@@ -6,6 +6,7 @@ export default {
   },
   daisyui: {
     themes: ["lofi"],
+    
   },
   // eslint-disable-next-line no-undef
   plugins: [require("daisyui")],

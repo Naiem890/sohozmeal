@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function MealCalendar() {
+export default function MealPlan() {
   const [meals, setMeals] = useState([
     { date: "29/08/2023", breakfast: true, lunch: true, dinner: true },
     { date: "30/08/2023", breakfast: true, lunch: false, dinner: true },
@@ -18,8 +18,8 @@ export default function MealCalendar() {
   };
 
   return (
-    <div className="dashboard">
-      <h2 className="text-3xl m-4 font-semibold">Meal Information</h2>
+    <div className="lg:my-10 lg:mx-4">
+      <h2 className="text-3xl m-4 font-semibold">Meal Plan</h2>
       <div className="overflow-x-auto lg:mr-12">
         <table className="table">
           <thead>

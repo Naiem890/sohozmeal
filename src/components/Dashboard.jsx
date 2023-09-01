@@ -1,23 +1,24 @@
-// Dashboard.js
-
+import { useState } from "react";
 import Aside from "./Aside";
-import MealCalender from "./MealCalender";
+import { Outlet } from "react-router-dom";
 
 const Dashboard = () => {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const toggleDrawer = () => {
+    setIsDrawerOpen((prev) => !prev);
+  };
   return (
     <div className="drawer lg:drawer-open">
-      <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
-      {/* <div className="drawer-content flex flex-col items-center justify-center">
-        <label
-          htmlFor="my-drawer-2"
-          className="btn btn-primary drawer-button lg:hidden"
-        >
-          Open drawer
-        </label>
-      </div> */}
-      <Aside />
-      <div className="drawer-content">
-        <MealCalender />
+      <input
+        id="my-drawer-2"
+        type="checkbox"
+        checked={isDrawerOpen}
+        onChange={toggleDrawer}
+        className="drawer-toggle"
+      />
+      <Aside toggleDrawer={toggleDrawer} />
+      <div className="drawer-content ">
+        <Outlet />
       </div>
     </div>
   );
