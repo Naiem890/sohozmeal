@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Student = require("../models/student"); // Adjust the path as needed
 const { validateToken } = require("../utils/validateToken");
+const Admin = require("../models/admin");
 
 // Student login
 router.post("/login", async (req, res) => {
@@ -30,6 +31,41 @@ router.post("/login", async (req, res) => {
     );
 
     res.status(200).json({ token, student });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "An error occurred" });
+  }
+});
+
+// Admin login
+router.post("/admin/login", async (req, res) => {
+  const { email, password } = req.body;
+  console.log(req.body);
+  try {
+    const admin = await Admin.findOne({
+      email: { $regex: new RegExp(email, "i") },
+    });
+
+    console.log("admin", admin);
+    if (!admin || !bcrypt.compareSync(password, admin.password)) {
+      return res
+        .status(401)
+        .json({ message: "Invalid admin email or password" });
+    }
+
+    // eslint-disable-next-line no-undef
+    console.log("JWT_SECRET", process.env.JWT_SECRET);
+    // Create a JWT token
+    const token = jwt.sign(
+      { email: admin.email, _id: admin._id },
+      // eslint-disable-next-line no-undef
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+
+    res.status(200).json({ token, admin });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "An error occurred" });
