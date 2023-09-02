@@ -9,9 +9,9 @@ import {
   UserCircleIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
-import { MealIcon } from "../assets/Icons";
+import { MealIcon } from "../../assets/Icons";
 
-export default function Aside({ toggleDrawer }) {
+export default function AdminAside({ toggleDrawer }) {
   // const auth = useAuthUser();
   const signOut = useSignOut();
   const navigate = useNavigate();

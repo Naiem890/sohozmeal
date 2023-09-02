@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
-import { Axios } from "../api/api";
 import { toast } from "react-toastify";
+import { Axios } from "../../api/api";
 
 export default function Profile() {
   const auth = useAuthUser();

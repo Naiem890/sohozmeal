@@ -1,22 +1,22 @@
 import { useSignIn } from "react-auth-kit";
-import { Axios } from "../api/api";
 import { toast } from "react-toastify";
-import MISTImage from "../assets/Military_Institute_of_Science_and_Technology_Monogram.svg.png";
+import MISTImage from "../../assets/MIST.png";
 import { useNavigate } from "react-router-dom";
+import { Axios } from "../../api/api";
 
-export default function Login() {
+export default function AdminLogin() {
   const signIn = useSignIn();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    const studentId = e.target.studentId.value;
+    const email = e.target.email.value;
     const password = e.target.password.value;
 
     try {
-      const result = await Axios.post("/auth/login", {
-        studentId,
+      const result = await Axios.post("/auth/admin/login", {
+        email,
         password,
       }).then((res) => res.data);
 
@@ -25,17 +25,15 @@ export default function Login() {
         expiresIn: 3600,
         tokenType: "Bearer",
         authState: {
-          studentId: studentId,
-          role: "student",
+          email: email,
+          _id: result._id,
+          role: "admin",
           isAuthenticated: true,
         },
       });
       toast.success("Login successful");
-      if (result?.student?.firstTimeLogin) {
-        navigate("/change-password");
-      } else {
-        navigate("/dashboard");
-      }
+
+      navigate("/admin/dashboard");
     } catch (error) {
       console.log(error);
       toast.error(error.response.data.message);
@@ -54,9 +52,9 @@ export default function Login() {
         <div className="form-control">
           <input
             type="text"
-            name="studentId"
+            name="email"
             className="input input-sm input-ghost outline-none placeholder:uppercase focus:outline-none text-lg border-0 border-b-2 border-green-600"
-            placeholder="Student Id"
+            placeholder="Email"
           />
         </div>
         <div className="form-control">

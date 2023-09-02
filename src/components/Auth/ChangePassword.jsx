@@ -1,7 +1,7 @@
 import { toast } from "react-toastify";
-import { Axios } from "../api/api";
-import MISTImage from "../assets/Military_Institute_of_Science_and_Technology_Monogram.svg.png";
+import MISTImage from "../../assets/MIST.png";
 import { useNavigate } from "react-router-dom";
+import { Axios } from "../../api/api";
 
 export default function ChangePassword() {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export default function ChangePassword() {
       navigate("/dashboard");
     } catch (error) {
       console.error("Error changing password:", error);
-      toast.error("An error occurred while changing the password.");
+      toast.error(error?.response?.data?.message);
     }
   };
 

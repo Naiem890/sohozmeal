@@ -18,7 +18,7 @@ export default function MealPlan() {
   };
 
   return (
-    <div className="lg:my-10 lg:mx-4">
+    <div className="lg:my-10 lg:mx-4 lg:w-2/3">
       <h2 className="text-3xl m-4 font-semibold">Meal Plan</h2>
       <div className="overflow-x-auto lg:mr-12">
         <table className="table">
