@@ -1,12 +1,21 @@
 const jwt = require("jsonwebtoken");
+
+const invalidTokens = [];
+
+const invalidateToken = (token) => {
+  invalidTokens.push(token);
+};
 // Custom middleware for JWT token validation
 const validateToken = (req, res, next) => {
   // Get the JWT token from the cookie (you should replace "yourCookieName" with your cookie name)
   const token = req.cookies._auth;
-
   if (!token) {
     // Token is missing, return unauthorized
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ isValid: false, message: "Unauthorized" });
+  }
+
+  if (invalidTokens.includes(token)) {
+    return res.status(401).json({ isValid: false, message: "Unauthorized" });
   }
 
   try {
@@ -22,8 +31,8 @@ const validateToken = (req, res, next) => {
   } catch (error) {
     console.log(error);
     // Token is invalid or expired
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ isValid: false, message: "Unauthorized" });
   }
 };
 
-module.exports = { validateToken };
+module.exports = { validateToken, invalidateToken };
