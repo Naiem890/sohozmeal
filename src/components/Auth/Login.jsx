@@ -20,13 +20,15 @@ export default function Login() {
         password,
       }).then((res) => res.data);
 
+      console.log(result);
       signIn({
         token: result.token,
         expiresIn: 3600,
         tokenType: "Bearer",
         authState: {
           studentId: studentId,
-          role: "student",
+          role: result?.role,
+          _id: result?.student?._id,
           isAuthenticated: true,
         },
       });
@@ -34,7 +36,7 @@ export default function Login() {
       if (result?.student?.firstTimeLogin) {
         navigate("/change-password");
       } else {
-        navigate("/dashboard");
+        navigate("/dashboard/");
       }
     } catch (error) {
       console.log(error);

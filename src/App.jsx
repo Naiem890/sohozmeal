@@ -11,6 +11,9 @@ import AdminDashboard from "./components/Admin/AdminDashboard";
 import RequiredAdminAuth from "./components/Admin/RequiredAdminAuth";
 import Login from "./components/Auth/Login";
 import ChangePassword from "./components/Auth/ChangePassword";
+import { Students } from "./components/Admin/Students";
+import { Stock } from "./components/Admin/Stock";
+import { Expenses } from "./components/Admin/Expenses";
 
 function App() {
   return (
@@ -27,8 +30,21 @@ function App() {
             </RequiredStudentAuth>
           }
         />
+
         <Route
-          path="/dashboard"
+          path="/admin/dashboard/"
+          element={
+            <RequiredAdminAuth>
+              <AdminDashboard />
+            </RequiredAdminAuth>
+          }
+        >
+          <Route index element={<Students />} />
+          <Route path="stock" element={<Stock />} />
+          <Route path="expenses" element={<Expenses />} />
+        </Route>
+        <Route
+          path="/dashboard/"
           element={
             <RequiredStudentAuth>
               <Dashboard />
@@ -41,15 +57,6 @@ function App() {
           <Route path="bill-payment" element={<BillPayment />} />
           <Route path="meal-routine" element={<MealRoutine />} />
         </Route>
-
-        <Route
-          path="/admin/dashboard"
-          element={
-            <RequiredAdminAuth>
-              <AdminDashboard />
-            </RequiredAdminAuth>
-          }
-        ></Route>
       </Routes>
     </>
   );

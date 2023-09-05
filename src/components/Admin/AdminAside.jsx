@@ -5,9 +5,13 @@ import Swal from "sweetalert2";
 import {
   ArrowRightOnRectangleIcon,
   CreditCardIcon,
+  ShoppingBagIcon,
+  ShoppingCartIcon,
   TableCellsIcon,
   UserCircleIcon,
+  UserGroupIcon,
   UserIcon,
+  UserPlusIcon,
 } from "@heroicons/react/24/outline";
 import { MealIcon } from "../../assets/Icons";
 
@@ -37,24 +41,20 @@ export default function AdminAside({ toggleDrawer }) {
 
   const asideLinks = [
     {
-      link: "Meal Plan",
-      path: "/dashboard/",
-      icon: <MealIcon />,
+      link: "All Students",
+      path: "/admin/dashboard/",
+      icon: <UserGroupIcon className="h-6 w-6" />,
+    },
+
+    {
+      link: "Stock",
+      path: "/admin/dashboard/stock",
+      icon: <ShoppingBagIcon className="h-6 w-6" />,
     },
     {
-      link: "Meal Routine",
-      path: "/dashboard/meal-routine",
-      icon: <TableCellsIcon className="w-6 h-6" />,
-    },
-    {
-      link: "Bill Payment",
-      path: "/dashboard/bill-payment",
-      icon: <CreditCardIcon className="h-6 w-6" />,
-    },
-    {
-      link: "Profile",
-      path: "/dashboard/profile",
-      icon: <UserCircleIcon className="h-6 w-6" />,
+      link: "Expenses",
+      path: "/admin/dashboard/expenses",
+      icon: <ShoppingCartIcon className="h-6 w-6" />,
     },
   ];
 
@@ -63,7 +63,7 @@ export default function AdminAside({ toggleDrawer }) {
       <label htmlFor="my-drawer-2" className="drawer-overlay"></label>
       <ul className="menu  flex flex-col p-0 w-60 min-h-full bg-base-200 text-base-content font-medium">
         <div className="flex menu-title justify-center items-center text-xl h-14 text-white mb-4 bg-green-700">
-          Sohoz Meal
+          Sohoz Meal - Admin
         </div>
         {asideLinks.map((link, index) => (
           <li key={index} className="px-2">

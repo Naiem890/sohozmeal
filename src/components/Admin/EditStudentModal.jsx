@@ -1,67 +1,47 @@
-import React, { useEffect, useState } from "react";
-import { useAuthUser } from "react-auth-kit";
-import { toast } from "react-toastify";
+import React from "react";
 import { Axios } from "../../api/api";
+import { toast } from "react-toastify";
+import Modal from "../Common/Modal";
+import { DEPARTMENTS } from "../../Utils/constant";
 
-export default function Profile() {
-  const auth = useAuthUser();
-  const [student, setStudent] = useState(null);
-
-  const fetchStudentProfile = async () => {
-    try {
-      const res = await Axios.get("/student", {
-        withCredentials: true,
-      });
-      console.log(res.data);
-      setStudent(res?.data?.student);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-  useEffect(() => {
-    fetchStudentProfile();
-  }, []);
-
-  const departments = [
-    "CSE",
-    "EECE",
-    "CE",
-    "ME",
-    "NAME",
-    "BME",
-    "PME",
-    "IPE",
-    "AE",
-    "NSE",
-    "EWCE",
-    "ARCH",
-  ];
-
+export const EditStudentModal = ({
+  showModal,
+  setShowModal,
+  student,
+  setStudents,
+  setStudent,
+}) => {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    console.log("student", student);
+
     try {
       const res = await Axios.put("/student", student, {
         withCredentials: true,
       });
-      console.log(res.data);
-      // fetchStudentProfile();
-      setStudent(res?.data?.student);
-      toast.success(res.data.message);
+      const response = res.data;
+      const updatedStudent = response.student;
+      setStudents((prevStudents) =>
+        prevStudents.map((s) =>
+          s._id === updatedStudent._id ? updatedStudent : s
+        )
+      );
+      toast.success(response.message);
+      setShowModal(false);
     } catch (err) {
       console.log(err);
       toast.error(err.response.data.message);
     }
   };
-
   return (
-    <div className="lg:m-10 m-4">
-      <h2 className="lg:text-3xl text-xl mb-4 font-semibold">
-        Update Profile Info
-      </h2>
+    <Modal
+      setShowModal={setShowModal}
+      className={`${showModal ? "" : "hidden"}`}
+    >
+      <h3 className="font-bold text-lg">Edit Student Information</h3>
+      <div className="divide-2" />
       <form
         onSubmit={handleUpdateProfile}
-        className="grid lg:grid-cols-2 lg:w-2/3 gap-2 lg:gap-x-8"
+        className="grid lg:grid-cols-2 gap-2 lg:gap-x-8"
       >
         <div className="form-control w-full">
           <label className="label">
@@ -72,7 +52,7 @@ export default function Profile() {
           <input
             type="text"
             value={student?.name}
-            disabled
+            onChange={(e) => setStudent({ ...student, name: e.target.value })}
             placeholder="Type here"
             className="input input-bordered w-full"
           />
@@ -102,8 +82,12 @@ export default function Profile() {
           <input
             type="text"
             name="studentId"
-            value={student?.studentId}
-            disabled
+            value={
+              student?.newStudentId ? student?.newStudentId : student?.studentId
+            }
+            onChange={(e) =>
+              setStudent({ ...student, newStudentId: e.target.value })
+            }
             placeholder="Type here"
             className="input input-bordered w-full"
           />
@@ -116,7 +100,7 @@ export default function Profile() {
             type="text"
             name="studentId"
             value={student?.hallId}
-            disabled
+            onChange={(e) => setStudent({ ...student, hallId: e.target.value })}
             placeholder="Type here"
             className="input input-bordered w-full"
           />
@@ -137,7 +121,7 @@ export default function Profile() {
             <option disabled selected>
               Select Department
             </option>
-            {departments.map((dept) => (
+            {DEPARTMENTS.map((dept) => (
               <option key={dept} value={dept}>
                 {dept}
               </option>
@@ -156,12 +140,18 @@ export default function Profile() {
             className="input input-bordered w-full"
           />
         </div>
-        <div className="mt-4 col-span-full flex justify-end">
+        <div className="mt-4 col-span-full flex justify-end gap-6">
+          <div
+            onClick={() => setShowModal((prev) => !prev)}
+            className="btn bg-gray-200"
+          >
+            Close
+          </div>
           <button type="submit" className="btn btn-success text-white">
             Update Changes
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
-}
+};

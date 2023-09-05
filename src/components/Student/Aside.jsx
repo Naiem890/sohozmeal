@@ -2,6 +2,7 @@ import { useSignOut } from "react-auth-kit";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import { Axios } from "../../api/api";
 import {
   ArrowRightOnRectangleIcon,
   CreditCardIcon,
@@ -16,8 +17,8 @@ export default function Aside({ toggleDrawer }) {
   const signOut = useSignOut();
   const navigate = useNavigate();
 
-  const handleSignOut = () => {
-    Swal.fire({
+  const handleSignOut = async () => {
+    const result = await Swal.fire({
       title: "Are you sure?",
       text: "You want to logout from Sohoz Meal?",
       icon: "warning",
@@ -26,13 +27,21 @@ export default function Aside({ toggleDrawer }) {
       cancelButtonColor: "#d33",
 
       confirmButtonText: "Yes, Logout!",
-    }).then((result) => {
-      if (result.isConfirmed) {
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const logout = await Axios.post("/auth/logout", "", {
+          withCredentials: true,
+        });
+        localStorage.clear();
         signOut();
         navigate("/");
         toast.success("Logged out successfully!");
+      } catch (error) {
+        console.log(error);
       }
-    });
+    }
   };
 
   const asideLinks = [

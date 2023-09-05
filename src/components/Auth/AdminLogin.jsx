@@ -27,7 +27,7 @@ export default function AdminLogin() {
         authState: {
           email: email,
           _id: result._id,
-          role: "admin",
+          role: result.role,
           isAuthenticated: true,
         },
       });
