@@ -84,4 +84,23 @@ router.put("/plan/:mealId", validateToken, async (req, res) => {
   }
 });
 
+// add route to delete all meal by date
+router.delete("/plan/", async (req, res) => {
+  const date = "2023-09-19";
+
+  try {
+    const deletedMeal = await Meal.deleteMany({ date });
+    if (!deletedMeal) {
+      return res.status(404).json({ message: "Meal not found" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Meal deleted successfully", meal: deletedMeal });
+  } catch (error) {
+    console.error("Error deleting meal:", error);
+    res.status(500).json({ message: "An error occurred while deleting meal" });
+  }
+});
+
 module.exports = router;
