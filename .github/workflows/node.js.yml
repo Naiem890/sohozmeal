@@ -1,0 +1,23 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Node.js CI
+
+on:
+  push:
+    branches: [sohozmeal_backend]
+env:
+  PORT: ${{secrets.PORT}}
+  NODE_ENV: ${{secrets.NODE_ENV}}
+  SALT_ROUNDS: ${{secrets.SALT_ROUNDS}}
+  JWT_SECRET: ${{secrets.JWT_SECRET}}
+  DB_URI_CLOUD: ${{secrets.DB_URI_CLOUD}}
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v3
+      - run: npm ci
+      - run: pm2 restart sohozmeal -a
