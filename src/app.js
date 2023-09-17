@@ -35,7 +35,8 @@ app.get("/", (req, res) => {
 app.use("/api", apiRoutes);
 
 // Error handling middleware
-app.use((err, req, res) => {
+app.use((err, req, res, next) => {
+  // Add 'next' as the fourth parameter
   console.error(err.stack);
   res.status(500).json({ error: "Internal Server Error" });
 });
