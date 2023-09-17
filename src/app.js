@@ -48,5 +48,5 @@ require("../cron/cronScheduler");
 
 app.listen(port, () => {
   console.log(`Sohoz Meal app listening on port ${port}`);
-  console.log(`Running on: http://localhost:${port}`);
+  console.log(`Running on port: ${port}`);
 });
