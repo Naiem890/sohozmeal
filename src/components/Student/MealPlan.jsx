@@ -1,20 +1,70 @@
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { Axios } from "../../api/api";
+import { dateToDayConverter } from "../../Utils/dateToDayConverter";
+import { dateToYYYYMMDD } from "../../Utils/dateToYYYYMMDD";
 export default function MealPlan() {
   const [meals, setMeals] = useState([
-    { date: "29/08/2023", breakfast: true, lunch: true, dinner: true },
-    { date: "30/08/2023", breakfast: true, lunch: false, dinner: true },
+    // { date: "29/08/2023", breakfast: true, lunch: true, dinner: true },
+    // { date: "30/08/2023", breakfast: true, lunch: false, dinner: true },
   ]);
 
-  const handleMealToggle = (date, mealType) => {
-    setMeals((prevMeals) => {
-      return prevMeals.map((meal) => {
-        if (meal.date === date) {
-          return { ...meal, [mealType]: !meal[mealType] };
-        }
-        return meal;
+  useEffect(() => {
+    const fetchMeals = async () => {
+      const res = await Axios.get("/meal/plan", {
+        withCredentials: true,
       });
-    });
+      const { meals } = res.data;
+      setMeals(meals);
+    };
+    fetchMeals();
+  }, []);
+
+  const handleMealUpdate = async (mealId, meal) => {
+    console.log("mealId", mealId);
+    console.log("meal", meal);
+
+    try {
+      const res = await Axios.put(
+        `/meal/plan/${mealId}`,
+        { meal },
+        {
+          withCredentials: true,
+        }
+      );
+      const result = res.data;
+
+      setMeals((prevMeals) =>
+        prevMeals.map((prevMeal) => {
+          if (prevMeal._id === mealId) {
+            return {
+              ...prevMeal,
+              ...result.meal,
+              meal: { ...result.meal.meal },
+            };
+          }
+          return prevMeal;
+        })
+      );
+      toast.success(result.message);
+    } catch (error) {
+      console.log(error);
+      toast.error(error.response.data.message);
+    }
+  };
+
+  const validDate = () => {
+    const today = new Date();
+    const time = today.getHours();
+    let dayCount = 0;
+    console.log(time);
+    if (time >= 22) {
+      dayCount = 2;
+    } else {
+      dayCount = 1;
+    }
+    const availableDate = new Date(today.setDate(today.getDate() + dayCount));
+    return dateToYYYYMMDD(availableDate);
   };
 
   return (
@@ -31,21 +81,38 @@ export default function MealPlan() {
             </tr>
           </thead>
           <tbody className="">
-            {meals.map((day) => (
-              <tr key={day.date} className="hover">
-                <td className="">
-                  {`Monday -`} <span className="text-sm">{day.date}</span>{" "}
+            {meals.map((meal) => (
+              <tr
+                key={meal._id}
+                className={` ${
+                  validDate() == meal.date
+                    ? "bg-green-200  cursor-pointer"
+                    : "bg-gray-100 grayscale pointer-events-none cursor-not-allowed"
+                }`}
+              >
+                <td className="md:text-lg font-medium">
+                  {`${dateToDayConverter(meal.date)} - `}
+                  <span className="">{meal.date}</span>
                 </td>
                 {["breakfast", "lunch", "dinner"].map((mealType) => (
-                  <td className="text-center" key={mealType}>
+                  <td
+                    className="text-center checkbox-wrapper-26"
+                    key={mealType}
+                  >
                     <input
+                      checked={meal.meal[mealType]}
+                      onChange={() =>
+                        handleMealUpdate(meal._id, {
+                          ...meal.meal,
+                          [mealType]: !meal.meal[mealType],
+                        })
+                      }
                       type="checkbox"
-                      className={`toggle ${
-                        day[mealType] ? "toggle-success" : "bg-red-500"
-                      }`}
-                      checked={day[mealType]}
-                      onChange={() => handleMealToggle(day.date, mealType)}
+                      id={`_checkbox-${meal._id}-${mealType}`}
                     />
+                    <label htmlFor={`_checkbox-${meal._id}-${mealType}`}>
+                      <div className="tick_mark"></div>
+                    </label>
                   </td>
                 ))}
               </tr>
