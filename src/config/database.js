@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 mongoose.set("strictQuery", true);
 
 async function dbConnect () {
+  // eslint-disable-next-line no-undef
   const { DB_URI_CLOUD, DB_URI_LOCAL, NODE_ENV } = process.env;
   const dbUrl = NODE_ENV === "production" ? DB_URI_CLOUD : DB_URI_LOCAL;
 

@@ -18,7 +18,7 @@ router.post("/generate-meal", async (req, res) => {
     const currentDate = new Date();
 
     // Calculate the next day
-    currentDate.setDate(currentDate.getDate() + 2);
+    currentDate.setDate(currentDate.getDate() + 1);
 
     // Format the next day as a string (e.g., "yyyy-mm-dd")
     const nextDay = currentDate.toISOString().split("T")[0];
