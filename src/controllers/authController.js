@@ -30,6 +30,13 @@ router.post("/login", async (req, res) => {
         expiresIn: "24h",
       }
     );
+
+    // Set the cookie with SameSite=None attribute
+    res.cookie("_auth", token, {
+      httpOnly: true,
+      sameSite: "None",
+    });
+
     delete student.password;
     res.status(200).json({ token, student, role: "student" });
   } catch (error) {
