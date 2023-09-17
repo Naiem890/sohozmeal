@@ -11,6 +11,9 @@ require("dotenv").config();
 // eslint-disable-next-line no-undef
 const port = process.env.PORT || 5000;
 
+// eslint-disable-next-line no-undef
+const { PORT, NODE_ENV, DB_URI_CLOUD } = process.env;
+console.log("app.js => ", PORT, NODE_ENV, DB_URI_CLOUD);
 // Middleware Array
 const middleware = [
   logger("dev"),
