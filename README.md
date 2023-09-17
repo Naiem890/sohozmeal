@@ -1,1 +1,1 @@
-# sohozmeal
+# sohozmeal app for Osmany Hall
