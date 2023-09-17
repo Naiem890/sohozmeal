@@ -49,6 +49,6 @@ dbConnect();
 require("../cron/cronScheduler");
 
 app.listen(port, () => {
-  console.log(`Sohoz Meal app listening on port ${port}`);
+  console.log(`Sohoz Meal app listening on port ${port}!`);
   console.log(`Running on port: ${port}`);
 });
