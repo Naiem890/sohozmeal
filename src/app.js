@@ -11,9 +11,6 @@ require("dotenv").config();
 // eslint-disable-next-line no-undef
 const port = process.env.PORT || 5000;
 
-// eslint-disable-next-line no-undef
-const { PORT, NODE_ENV, DB_URI_CLOUD } = process.env;
-console.log("app.js => ", PORT, NODE_ENV, DB_URI_CLOUD);
 // Middleware Array
 const middleware = [
   logger("dev"),
@@ -38,6 +35,7 @@ app.get("/", (req, res) => {
 app.use("/api", apiRoutes);
 
 // Error handling middleware
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   // Add 'next' as the fourth parameter
   console.error(err.stack);
