@@ -12,10 +12,12 @@ const validateToken = (req, res, next) => {
   // console.log("token", token);
   if (!token) {
     // Token is missing, return unauthorized
+    console.log("Unauthorized1");
     return res.status(401).json({ isValid: false, message: "Unauthorized" });
   }
 
   if (invalidTokens.includes(token)) {
+    console.log("Unauthorized2");
     return res.status(401).json({ isValid: false, message: "Unauthorized" });
   }
 
@@ -31,6 +33,7 @@ const validateToken = (req, res, next) => {
     next();
   } catch (error) {
     console.log(error);
+    console.log("Unauthorized3");
     // Token is invalid or expired
     return res.status(401).json({ isValid: false, message: "Unauthorized" });
   }
