@@ -3,7 +3,7 @@ const Meal = require("../src/models/meal");
 
 // Schedule the cron job to run daily at 10:00 PM (adjust as needed)
 cron.schedule(
-  "13 22 * * *",
+  "20 22 * * *",
   async () => {
     // Your cron job logic goes here
     console.log("Cron job executed: Generating meals for students.");
