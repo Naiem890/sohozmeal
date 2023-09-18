@@ -86,7 +86,7 @@ router.put("/plan/:mealId", validateToken, async (req, res) => {
 
 // add route to delete all meal by date
 router.delete("/plan/", async (req, res) => {
-  const date = "2023-09-19";
+  const date = "2023-09-20";
 
   try {
     const deletedMeal = await Meal.deleteMany({ date });
