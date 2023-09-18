@@ -32,7 +32,7 @@ router.post("/login", async (req, res) => {
     );
 
     // Set the cookie with SameSite=None attribute
-    res.cookie("token", token, {
+    res.cookie("_auth", token, {
       httpOnly: true,
       sameSite: "None",
     });
