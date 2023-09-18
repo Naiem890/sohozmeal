@@ -35,6 +35,8 @@ router.post("/login", async (req, res) => {
     res.cookie("_auth", token, {
       httpOnly: true,
       sameSite: "None",
+      secure: true, // Add this line if your app is served over HTTPS
+      path: "/", // Allow the cookie to be accessible across the entire app
     });
 
     delete student.password;
