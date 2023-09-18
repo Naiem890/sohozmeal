@@ -43,4 +43,4 @@ cron.schedule("* 22 * * *", async () => {
   }
 });
 
-console.log("Cron job scheduled to run daily at 10:00 PM.");
+console.log("Cron job scheduled to run daily at 10:00 PM.!");
