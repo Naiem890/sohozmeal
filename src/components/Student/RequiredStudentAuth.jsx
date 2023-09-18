@@ -27,9 +27,13 @@ export default function RequiredStudentAuth({ children }) {
         setIsTokenValid(cachedTokenValidity.isValid === "true");
       } else {
         try {
-          const response = await Axios.get("/auth/check-token-validity", {
-            withCredentials: true,
-          });
+          const response = await Axios.post(
+            "/auth/check-token-validity",
+            null,
+            {
+              withCredentials: true,
+            }
+          );
 
           if (response.data.isValid) {
             setIsTokenValid(true);
@@ -72,6 +76,6 @@ export default function RequiredStudentAuth({ children }) {
   if (!isTokenValid) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
-  
+
   return children;
 }

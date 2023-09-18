@@ -55,6 +55,7 @@ export default function MealPlan() {
 
   const validDate = () => {
     const today = new Date();
+    console.log("=>", new Date());
     const time = today.getHours();
     let dayCount = 0;
     console.log(time);
@@ -64,6 +65,7 @@ export default function MealPlan() {
       dayCount = 1;
     }
     const availableDate = new Date(today.setDate(today.getDate() + dayCount));
+    console.log("availableDate", availableDate, today);
     return dateToYYYYMMDD(availableDate);
   };
 
