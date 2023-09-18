@@ -56,7 +56,7 @@ router.post("/logout", validateToken, async (req, res) => {
   }
 });
 
-router.get("/check-token-validity", validateToken, async (req, res) => {
+router.post("/check-token-validity", validateToken, async (req, res) => {
   res.status(200).json({ isValid: true, message: "Token is valid" });
 });
 
