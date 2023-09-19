@@ -8,10 +8,10 @@ const invalidateToken = (token) => {
 // Custom middleware for JWT token validation
 const validateToken = (req, res, next) => {
   // Get the JWT token from the cookie (you should replace "yourCookieName" with your cookie name)
-  console.log("req.cookies", JSON.stringify(req));
-  console.log("req.headers", JSON.stringify(req.headers));
-  const token = req.cookies._auth;
-  // console.log("token", token);
+  console.log("req.cookies", JSON.stringify(req.cookies));
+  console.log("req.headers", req.headers);
+  const token = req.cookies?._auth || req.headers?.authorization?.split(" ")[1];
+  console.log("token", token);
   if (!token) {
     // Token is missing, return unauthorized
     console.log("Unauthorized1");
