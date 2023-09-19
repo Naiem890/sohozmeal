@@ -59,6 +59,7 @@ router.post("/logout", validateToken, async (req, res) => {
 });
 
 router.post("/check-token-validity", validateToken, async (req, res) => {
+  console.log("checking from token valid");
   res.status(200).json({ isValid: true, message: "Token is valid" });
 });
 
