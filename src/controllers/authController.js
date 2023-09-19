@@ -32,12 +32,12 @@ router.post("/login", async (req, res) => {
     );
 
     // Set the cookie with SameSite=None attribute
-    // res.cookie("_auth", token, {
-    //   httpOnly: true,
-    //   sameSite: "None",
-    //   secure: true, // Add this line if your app is served over HTTPS
-    //   path: "/", // Allow the cookie to be accessible across the entire app
-    // });
+    res.cookie("_auth", token, {
+      httpOnly: true,
+      sameSite: "None",
+      secure: true, // Add this line if your app is served over HTTPS
+      path: "/", // Allow the cookie to be accessible across the entire app
+    });
 
     delete student.password;
     res.status(200).json({ token, student, role: "student" });
