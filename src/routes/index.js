@@ -19,7 +19,7 @@ router.get("/test-sms", async (req, res) => {
     res.status(200).json({ message: "SMS sent successfully!" });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: "An error occurred" });
+    res.status(500).json({ message: "An error occurred", error });
   }
 });
 
