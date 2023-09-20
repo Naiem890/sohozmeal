@@ -12,6 +12,8 @@ env:
   SALT_ROUNDS: ${{secrets.SALT_ROUNDS}}
   JWT_SECRET: ${{secrets.JWT_SECRET}}
   DB_URI_CLOUD: ${{secrets.DB_URI_CLOUD}}
+  API_KEY: ${{secrets.API_KEY}}
+  SENDERID: ${{secrets.SENDERID}}
 
 jobs:
   build:
