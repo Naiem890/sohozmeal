@@ -56,6 +56,7 @@ export default function Login() {
         <div className="form-control">
           <input
             type="text"
+            inputMode="numeric"
             name="studentId"
             className="input input-sm input-ghost outline-none placeholder:uppercase focus:outline-none text-lg border-0 border-b-2 border-green-600"
             placeholder="Student Id"
