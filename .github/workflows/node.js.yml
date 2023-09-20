@@ -13,7 +13,7 @@ env:
   JWT_SECRET: ${{secrets.JWT_SECRET}}
   DB_URI_CLOUD: ${{secrets.DB_URI_CLOUD}}
   API_KEY: ${{secrets.API_KEY}}
-  SENDERID: ${{secrets.SENDERID}}
+  SENDER_ID: ${{secrets.SENDER_ID}}
 
 jobs:
   build:
