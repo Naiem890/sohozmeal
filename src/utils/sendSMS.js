@@ -13,13 +13,9 @@ const sendSMS = async (phone, message) => {
     throw new Error("Phone number or message is missing");
   }
 
-  return await axios.post(`http://bulksmsbd.net/api/smsapi`, {
-    api_key: apiKey,
-    type: "text",
-    number: phone,
-    senderid: senderId,
-    message: message,
-  });
+  return await axios.post(
+    `http://bulksmsbd.net/api/smsapi?api_key=${apiKey}&type=text&number=phone&senderid=${senderId}&message=${message}`
+  );
 };
 
 module.exports = { sendSMS };
