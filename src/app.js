@@ -14,10 +14,7 @@ const port = process.env.PORT || 5000;
 // Middleware Array
 const middleware = [
   logger("dev"),
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-  }),
+  cors(),
   cookieParser(),
   express.static("public"),
   express.urlencoded({ extended: true }),
