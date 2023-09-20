@@ -4,7 +4,7 @@ const { sendSMS } = require("../src/utils/sendSMS");
 
 // Schedule the cron job to run daily at 10:00 PM (adjust as needed)
 cron.schedule(
-  "33 23 * * *",
+  "36 23 * * *",
   async () => {
     // Your cron job logic goes here
     console.log("Cron job executed: Generating meals for students.");
@@ -47,10 +47,11 @@ cron.schedule(
         );
 
         console.log("New meals created successfully!", nextDay);
-        await sendSMS(
+        const result = await sendSMS(
           `Meals generated for ${nextDay}! \nTotal meals generated: ${newMeals.length} meals. \nBreakfast: ${breakfastMeals.length} \nLunch: ${lunchMeals.length} \nDinner: ${dinnerMeals.length} \n\n-Sohoz Meal App`,
           "01790732717"
         );
+        console.log("SMS sent successfully!", result);
       } else {
         console.log("No meals found for the previous day.");
       }
