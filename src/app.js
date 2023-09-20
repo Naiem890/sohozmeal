@@ -5,6 +5,7 @@ const logger = require("morgan");
 const cookieParser = require("cookie-parser");
 const dbConnect = require("./config/database");
 const apiRoutes = require("./routes/index");
+const { sendSMS } = require("./utils/sendSMS");
 // Load env variables
 require("dotenv").config();
 
@@ -30,6 +31,20 @@ app.get("/", (req, res) => {
 
 // Api routes
 app.use("/api", apiRoutes);
+app.get("/test-sms", async (req, res) => {
+  console.log("test-sms route");
+  try {
+    const result = await sendSMS(
+      "Message working from Sohoz Meal App",
+      "01790732717"
+    );
+    console.log("SMS sent successfully!", result);
+    res.status(200).json({ message: "SMS sent successfully!" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "An error occurred", error });
+  }
+});
 
 // Error handling middleware
 // eslint-disable-next-line no-unused-vars
