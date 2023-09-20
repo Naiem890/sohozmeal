@@ -2,7 +2,7 @@ const router = require("express").Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Student = require("../models/student"); // Adjust the path as needed
-const { validateToken, invalidateToken } = require("../utils/validateToken");
+const { validateToken } = require("../utils/validateToken");
 const Admin = require("../models/admin");
 const { checkAdminRole } = require("../utils/checkAdminRole");
 
@@ -42,11 +42,6 @@ router.post("/login", async (req, res) => {
 // write a logout route for devalidating the token
 router.post("/logout", validateToken, async (req, res) => {
   try {
-    const token = req.headers?.authorization?.split(" ")[1];
-    if (token) {
-      // invalidateToken(req.cookies?._auth);
-    }
-
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.log(error);
