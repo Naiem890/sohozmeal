@@ -2,7 +2,6 @@ const router = require("express").Router();
 const authController = require("../controllers/authController");
 const studentController = require("../controllers/studentController");
 const mealController = require("../controllers/mealController");
-const { sendSMS } = require("../utils/sendSMS");
 
 router.use("/auth", authController);
 router.use("/student", studentController);
