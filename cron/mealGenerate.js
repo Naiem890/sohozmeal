@@ -4,7 +4,7 @@ const { sendSMS } = require("../src/utils/sendSMS");
 
 // Schedule the cron job to run daily at 10:00 PM (adjust as needed)
 cron.schedule(
-  "23 23 * * *",
+  "24 23 * * *",
   async () => {
     // Your cron job logic goes here
     console.log("Cron job executed: Generating meals for students.");
