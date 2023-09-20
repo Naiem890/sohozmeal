@@ -43,7 +43,7 @@ app.use((err, req, res, next) => {
 dbConnect();
 
 // require("../temp/insertStudents");
-require("../cron/cronScheduler");
+require("../cron/mealGenerate");
 
 app.listen(port, () => {
   console.log(`Sohoz Meal app listening on port ${port}!`);

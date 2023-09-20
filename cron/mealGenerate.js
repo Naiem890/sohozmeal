@@ -1,5 +1,6 @@
 const cron = require("node-cron");
 const Meal = require("../src/models/meal");
+const { sendSMS } = require("../src/utils/sendSMS");
 
 // Schedule the cron job to run daily at 10:00 PM (adjust as needed)
 cron.schedule(
@@ -36,7 +37,20 @@ cron.schedule(
         // Insert the new meals into the database
         await Meal.insertMany(newMeals);
 
+        // I want to extract how many meals are on for breakfast, lunch and dinner
+        const breakfastMeals = newMeals.filter(
+          (meal) => meal.meal.breakfast === true
+        );
+        const lunchMeals = newMeals.filter((meal) => meal.meal.lunch === true);
+        const dinnerMeals = newMeals.filter(
+          (meal) => meal.meal.dinner === true
+        );
+
         console.log("New meals created successfully!", nextDay);
+        await sendSMS(
+          `Meals generated for ${nextDay}! \nTotal meals generated: ${newMeals.length} meals. \nBreakfast: ${breakfastMeals.length} \nLunch: ${lunchMeals.length} \nDinner: ${dinnerMeals.length} \n\n-Sohoz Meal App`,
+          "01790732717"
+        );
       } else {
         console.log("No meals found for the previous day.");
       }
@@ -47,4 +61,4 @@ cron.schedule(
   { scheduled: true, timezone: "Asia/Dhaka" }
 );
 
-console.log("Cron job scheduled to run daily at 10:00 PM.");
+console.log("Cron job scheduled to run daily at 09:55 PM!");

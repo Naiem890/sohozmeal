@@ -31,9 +31,6 @@ router.post("/login", async (req, res) => {
       }
     );
 
-    // Set the cookie with SameSite=None attribute
-    res.cookie("token", token);
-
     delete student.password;
     res.status(200).json({ token, student, role: "student" });
   } catch (error) {
