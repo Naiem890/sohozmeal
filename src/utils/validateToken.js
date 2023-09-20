@@ -11,10 +11,9 @@ const validateToken = (req, res, next) => {
   console.log("req.cookies", req.cookies);
   console.log("req.headers.cookie", req.headers?.cookie);
   console.log("req.headers", req.headers);
-  const token =
-    req.cookies?._auth ||
-    req.cookies?.token ||
-    req.headers?.authorization?.split(" ")[1];
+  const token = req.headers?.authorization?.split(" ")[1];
+  // req.cookies?._auth ||
+  // req.cookies?.token ||
   console.log("token", token);
   if (!token) {
     // Token is missing, return unauthorized

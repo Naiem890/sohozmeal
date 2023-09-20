@@ -42,7 +42,11 @@ router.post("/login", async (req, res) => {
 // write a logout route for devalidating the token
 router.post("/logout", validateToken, async (req, res) => {
   try {
-    invalidateToken(req.cookies._auth);
+    const token = req.headers?.authorization?.split(" ")[1];
+    if (token) {
+      invalidateToken(req.cookies?._auth);
+    }
+
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.log(error);
