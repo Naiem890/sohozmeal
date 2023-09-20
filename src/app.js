@@ -35,7 +35,7 @@ app.get("/test-sms", async (req, res) => {
   console.log("test-sms route");
   try {
     const result = await sendSMS(
-      "Message working from Sohoz Meal App",
+      req.body.message || "Message working from Sohoz Meal App",
       "01790732717"
     );
     console.log("SMS sent successfully!", result);
