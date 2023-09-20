@@ -70,10 +70,12 @@ export default function MealPlan() {
         <table className="table">
           <thead>
             <tr>
-              <th className="">Day</th>
-              <th className="text-center lg:w-10">Breakfast 🍳</th>
-              <th className="text-center lg:w-10">Lunch 🍲</th>
-              <th className="text-center lg:w-10">Dinner 🥗</th>
+              <th className="w-3/4">Day</th>
+              <th className="text-center md:!p-4 !p-2  md:w-10">
+                Breakfast 🍳
+              </th>
+              <th className="text-center md:!p-4 !p-2  md:w-10">Lunch 🍲</th>
+              <th className="text-center md:!p-4 !p-2  md:w-10">Dinner 🥗</th>
             </tr>
           </thead>
           <tbody className="">
