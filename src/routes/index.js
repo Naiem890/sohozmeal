@@ -9,7 +9,7 @@ router.use("/student", studentController);
 router.use("/meal", mealController);
 
 // write a test route to check the sms functionality
-router.get("/test-sms", async (req, res) => {
+router.post("/test-sms", async (req, res) => {
   try {
     const result = await sendSMS(
       "Message working from Sohoz Meal App",
