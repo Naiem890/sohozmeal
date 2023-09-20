@@ -50,14 +50,16 @@ export default function MealPlan() {
     console.log("=>", new Date());
     const time = today.getHours();
     let dayCount = 0;
-    console.log(time);
+    console.log("time", time);
     if (time >= 22) {
       dayCount = 2;
     } else {
       dayCount = 1;
     }
-    const availableDate = new Date(today.setDate(today.getDate() + dayCount));
-    console.log("availableDate", availableDate, today);
+    console.log("dayCount", dayCount);
+    const availableDate = new Date();
+    availableDate.setDate(today.getDate() + dayCount);
+    console.log("availableDate=>", availableDate);
     return dateToYYYYMMDD(availableDate);
   };
 
