@@ -15,9 +15,7 @@ export const EditStudentModal = ({
     e.preventDefault();
 
     try {
-      const res = await Axios.put("/student", student, {
-        withCredentials: true,
-      });
+      const res = await Axios.put("/student", student);
       const response = res.data;
       const updatedStudent = response.student;
       setStudents((prevStudents) =>

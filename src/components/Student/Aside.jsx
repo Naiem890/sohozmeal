@@ -31,9 +31,7 @@ export default function Aside({ toggleDrawer }) {
 
     if (result.isConfirmed) {
       try {
-        const logout = await Axios.post("/auth/logout", "", {
-          withCredentials: true,
-        });
+        const logout = await Axios.post("/auth/logout", "");
         localStorage.clear();
         signOut();
         navigate("/");

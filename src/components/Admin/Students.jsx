@@ -26,7 +26,7 @@ export const Students = () => {
     fetchStudents();
 
     async function fetchStudents() {
-      const result = await Axios.get("/student/all", { withCredentials: true });
+      const result = await Axios.get("/student/all");
       console.log("students", result.data);
       setStudents(result.data);
     }
@@ -110,9 +110,7 @@ export const Students = () => {
 
     if (result.isConfirmed) {
       try {
-        const result = await Axios.post("/auth/password-reset", student, {
-          withCredentials: true,
-        });
+        const result = await Axios.post("/auth/password-reset", student);
         toast.success(result.data.message);
       } catch (error) {
         console.log(error);
@@ -144,9 +142,7 @@ export const Students = () => {
 
     if (result.isConfirmed) {
       try {
-        const result = await Axios.delete(`/student/${student.studentId}`, {
-          withCredentials: true,
-        });
+        const result = await Axios.delete(`/student/${student.studentId}`);
         toast.success(result.data.message);
         setStudents(students.filter((s) => s._id !== student._id));
       } catch (error) {

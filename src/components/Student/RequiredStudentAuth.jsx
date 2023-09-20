@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
 import { Navigate, useLocation } from "react-router-dom";
-import { Axios } from "../../api/api";
+import { Axios } from "../../api/api"; // Import Axios instance
 
-// Token cache constants
 const TOKEN_CACHE_KEY = "token_validity";
 const CACHE_EXPIRATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
-// eslint-disable-next-line react/prop-types
 export default function RequiredStudentAuth({ children }) {
   const location = useLocation();
   const auth = useAuthUser();
-
   const [isTokenValid, setIsTokenValid] = useState(null);
 
   useEffect(() => {
@@ -19,43 +16,28 @@ export default function RequiredStudentAuth({ children }) {
       const cachedTokenValidity = JSON.parse(
         localStorage.getItem(TOKEN_CACHE_KEY)
       );
-
-      if (
+      const isValidCached =
         cachedTokenValidity &&
-        Date.now() - parseInt(cachedTokenValidity.timestamp) < CACHE_EXPIRATION
-      ) {
+        Date.now() - parseInt(cachedTokenValidity.timestamp) < CACHE_EXPIRATION;
+
+      if (isValidCached) {
         setIsTokenValid(cachedTokenValidity.isValid === "true");
       } else {
         try {
-          const response = await Axios.post(
-            "/auth/check-token-validity",
-            null,
-            {
-              withCredentials: true,
-            }
-          );
+          const response = await Axios.get("/auth/check-token-validity");
+          console.log("response", response);
+          const isValid = response.data.isValid;
 
-          if (response.data.isValid) {
-            setIsTokenValid(true);
-            // Cache the token validity status with a timestamp
-            localStorage.setItem(
-              TOKEN_CACHE_KEY,
-              JSON.stringify({
-                isValid: "true",
-                timestamp: Date.now().toString(),
-              })
-            );
-          } else {
-            setIsTokenValid(false);
-            // Cache the token invalidity status with a timestamp
-            localStorage.setItem(
-              TOKEN_CACHE_KEY,
-              JSON.stringify({
-                isValid: "false",
-                timestamp: Date.now().toString(),
-              })
-            );
-          }
+          setIsTokenValid(isValid);
+
+          // Cache the token validity status with a timestamp
+          localStorage.setItem(
+            TOKEN_CACHE_KEY,
+            JSON.stringify({
+              isValid: isValid.toString(), // Convert to string
+              timestamp: Date.now().toString(),
+            })
+          );
         } catch (error) {
           setIsTokenValid(false);
         }

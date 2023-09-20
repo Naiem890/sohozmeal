@@ -9,9 +9,7 @@ export default function Profile() {
 
   const fetchStudentProfile = async () => {
     try {
-      const res = await Axios.get("/student", {
-        withCredentials: true,
-      });
+      const res = await Axios.get("/student");
       console.log(res.data);
       setStudent(res?.data?.student);
     } catch (err) {
@@ -41,9 +39,7 @@ export default function Profile() {
     e.preventDefault();
     console.log("student", student);
     try {
-      const res = await Axios.put("/student", student, {
-        withCredentials: true,
-      });
+      const res = await Axios.put("/student", student);
       console.log(res.data);
       // fetchStudentProfile();
       setStudent(res?.data?.student);

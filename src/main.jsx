@@ -9,12 +9,7 @@ import { ToastContainer } from "react-toastify";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <AuthProvider
-      authType={"cookie"}
-      authName={"_auth"}
-      cookieDomain={window.location.hostname}
-      cookieSecure={window.location.protocol === "https:"}
-    >
+    <AuthProvider authType={"localstorage"} authName={"_auth"}>
       <BrowserRouter>
         <App />
       </BrowserRouter>

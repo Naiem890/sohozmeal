@@ -11,9 +11,7 @@ export default function MealPlan() {
 
   useEffect(() => {
     const fetchMeals = async () => {
-      const res = await Axios.get("/meal/plan", {
-        withCredentials: true,
-      });
+      const res = await Axios.get("/meal/plan");
       const { meals } = res.data;
       setMeals(meals);
     };
@@ -25,13 +23,7 @@ export default function MealPlan() {
     console.log("meal", meal);
 
     try {
-      const res = await Axios.put(
-        `/meal/plan/${mealId}`,
-        { meal },
-        {
-          withCredentials: true,
-        }
-      );
+      const res = await Axios.put(`/meal/plan/${mealId}`, { meal });
       const result = res.data;
 
       setMeals((prevMeals) =>

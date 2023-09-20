@@ -16,13 +16,9 @@ export default function ChangePassword() {
     }
 
     try {
-      const result = await Axios.post(
-        "/auth/change-password",
-        {
-          password,
-        },
-        { withCredentials: true }
-      ).then((res) => res.data);
+      const result = await Axios.post("/auth/change-password", {
+        password,
+      }).then((res) => res.data);
 
       console.log(result);
       toast.success(result.message);
