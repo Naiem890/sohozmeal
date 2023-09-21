@@ -2,14 +2,8 @@ const schedule = require("node-schedule");
 const Meal = require("../src/models/meal");
 const { sendSMS } = require("../src/utils/sendSMS");
 
-let rule = new schedule.RecurrenceRule();
-rule.dayOfWeek = [0, new schedule.Range(1, 6)];
-rule.hour = 22;
-rule.minute = 0;
-rule.tz = "Asia/Dhaka";
-
-// Schedule the cron job to run daily at 10:00 PM (adjust as needed)
-schedule.scheduleJob(rule, async () => {
+// Schedule the cron job to run daily at 09:55 PM
+schedule.scheduleJob({ hour: 21, minute: 55, tz: "Asia/Dhaka" }, async () => {
   // Your cron job logic goes here
   console.log("Cron job executed: Generating meals for students.");
 
