@@ -73,5 +73,3 @@ schedule.scheduleJob(rule, async () => {
 });
 
 console.log("Cron job scheduled to run daily at 09:55 PM!");
-
-console.log(cron.getTasks());
