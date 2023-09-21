@@ -66,7 +66,7 @@ schedule.scheduleJob(
       //   `Error generating meal: ${error} \n\n-Sohoz Meal App`,
       //   "01790732717"
       // );
-      console.log("SMS sent successfully!", result);
+      console.log("SMS sent successfully!");
     }
   },
   { scheduled: true, timezone: "Asia/Dhaka" }
