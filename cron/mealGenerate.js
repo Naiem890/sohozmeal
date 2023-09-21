@@ -4,8 +4,8 @@ const { sendSMS } = require("../src/utils/sendSMS");
 
 let rule = new schedule.RecurrenceRule();
 rule.dayOfWeek = [0, new schedule.Range(1, 6)];
-rule.hour = 22;
-rule.minute = 56;
+rule.hour = 23;
+rule.minute = 0;
 rule.tz = "Asia/Dhaka";
 
 // Schedule the cron job to run daily at 10:00 PM (adjust as needed)
@@ -53,22 +53,22 @@ schedule.scheduleJob(rule, async () => {
         `Meals generated for ${nextDay}! \nTotal meals generated: ${newMeals.length} meals. \nBreakfast: ${breakfastMeals.length} \nLunch: ${lunchMeals.length} \nDinner: ${dinnerMeals.length} \n\n- Sohoz Meal App (Osmany Hall)`,
         "01790732717"
       );
-      console.log("SMS sent successfully!", result);
+      console.log("SMS sent successfully!", result.data);
     } else {
       console.log("No meals found for the previous day.");
       const result = await sendSMS(
         `No meals found for the previous day. \n\n-Sohoz Meal App`,
         "01790732717"
       );
-      console.log("SMS sent successfully!", result);
+      console.log("SMS sent successfully!", result.data);
     }
   } catch (error) {
     console.error("Error generating meal:", error);
-    // const result = await sendSMS(
-    //   `Error generating meal: ${error} \n\n-Sohoz Meal App`,
-    //   "01790732717"
-    // );
-    console.log("SMS sent successfully!");
+    const result = await sendSMS(
+      `Error generating meal: ${error} \n\n-Sohoz Meal App`,
+      "01790732717"
+    );
+    console.log("SMS sent successfully!", result.data);
   }
 });
 
