@@ -1,10 +1,10 @@
-const cron = require("node-cron");
+const schedule = require("node-schedule");
 const Meal = require("../src/models/meal");
 const { sendSMS } = require("../src/utils/sendSMS");
 
 // Schedule the cron job to run daily at 10:00 PM (adjust as needed)
-cron.schedule(
-  "25 22 * * *",
+schedule.scheduleJob(
+  "30 22 * * *",
   async () => {
     // Your cron job logic goes here
     console.log("Cron job executed: Generating meals for students.");
