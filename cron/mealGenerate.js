@@ -2,75 +2,75 @@ const schedule = require("node-schedule");
 const Meal = require("../src/models/meal");
 const { sendSMS } = require("../src/utils/sendSMS");
 
+let rule = new schedule.RecurrenceRule();
+rule.dayOfWeek = [0, new schedule.Range(1, 6)];
+rule.hour = 39;
+rule.minute = 30;
+rule.tz = "Asia/Dhaka";
+
 // Schedule the cron job to run daily at 10:00 PM (adjust as needed)
-schedule.scheduleJob(
-  "30 22 * * *",
-  async () => {
-    // Your cron job logic goes here
-    console.log("Cron job executed: Generating meals for students.");
+schedule.scheduleJob(rule, async () => {
+  // Your cron job logic goes here
+  console.log("Cron job executed: Generating meals for students.");
 
-    try {
-      // Get the current date
-      const currentDate = new Date(); // 17
+  try {
+    // Get the current date
+    const currentDate = new Date(); // 17
 
-      currentDate.setDate(currentDate.getDate() + 1); // 18
+    currentDate.setDate(currentDate.getDate() + 1); // 18
 
-      // Retrieve meals for the previous day
-      const previousDayMeals = await Meal.find({
-        date: currentDate.toISOString().split("T")[0],
-      });
+    // Retrieve meals for the previous day
+    const previousDayMeals = await Meal.find({
+      date: currentDate.toISOString().split("T")[0],
+    });
 
-      // Calculate the next day
-      currentDate.setDate(currentDate.getDate() + 1); //19
+    // Calculate the next day
+    currentDate.setDate(currentDate.getDate() + 1); //19
 
-      // Format the next day as a string (e.g., "yyyy-mm-dd")
-      const nextDay = currentDate.toISOString().split("T")[0];
+    // Format the next day as a string (e.g., "yyyy-mm-dd")
+    const nextDay = currentDate.toISOString().split("T")[0];
 
-      if (previousDayMeals.length > 0) {
-        // Create new meals for the current day by copying data from previous day meals
-        const newMeals = previousDayMeals.map((meal) => ({
-          ...meal.toObject(),
-          _id: undefined, // Exclude the _id field to create a new document
-          date: nextDay, // Set the current date
-        }));
+    if (previousDayMeals.length > 0) {
+      // Create new meals for the current day by copying data from previous day meals
+      const newMeals = previousDayMeals.map((meal) => ({
+        ...meal.toObject(),
+        _id: undefined, // Exclude the _id field to create a new document
+        date: nextDay, // Set the current date
+      }));
 
-        // Insert the new meals into the database
-        await Meal.insertMany(newMeals);
+      // Insert the new meals into the database
+      await Meal.insertMany(newMeals);
 
-        // I want to extract how many meals are on for breakfast, lunch and dinner
-        const breakfastMeals = newMeals.filter(
-          (meal) => meal.meal.breakfast === true
-        );
-        const lunchMeals = newMeals.filter((meal) => meal.meal.lunch === true);
-        const dinnerMeals = newMeals.filter(
-          (meal) => meal.meal.dinner === true
-        );
+      // I want to extract how many meals are on for breakfast, lunch and dinner
+      const breakfastMeals = newMeals.filter(
+        (meal) => meal.meal.breakfast === true
+      );
+      const lunchMeals = newMeals.filter((meal) => meal.meal.lunch === true);
+      const dinnerMeals = newMeals.filter((meal) => meal.meal.dinner === true);
 
-        console.log("New meals created successfully!", nextDay);
-        const result = await sendSMS(
-          `Meals generated for ${nextDay}! \nTotal meals generated: ${newMeals.length} meals. \nBreakfast: ${breakfastMeals.length} \nLunch: ${lunchMeals.length} \nDinner: ${dinnerMeals.length} \n\n- Sohoz Meal App (Osmany Hall)`,
-          "01790732717"
-        );
-        console.log("SMS sent successfully!", result);
-      } else {
-        console.log("No meals found for the previous day.");
-        const result = await sendSMS(
-          `No meals found for the previous day. \n\n-Sohoz Meal App`,
-          "01790732717"
-        );
-        console.log("SMS sent successfully!", result);
-      }
-    } catch (error) {
-      console.error("Error generating meal:", error);
-      // const result = await sendSMS(
-      //   `Error generating meal: ${error} \n\n-Sohoz Meal App`,
-      //   "01790732717"
-      // );
-      console.log("SMS sent successfully!");
+      console.log("New meals created successfully!", nextDay);
+      const result = await sendSMS(
+        `Meals generated for ${nextDay}! \nTotal meals generated: ${newMeals.length} meals. \nBreakfast: ${breakfastMeals.length} \nLunch: ${lunchMeals.length} \nDinner: ${dinnerMeals.length} \n\n- Sohoz Meal App (Osmany Hall)`,
+        "01790732717"
+      );
+      console.log("SMS sent successfully!", result);
+    } else {
+      console.log("No meals found for the previous day.");
+      const result = await sendSMS(
+        `No meals found for the previous day. \n\n-Sohoz Meal App`,
+        "01790732717"
+      );
+      console.log("SMS sent successfully!", result);
     }
-  },
-  { scheduled: true, timezone: "Asia/Dhaka" }
-);
+  } catch (error) {
+    console.error("Error generating meal:", error);
+    // const result = await sendSMS(
+    //   `Error generating meal: ${error} \n\n-Sohoz Meal App`,
+    //   "01790732717"
+    // );
+    console.log("SMS sent successfully!");
+  }
+});
 
 console.log("Cron job scheduled to run daily at 09:55 PM!");
 
