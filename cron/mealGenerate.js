@@ -4,8 +4,8 @@ const { sendSMS } = require("../src/utils/sendSMS");
 
 let rule = new schedule.RecurrenceRule();
 rule.dayOfWeek = [0, new schedule.Range(1, 6)];
-rule.hour = 48;
-rule.minute = 30;
+rule.hour = 22;
+rule.minute = 55;
 rule.tz = "Asia/Dhaka";
 
 // Schedule the cron job to run daily at 10:00 PM (adjust as needed)
