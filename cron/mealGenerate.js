@@ -4,7 +4,7 @@ const { sendSMS } = require("../src/utils/sendSMS");
 
 let rule = new schedule.RecurrenceRule();
 rule.dayOfWeek = [0, new schedule.Range(1, 6)];
-rule.hour = 23;
+rule.hour = 22;
 rule.minute = 0;
 rule.tz = "Asia/Dhaka";
 
