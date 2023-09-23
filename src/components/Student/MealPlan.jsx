@@ -33,11 +33,7 @@ export default function MealPlan() {
       setMeals((prevMeals) =>
         prevMeals.map((prevMeal) => {
           if (prevMeal?._id === mealId) {
-            return {
-              ...prevMeal,
-              ...result.meal,
-              meal: { ...result.meal.meal },
-            };
+            return result.meal;
           }
           return prevMeal;
         })
@@ -63,14 +59,20 @@ export default function MealPlan() {
       <h2 className="text-3xl font-semibold">Meal Plan</h2>
       <div className="divider"></div>
       <div className="flex justify-between items-center mb-6 gap-10 flex-wrap">
-        <div className="flex gap-7 flex-wrap">
-          {["breakfast", "lunch", "dinner"].map((mealType) => (
+        <div className="flex gap-2 md:gap-4 flex-wrap">
+          {["breakfast", "lunch", "dinner"].map((mealType, index) => (
             <div
               key={mealType}
-              className="rounded-md text-lg shadow px-3 py-1 text-slate-800 flex justify-center items-center gap-3"
+              className={`relative flex justify-center items-center gap-3 rounded-md px-4 py-2  text-white ${
+                index === 0
+                  ? "bg-gradient-to-br from-blue-300 to-blue-500"
+                  : index === 1
+                  ? "bg-gradient-to-br from-orange-300 to-orange-500"
+                  : "bg-gradient-to-br from-zinc-400 to-zinc-500"
+              }`}
             >
-              <div className="font-semibold capitalize">{mealType} :</div>
-              <div className="font-bold">
+              <div className="font-semibold capitalize">{mealType}</div>
+              <div className="font-bold md:text-2xl">
                 {meals.filter((meal) => meal?.meal[mealType]).length}
               </div>
             </div>
@@ -89,7 +91,7 @@ export default function MealPlan() {
           </button>
         </div>
       </div>
-      <div className="mt-10">
+      <div className="md:mt-16">
         <div className="md:grid grid-cols-1 md:grid-cols-7 gap-x-6 gap-y-6 hidden">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <div key={day} className="text-center font-bold text-gray-500">
@@ -97,14 +99,14 @@ export default function MealPlan() {
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-y-2 gap-x-3 lg:gap-x-6 lg:gap-y-6 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-y-3 gap-x-3 lg:gap-x-6 lg:gap-y-6 mt-6">
           {meals.map((meal, i) =>
             meal?._id ? (
               <div
                 key={meal._id}
-                className={`flex justify-between gap-3 flex-wrap px-2 md:px-4 py-3 md:py-6 rounded-xl shadow border border-gray-50 ${
+                className={`flex justify-between items-center gap-3 flex-wrap px-4 py-3 md:py-6 rounded-xl shadow border border-gray-50 ${
                   validDate() === meal.date
-                    ? "bg-emerald-50 cursor-pointer font-medium"
+                    ? "bg-emerald-50 font-medium"
                     : "grayscale pointer-events-none cursor-not-allowed !font-light"
                 }`}
               >
@@ -113,11 +115,11 @@ export default function MealPlan() {
                     {dateToDayConverter(meal.date)}
                   </span>
                   <span className="md:hidden">{meal.date}</span>
-                  <span className="hidden md:inline">
+                  <span className="hidden md:inline text-lg font-bold">
                     {meal.date.split("-")[2]}
                   </span>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-6">
                   {["breakfast", "lunch", "dinner"].map((mealType) => (
                     <div
                       className="text-center checkbox-wrapper-26"
@@ -127,7 +129,6 @@ export default function MealPlan() {
                         checked={meal.meal[mealType]}
                         onChange={() =>
                           handleMealUpdate(meal._id, {
-                            ...meal.meal,
                             [mealType]: !meal.meal[mealType],
                           })
                         }
@@ -142,7 +143,7 @@ export default function MealPlan() {
                 </div>
               </div>
             ) : (
-              <div key={i}></div>
+              <div key={i} className="hidden md:block"></div>
             )
           )}
         </div>

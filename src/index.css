@@ -12,7 +12,7 @@
 }
 
 .checkbox-wrapper-26 label {
-  --size: 24px;
+  --size: 26px;
   --shadow: calc(var(--size) * 0.07) calc(var(--size) * 0.1);
 
   position: relative;
