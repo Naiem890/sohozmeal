@@ -3,6 +3,11 @@ import { toast } from "react-toastify";
 import { Axios } from "../../api/api";
 import { dateToDayConverter } from "../../Utils/dateToDayConverter";
 import { dateToYYYYMMDD } from "../../Utils/dateToYYYYMMDD";
+import {
+  ArrowLeftCircleIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+} from "@heroicons/react/24/outline";
 export default function MealPlan() {
   const [meals, setMeals] = useState([
     // { date: "29/08/2023", breakfast: true, lunch: true, dinner: true },
@@ -64,9 +69,21 @@ export default function MealPlan() {
   };
 
   return (
-    <div className="lg:my-10 lg:mx-6">
+    <div className="lg:my-10 lg:mx-6 px-2">
       <h2 className="text-3xl font-semibold">Meal Plan</h2>
-      <div className="overflow-x-auto lg:mr-12 px-2">
+      <div className="divider"></div>
+      <div className="flex justify-center items-center mb-6 gap-10">
+        <button>
+          <ArrowLeftIcon className="h-6 w-6" />
+        </button>
+        <div>
+          <h2 className="text-2xl font-semibold">September 2023</h2>
+        </div>
+        <button>
+          <ArrowRightIcon className="h-6 w-6" />
+        </button>
+      </div>
+      <div className="overflow-x-auto lg:mr-12">
         <table className="table table-sm ">
           <thead>
             <tr>
@@ -84,8 +101,8 @@ export default function MealPlan() {
                 key={meal._id}
                 className={`${
                   validDate() == meal.date
-                    ? "bg-emerald-200  cursor-pointer"
-                    : "grayscale pointer-events-none cursor-not-allowed"
+                    ? "bg-emerald-200  cursor-pointer font-medium"
+                    : "grayscale pointer-events-none cursor-not-allowed !font-light"
                 }`}
               >
                 <td className="md:text-lg font-medium">

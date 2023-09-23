@@ -56,7 +56,7 @@ export default function Login() {
             <h2 className="uppercase text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
               Sohoz Meal (MIST)
             </h2>
-            <p className="uppercase text-lg tracking-widest font-light -mt-1">
+            <p className="uppercase text-lg tracking-widest font-light -mt-1 text-gray-500">
               Student Portal
             </p>
           </div>
@@ -100,6 +100,7 @@ export default function Login() {
                   name="password"
                   type="password"
                   autoComplete="current-password"
+                  placeholder="********"
                   required
                   className={`${fixedInputClass}`}
                 />
