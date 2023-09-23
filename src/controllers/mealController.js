@@ -17,18 +17,23 @@ router.get("/plan", validateToken, async (req, res) => {
 
 router.put("/plan/:mealId", validateToken, async (req, res) => {
   const { studentId } = req.user;
-  const { meal } = req.body;
+  const { meal: newMeal } = req.body;
   const { mealId } = req.params;
   console.log("mealId:", mealId);
   console.log("studentId:", studentId);
-  console.log("meal:", meal);
+  console.log("meal:", newMeal);
 
   try {
     const updatedMeal = await Meal.findOneAndUpdate(
       { _id: mealId, studentId },
-      { meal },
+      {
+        $set: {
+          [`meal.${Object.keys(newMeal)[0]}`]: newMeal[Object.keys(newMeal)[0]],
+        },
+      },
       { new: true }
     );
+
     if (!updatedMeal) {
       return res.status(404).json({ message: "Meal not found" });
     }
