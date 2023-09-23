@@ -8,32 +8,31 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
+
 export default function MealPlan() {
-  const [meals, setMeals] = useState([
-    // { date: "29/08/2023", breakfast: true, lunch: true, dinner: true },
-    // { date: "30/08/2023", breakfast: true, lunch: false, dinner: true },
-  ]);
+  const [meals, setMeals] = useState([]);
 
   useEffect(() => {
     const fetchMeals = async () => {
       const res = await Axios.get("/meal/plan");
       const { meals } = res.data;
+
+      const day = new Date(meals[0].date).getDay();
+      const emptyDays = Array(day).fill(null);
+      meals.unshift(...emptyDays);
       setMeals(meals);
     };
     fetchMeals();
   }, []);
 
   const handleMealUpdate = async (mealId, meal) => {
-    console.log("mealId", mealId);
-    console.log("meal", meal);
-
     try {
       const res = await Axios.put(`/meal/plan/${mealId}`, { meal });
       const result = res.data;
 
       setMeals((prevMeals) =>
         prevMeals.map((prevMeal) => {
-          if (prevMeal._id === mealId) {
+          if (prevMeal?._id === mealId) {
             return {
               ...prevMeal,
               ...result.meal,
@@ -52,91 +51,101 @@ export default function MealPlan() {
 
   const validDate = () => {
     const today = new Date();
-    console.log("=>", new Date());
     const time = today.getHours();
-    let dayCount = 0;
-    console.log("time", time);
-    if (time >= 22) {
-      dayCount = 2;
-    } else {
-      dayCount = 1;
-    }
-    console.log("dayCount", dayCount);
+    let dayCount = time >= 22 ? 2 : 1;
     const availableDate = new Date();
     availableDate.setDate(today.getDate() + dayCount);
-    console.log("availableDate=>", availableDate);
     return dateToYYYYMMDD(availableDate);
   };
 
   return (
-    <div className="lg:my-10 lg:mx-6 px-2">
+    <div className="lg:my-10 px-5 lg:mr-12">
       <h2 className="text-3xl font-semibold">Meal Plan</h2>
       <div className="divider"></div>
-      <div className="flex justify-center items-center mb-6 gap-10">
-        <button>
-          <ArrowLeftIcon className="h-6 w-6" />
-        </button>
-        <div>
-          <h2 className="text-2xl font-semibold">September 2023</h2>
+      <div className="flex justify-between items-center mb-6 gap-10 flex-wrap">
+        <div className="flex gap-7 flex-wrap">
+          {["breakfast", "lunch", "dinner"].map((mealType) => (
+            <div
+              key={mealType}
+              className="rounded-md text-lg shadow px-3 py-1 text-slate-800 flex justify-center items-center gap-3"
+            >
+              <div className="font-semibold capitalize">{mealType} :</div>
+              <div className="font-bold">
+                {meals.filter((meal) => meal?.meal[mealType]).length}
+              </div>
+            </div>
+          ))}
         </div>
-        <button>
-          <ArrowRightIcon className="h-6 w-6" />
-        </button>
-      </div>
-      <div className="overflow-x-auto lg:mr-12">
-        <table className="table table-sm ">
-          <thead>
-            <tr>
-              <th className="">Day</th>
-              <th className="w-3/4">Date</th>
 
-              <th className="text-center md:!p-4 !p-2  md:w-10">Breakfast</th>
-              <th className="text-center md:!p-4 !p-2  md:w-10">Lunch</th>
-              <th className="text-center md:!p-4 !p-2  md:w-10">Dinner</th>
-            </tr>
-          </thead>
-          <tbody className="">
-            {meals.map((meal) => (
-              <tr
+        <div className="flex justify-center items-center gap-10 md:mx-0 mx-auto">
+          <button>
+            <ArrowLeftIcon className="h-6 w-6" />
+          </button>
+          <div>
+            <h2 className="text-2xl font-semibold">September 2023</h2>
+          </div>
+          <button>
+            <ArrowRightIcon className="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+      <div className="mt-10">
+        <div className="md:grid grid-cols-1 md:grid-cols-7 gap-x-6 gap-y-6 hidden">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <div key={day} className="text-center font-bold text-gray-500">
+              {day}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-y-2 gap-x-3 lg:gap-x-6 lg:gap-y-6 mt-4">
+          {meals.map((meal, i) =>
+            meal?._id ? (
+              <div
                 key={meal._id}
-                className={`${
-                  validDate() == meal.date
-                    ? "bg-emerald-200  cursor-pointer font-medium"
+                className={`flex justify-between gap-3 flex-wrap px-2 md:px-4 py-3 md:py-6 rounded-xl shadow border border-gray-50 ${
+                  validDate() === meal.date
+                    ? "bg-emerald-50 cursor-pointer font-medium"
                     : "grayscale pointer-events-none cursor-not-allowed !font-light"
                 }`}
               >
-                <td className="md:text-lg font-medium">
-                  <span className="">{dateToDayConverter(meal.date)}</span>
-                </td>
-                <td className="md:text-lg font-medium">
-                  <span className="">{meal.date}</span>
-                </td>
-
-                {["breakfast", "lunch", "dinner"].map((mealType) => (
-                  <td
-                    className="text-center checkbox-wrapper-26"
-                    key={mealType}
-                  >
-                    <input
-                      checked={meal.meal[mealType]}
-                      onChange={() =>
-                        handleMealUpdate(meal._id, {
-                          ...meal.meal,
-                          [mealType]: !meal.meal[mealType],
-                        })
-                      }
-                      type="checkbox"
-                      id={`_checkbox-${meal._id}-${mealType}`}
-                    />
-                    <label htmlFor={`_checkbox-${meal._id}-${mealType}`}>
-                      <div className="tick_mark"></div>
-                    </label>
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                <div className="text-center flex gap-6">
+                  <span className="w-6 md:hidden">
+                    {dateToDayConverter(meal.date)}
+                  </span>
+                  <span className="md:hidden">{meal.date}</span>
+                  <span className="hidden md:inline">
+                    {meal.date.split("-")[2]}
+                  </span>
+                </div>
+                <div className="flex gap-4">
+                  {["breakfast", "lunch", "dinner"].map((mealType) => (
+                    <div
+                      className="text-center checkbox-wrapper-26"
+                      key={mealType}
+                    >
+                      <input
+                        checked={meal.meal[mealType]}
+                        onChange={() =>
+                          handleMealUpdate(meal._id, {
+                            ...meal.meal,
+                            [mealType]: !meal.meal[mealType],
+                          })
+                        }
+                        type="checkbox"
+                        id={`_checkbox-${meal._id}-${mealType}`}
+                      />
+                      <label htmlFor={`_checkbox-${meal._id}-${mealType}`}>
+                        <div className="tick_mark"></div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div key={i}></div>
+            )
+          )}
+        </div>
       </div>
     </div>
   );

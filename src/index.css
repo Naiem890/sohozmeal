@@ -58,7 +58,7 @@
 
 .checkbox-wrapper-26 .tick_mark {
   position: absolute;
-  top: -1px;
+  top: 0;
   right: 0;
   left: calc(var(--size) * -0.05);
   width: calc(var(--size) * 0.6);
@@ -97,8 +97,8 @@
 }
 
 .checkbox-wrapper-26 input[type="checkbox"]:checked + label {
-  background-color: #07d410;
-  box-shadow: 0 var(--shadow) #92ff97;
+  background-color: #047857;
+  box-shadow: 0 var(--shadow) #04785732;
 }
 
 .checkbox-wrapper-26 input[type="checkbox"]:checked + label:before {
