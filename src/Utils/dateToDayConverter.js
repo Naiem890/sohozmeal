@@ -3,13 +3,13 @@ export const dateToDayConverter = (dateString) => {
 
   // Define an array of weekday names
   const weekdays = [
-    "Sun",
-    "Mon",
-    "Tue",
-    "Wed",
-    "Thu",
-    "Fri",
-    "Sat",
+    "Sunday    ",
+    "Monday    ",
+    "Tuesday   ",
+    "Wednesday ",
+    "Thursday  ",
+    "Friday    ",
+    "Saturday  ",
   ];
 
   // Get the day of the week (0 = Sunday, 1 = Monday, etc.)

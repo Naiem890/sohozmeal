@@ -66,32 +66,35 @@ export default function MealPlan() {
   return (
     <div className="lg:my-10 lg:mx-6">
       <h2 className="text-3xl font-semibold">Meal Plan</h2>
-      <div className="overflow-x-auto lg:mr-12">
-        <table className="table">
+      <div className="overflow-x-auto lg:mr-12 px-2">
+        <table className="table table-sm ">
           <thead>
             <tr>
-              <th className="w-3/4">Day</th>
-              <th className="text-center md:!p-4 !p-2  md:w-10">
-                Breakfast 🍳
-              </th>
-              <th className="text-center md:!p-4 !p-2  md:w-10">Lunch 🍲</th>
-              <th className="text-center md:!p-4 !p-2  md:w-10">Dinner 🥗</th>
+              <th className="">Day</th>
+              <th className="w-3/4">Date</th>
+
+              <th className="text-center md:!p-4 !p-2  md:w-10">Breakfast</th>
+              <th className="text-center md:!p-4 !p-2  md:w-10">Lunch</th>
+              <th className="text-center md:!p-4 !p-2  md:w-10">Dinner</th>
             </tr>
           </thead>
           <tbody className="">
             {meals.map((meal) => (
               <tr
                 key={meal._id}
-                className={` ${
+                className={`${
                   validDate() == meal.date
                     ? "bg-emerald-200  cursor-pointer"
-                    : "bg-gray-100 grayscale pointer-events-none cursor-not-allowed"
+                    : "grayscale pointer-events-none cursor-not-allowed"
                 }`}
               >
                 <td className="md:text-lg font-medium">
-                  {`${dateToDayConverter(meal.date)} - `}
+                  <span className="">{dateToDayConverter(meal.date)}</span>
+                </td>
+                <td className="md:text-lg font-medium">
                   <span className="">{meal.date}</span>
                 </td>
+
                 {["breakfast", "lunch", "dinner"].map((mealType) => (
                   <td
                     className="text-center checkbox-wrapper-26"

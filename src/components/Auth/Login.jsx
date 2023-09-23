@@ -50,15 +50,16 @@ export default function Login() {
   return (
     <div className="flex min-h-screen bg-[#f6f6f6] flex-1 flex-col justify-center px-4 py-12 lg:px-8 -mt-16 md:my-0">
       <div className="shadow-lg bg-white rounded-xl p-6 sm:p-10 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="mt-6">
-          <img
-            className="mx-auto h-20 w-auto"
-            src={MISTImage}
-            alt="Osmany Hall"
-          />
-          <h2 className="mt-6 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-            Sohoz Meal (Osmany Hall)
-          </h2>
+        <div className="mt-6 flex items-center gap-4 justify-center">
+          <img className="h-16 image" src={MISTImage} alt="Osmany Hall" />
+          <div>
+            <h2 className="uppercase text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
+              Sohoz Meal (MIST)
+            </h2>
+            <p className="uppercase text-lg tracking-widest font-light -mt-1">
+              Student Portal
+            </p>
+          </div>
         </div>
 
         <div className="mt-10 ">
@@ -76,6 +77,7 @@ export default function Login() {
                   name="studentId"
                   type="text"
                   inputMode="numeric"
+                  placeholder="202014035"
                   autoComplete="studentId"
                   required
                   className={`${fixedInputClass}`}
