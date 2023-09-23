@@ -53,7 +53,7 @@ export default function AdminLogin() {
           <input
             type="text"
             name="email"
-            className="input input-sm input-ghost outline-none placeholder:uppercase focus:outline-none text-lg border-0 border-b-2 border-green-600"
+            className="input input-sm input-ghost outline-none placeholder:uppercase focus:outline-none text-lg border-0 border-b-2 border-emerald-600"
             placeholder="Email"
           />
         </div>
@@ -61,12 +61,12 @@ export default function AdminLogin() {
           <input
             type="password"
             name="password"
-            className="input input-sm input-ghost placeholder:uppercase outline-none focus:outline-none text-lg border-0 border-b-2 border-green-600"
+            className="input input-sm input-ghost placeholder:uppercase outline-none focus:outline-none text-lg border-0 border-b-2 border-emerald-600"
             placeholder="Password"
           />
         </div>
         <button type="submit" className="btn btn-success hover:btn-primary">
-          Login
+          Loginsdsfdsf
         </button>
       </form>
     </div>

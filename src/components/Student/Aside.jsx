@@ -70,7 +70,7 @@ export default function Aside({ toggleDrawer }) {
     <div className="drawer-side z-50">
       <label htmlFor="my-drawer-2" className="drawer-overlay"></label>
       <ul className="menu  flex flex-col p-0 w-60 min-h-full bg-base-200 text-base-content font-medium">
-        <div className="flex menu-title justify-center items-center text-xl h-14 text-white mb-4 bg-green-700">
+        <div className="flex menu-title justify-center items-center text-xl h-14 text-white mb-4 bg-emerald-700">
           Sohoz Meal
         </div>
         {asideLinks.map((link, index) => (

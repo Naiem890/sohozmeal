@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
 import { DEPARTMENTS } from "../../Utils/constant";
 import { EditStudentModal } from "./EditStudentModal";
 
-export const Students = () => {
+export const StudentList = () => {
   const [sortBy, setSortBy] = useState(null);
   const [sortAsc, setSortAsc] = useState(true);
   const [students, setStudents] = useState([]);
@@ -166,7 +166,7 @@ export const Students = () => {
           <select
             value={department}
             onChange={(e) => setDepartment(e.target.value)}
-            className="input input-sm input-ghost outline-none focus:outline-none border-0 border-b-2 border-green-600 mr-10"
+            className="input input-sm input-ghost outline-none focus:outline-none border-0 border-b-2 border-emerald-600 mr-10"
           >
             <option value="">All Departments</option>
             {DEPARTMENTS.map((department) => (
@@ -180,7 +180,7 @@ export const Students = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search Name, Roll or Hall Id"
-            className="input input-sm input-ghost outline-none focus:outline-none border-0 border-b-2 border-green-600"
+            className="input input-sm input-ghost outline-none focus:outline-none border-0 border-b-2 border-emerald-600"
           />
           <button className="btn btn-sm ml-8 btn-success">Add Student</button>
         </div>

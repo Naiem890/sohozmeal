@@ -6,8 +6,7 @@ export default {
   },
   daisyui: {
     themes: ["lofi"],
-    
   },
   // eslint-disable-next-line no-undef
-  plugins: [require("daisyui")],
+  plugins: [require("daisyui"), require("@tailwindcss/forms")],
 };

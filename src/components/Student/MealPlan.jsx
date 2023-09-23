@@ -84,7 +84,7 @@ export default function MealPlan() {
                 key={meal._id}
                 className={` ${
                   validDate() == meal.date
-                    ? "bg-green-200  cursor-pointer"
+                    ? "bg-emerald-200  cursor-pointer"
                     : "bg-gray-100 grayscale pointer-events-none cursor-not-allowed"
                 }`}
               >

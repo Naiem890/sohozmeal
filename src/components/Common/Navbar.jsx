@@ -21,7 +21,7 @@ export default function Navbar() {
       <div className="navbar-start">
         <label
           htmlFor="my-drawer-2"
-          className="btn bg-green-700 text-white drawer-button lg:hidden"
+          className="btn bg-emerald-700 text-white drawer-button lg:hidden"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

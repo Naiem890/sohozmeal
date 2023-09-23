@@ -45,7 +45,7 @@ export default function ChangePassword() {
           <input
             type="password"
             name="password"
-            className="input input-sm input-ghost placeholder:uppercase outline-none focus:outline-none text-lg border-0 border-b-2 border-green-600"
+            className="input input-sm input-ghost placeholder:uppercase outline-none focus:outline-none text-lg border-0 border-b-2 border-emerald-600"
             placeholder="Password"
           />
         </div>
@@ -53,7 +53,7 @@ export default function ChangePassword() {
           <input
             type="password"
             name="confirmedPassword"
-            className="input input-sm input-ghost placeholder:uppercase outline-none focus:outline-none text-lg border-0 border-b-2 border-green-600"
+            className="input input-sm input-ghost placeholder:uppercase outline-none focus:outline-none text-lg border-0 border-b-2 border-emerald-600"
             placeholder="Re-enter Password"
           />
         </div>
