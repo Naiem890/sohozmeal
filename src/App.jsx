@@ -55,6 +55,7 @@ function App() {
         >
           <Route index element={<MealPlan />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="change-password" element={<ChangePassword />} />
 
           <Route path="bill-payment" element={<BillPayment />} />
           <Route path="meal-routine" element={<MealRoutine />} />

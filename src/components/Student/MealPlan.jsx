@@ -59,11 +59,11 @@ export default function MealPlan() {
       <h2 className="text-3xl font-semibold">Meal Plan</h2>
       <div className="divider"></div>
       <div className="flex justify-between items-center mb-6 gap-10 flex-wrap">
-        <div className="flex gap-2 md:gap-4 flex-wrap">
+        <div className="flex gap-2 md:gap-4 flex-wrap sm:w-auto w-full">
           {["breakfast", "lunch", "dinner"].map((mealType, index) => (
             <div
               key={mealType}
-              className={`relative flex justify-center items-center gap-3 rounded-md px-4 py-2  text-white ${
+              className={`relative flex justify-center items-center gap-3 rounded-md px-4 py-2 flex-1 text-white ${
                 index === 0
                   ? "bg-gradient-to-br from-blue-300 to-blue-500"
                   : index === 1
@@ -104,10 +104,10 @@ export default function MealPlan() {
             meal?._id ? (
               <div
                 key={meal._id}
-                className={`flex justify-between items-center gap-3 flex-wrap px-4 py-3 md:py-6 rounded-xl shadow border border-gray-50 ${
+                className={`flex justify-between items-center gap-3 flex-wrap px-4 py-3 md:py-6 rounded-xl shadow border-2 ${
                   validDate() === meal.date
-                    ? "bg-emerald-50 font-medium"
-                    : "grayscale pointer-events-none cursor-not-allowed !font-light"
+                    ? "bg-emerald-50 border-emerald-200 font-bold"
+                    : "border-gray-100 grayscale pointer-events-none cursor-not-allowed"
                 }`}
               >
                 <div className="text-center flex gap-6">
@@ -115,11 +115,11 @@ export default function MealPlan() {
                     {dateToDayConverter(meal.date)}
                   </span>
                   <span className="md:hidden">{meal.date}</span>
-                  <span className="hidden md:inline text-lg font-bold">
+                  <span className="hidden md:inline text-lg">
                     {meal.date.split("-")[2]}
                   </span>
                 </div>
-                <div className="flex gap-6">
+                <div className="flex justify-between gap-6 md:gap-4 flex-wrap">
                   {["breakfast", "lunch", "dinner"].map((mealType) => (
                     <div
                       className="text-center checkbox-wrapper-26"
