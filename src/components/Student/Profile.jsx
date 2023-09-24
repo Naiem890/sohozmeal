@@ -52,10 +52,8 @@ export default function Profile() {
   };
 
   return (
-    <div className="lg:m-10 m-4">
-      <h2 className="lg:text-3xl text-xl mb-4 font-semibold">
-        Update Profile Info
-      </h2>
+    <div className="mb-10 lg:my-10 px-5 lg:mr-12">
+      <h2 className="text-3xl font-semibold">Update Profile Info</h2>
       <div className="divider"></div>
       <form
         onSubmit={handleUpdateProfile}

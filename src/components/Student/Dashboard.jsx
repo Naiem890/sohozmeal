@@ -17,7 +17,7 @@ const Dashboard = () => {
         className="drawer-toggle"
       />
       <Aside toggleDrawer={toggleDrawer} />
-      <div className="drawer-content ">
+      <div className="drawer-content md:pl-6">
         <Outlet />
       </div>
     </div>
