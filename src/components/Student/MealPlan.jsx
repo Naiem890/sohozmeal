@@ -59,11 +59,11 @@ export default function MealPlan() {
       <h2 className="text-3xl font-semibold">Meal Plan</h2>
       <div className="divider"></div>
       <div className="flex justify-between items-center mb-6 gap-10 flex-wrap">
-        <div className="flex gap-2 md:gap-4 flex-wrap sm:w-auto w-full">
+        <div className="flex gap-2 md:gap-4 sm:w-auto w-full">
           {["breakfast", "lunch", "dinner"].map((mealType, index) => (
             <div
               key={mealType}
-              className={`relative flex justify-center items-center gap-3 rounded-md px-4 py-2 flex-1 text-white ${
+              className={`relative flex justify-center items-center gap-2 rounded-md px-4 py-2 flex-1 text-white ${
                 index === 0
                   ? "bg-gradient-to-br from-blue-300 to-blue-500"
                   : index === 1
@@ -84,7 +84,7 @@ export default function MealPlan() {
             <ArrowLeftIcon className="h-6 w-6" />
           </button>
           <div>
-            <h2 className="text-2xl font-semibold">September 2023</h2>
+            <h2 className="text-xl font-semibold">September 2023</h2>
           </div>
           <button>
             <ArrowRightIcon className="h-6 w-6" />

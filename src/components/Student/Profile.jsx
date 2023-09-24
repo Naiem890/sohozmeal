@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
 import { toast } from "react-toastify";
 import { Axios } from "../../api/api";
+import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
 
 export default function Profile() {
   const auth = useAuthUser();
@@ -55,29 +56,26 @@ export default function Profile() {
       <h2 className="lg:text-3xl text-xl mb-4 font-semibold">
         Update Profile Info
       </h2>
+      <div className="divider"></div>
       <form
         onSubmit={handleUpdateProfile}
-        className="grid lg:grid-cols-2 lg:w-2/3 gap-2 lg:gap-x-8"
+        className="grid lg:grid-cols-2 lg:w-2/3 gap-3 lg:gap-6"
       >
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">
-              Full Name
-            </span>
+        <div>
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Full Name
           </label>
           <input
             type="text"
             value={student?.name}
             disabled
             placeholder="Type here"
-            className="input input-bordered w-full"
+            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">
-              Phone Number
-            </span>
+        <div>
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Phone Number
           </label>
           <input
             type="text"
@@ -86,14 +84,12 @@ export default function Profile() {
               setStudent({ ...student, phoneNumber: e.target.value })
             }
             placeholder="eg: 01712345678"
-            className="input input-bordered w-full"
+            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">
-              Student Id
-            </span>
+        <div>
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Student Id
           </label>
           <input
             type="text"
@@ -101,12 +97,12 @@ export default function Profile() {
             value={student?.studentId}
             disabled
             placeholder="Type here"
-            className="input input-bordered w-full"
+            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">Hall Id</span>
+        <div>
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Hall Id
           </label>
           <input
             type="text"
@@ -114,21 +110,19 @@ export default function Profile() {
             value={student?.hallId}
             disabled
             placeholder="Type here"
-            className="input input-bordered w-full"
+            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">
-              Department
-            </span>
+        <div>
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Department
           </label>
           <select
             value={student?.department}
             onChange={(e) =>
               setStudent({ ...student, department: e.target.value })
             }
-            className="select select-bordered w-full"
+            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           >
             <option disabled selected>
               Select Department
@@ -140,20 +134,20 @@ export default function Profile() {
             ))}
           </select>
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">Batch</span>
+        <div>
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Batch
           </label>
           <input
             type="number"
             value={student?.batch}
             onChange={(e) => setStudent({ ...student, batch: +e.target.value })}
             placeholder="Type here"
-            className="input input-bordered w-full"
+            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
         </div>
         <div className="mt-4 col-span-full flex justify-end">
-          <button type="submit" className="btn btn-success text-white">
+          <button type="submit" className={`${fixedButtonClass} sm:w-44`}>
             Update Changes
           </button>
         </div>
