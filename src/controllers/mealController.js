@@ -38,9 +38,15 @@ router.put("/plan/:mealId", validateToken, async (req, res) => {
       return res.status(404).json({ message: "Meal not found" });
     }
 
-    res
-      .status(200)
-      .json({ message: "Meal updated successfully", meal: updatedMeal });
+    // send more infomation about which meal was updated
+
+    res.status(200).json({
+      message: `${Object.keys(newMeal)[0].toUpperCase()} is ${
+        newMeal[Object.keys(newMeal)[0]] ? "on" : "off"
+      } for ${updatedMeal.date}!
+        `,
+      meal: updatedMeal,
+    });
   } catch (error) {
     console.error("Error updating meal:", error);
     res.status(500).json({ message: "An error occurred while updating meal" });
