@@ -57,7 +57,7 @@ router.get("/check-token-validity", validateToken, async (req, res) => {
 // Student Password Change
 router.post("/change-password", validateToken, async (req, res) => {
   console.log("req.body", req.body, req.cookies, req.user);
-  const { password } = req.body;
+  const { oldPassword, password } = req.body;
   const { studentId } = req.user;
 
   try {
@@ -73,6 +73,13 @@ router.post("/change-password", validateToken, async (req, res) => {
         .status(400)
         .json({ message: "Password can't be same as student id" });
     }
+
+    // check if the given password is correct or not
+    if (!bcrypt.compareSync(oldPassword, student.password)) {
+      console.log("=>>", oldPassword);
+      return res.status(400).json({ message: "Wrong credential!" });
+    }
+    console.log("calling this=>");
 
     // Update the student's password
     student.password = bcrypt.hashSync(password, 10);
