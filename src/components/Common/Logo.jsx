@@ -3,7 +3,7 @@ import HeadingLogo from "./HeadingLogo";
 
 export default function Logo(props) {
   return (
-    <div className="flex items-center gap-6 flex-wrap">
+    <div className="flex items-center gap-6">
       {props.image && (
         <img className="h-16 image" src={props.logo} alt="Osmany Hall" />
       )}
