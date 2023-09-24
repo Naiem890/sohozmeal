@@ -1,3 +1,4 @@
+import { Bars3CenterLeftIcon } from "@heroicons/react/24/outline";
 import { useAuthUser, useSignOut } from "react-auth-kit";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -17,28 +18,13 @@ export default function Navbar() {
   ];
 
   return (
-    <div className="lg:hidden navbar bg-base-100 lg:px-12">
-      <div className="navbar-start">
-        <label
-          htmlFor="my-drawer-2"
-          className="btn bg-emerald-700 text-white drawer-button lg:hidden"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M4 6h16M4 12h8m-8 6h16"
-            />
-          </svg>
-        </label>
-      </div>
+    <div className="lg:hidden navbar flex shadow-md mb-8 px-6">
+      <label
+        htmlFor="my-drawer-2"
+        className="drawer-button w-12 h-12 rounded-lg flex justify-center items-center border border-gray-200 lg:hidden"
+      >
+        <Bars3CenterLeftIcon className="h-6 w-6" />
+      </label>
     </div>
   );
 }

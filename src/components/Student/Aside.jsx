@@ -11,6 +11,8 @@ import {
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { MealIcon } from "../../assets/Icons";
+import Logo from "../Common/Logo";
+import MISTImage from "../../assets/MIST.png";
 
 export default function Aside({ toggleDrawer }) {
   // const auth = useAuthUser();
@@ -69,10 +71,19 @@ export default function Aside({ toggleDrawer }) {
   return (
     <div className="drawer-side z-50">
       <label htmlFor="my-drawer-2" className="drawer-overlay"></label>
-      <ul className="menu  flex flex-col p-0 w-60 min-h-full bg-base-200 text-base-content font-medium">
-        <div className="flex menu-title justify-center items-center text-xl h-14 text-white mb-4 bg-emerald-700">
+      <ul className="menu  flex flex-col p-0  min-h-full bg-[#f6f6f6] text-base-content font-medium">
+        {/* <div className="flex menu-title justify-center items-center text-xl h-14 text-white mb-4 bg-emerald-700">
           Sohoz Meal
+        </div> */}
+        <div className="menu-title pt-10 px-8">
+          <Logo
+            // logo={MISTImage}
+            alt="Osmany Hall"
+            title="Sohoz Meal (MIST)"
+            subTitle="Student Portal"
+          />
         </div>
+        <div className="divider"></div>
         {asideLinks.map((link, index) => (
           <li key={index} className="px-2">
             <Link

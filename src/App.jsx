@@ -16,7 +16,6 @@ import { Stock } from "./components/Admin/Stock";
 import { Expenses } from "./components/Admin/Expenses";
 
 function App() {
-  console.log("document.cookies", document.cookie);
   return (
     <>
       <Navbar />
