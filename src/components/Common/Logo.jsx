@@ -3,7 +3,7 @@ import HeadingLogo from "./HeadingLogo";
 
 export default function Logo(props) {
   return (
-    <div className="flex items-center gap-3 md:gap-5 flex-wrap">
+    <div className="flex items-center gap-4 md:gap-5 flex-wrap">
       {props.logo && (
         <img className="h-16 image" src={props.logo} alt={props?.alt} />
       )}

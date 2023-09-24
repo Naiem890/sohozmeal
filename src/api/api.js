@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Define your Axios instance
 export const Axios = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://sohozmeal.eastus.cloudapp.azure.com/api",
 });
 
 // attach the auth token to every request
