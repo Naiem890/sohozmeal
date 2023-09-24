@@ -55,7 +55,7 @@ export default function MealPlan() {
   };
 
   return (
-    <div className="lg:my-10 px-5 lg:mr-12">
+    <div className="lg:my-10 mb-10 px-5 lg:mr-12">
       <h2 className="text-3xl font-semibold">Meal Plan</h2>
       <div className="divider"></div>
       <div className="flex justify-between items-center mb-6 gap-10 flex-wrap">
@@ -119,7 +119,11 @@ export default function MealPlan() {
                     {meal.date.split("-")[2]}
                   </span>
                 </div>
-                <div className="flex justify-between gap-6 md:gap-4 flex-wrap">
+                <div
+                  className={`flex justify-between gap-6 md:gap-4 flex-wrap ${
+                    validDate() !== meal.date && "opacity-50"
+                  }`}
+                >
                   {["breakfast", "lunch", "dinner"].map((mealType) => (
                     <div
                       className="text-center checkbox-wrapper-26"
