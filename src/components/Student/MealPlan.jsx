@@ -1,29 +1,47 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Axios } from "../../api/api";
 import { dateToDayConverter } from "../../Utils/dateToDayConverter";
 import { dateToYYYYMMDD } from "../../Utils/dateToYYYYMMDD";
 import {
-  ArrowLeftCircleIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
+import formatDate from "../../Utils/formatDateString";
 
 export default function MealPlan() {
   const [meals, setMeals] = useState([]);
+  const [distinctMonths, setDistinctMonths] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState("");
+
+  useEffect(() => {
+    const fetchDistinctMonths = async () => {
+      const res = await Axios.get("/meal/months");
+      const months = res.data;
+      console.log("months", months);
+      setDistinctMonths(months);
+      setSelectedMonth(months.slice(-1)[0]);
+    };
+
+    fetchDistinctMonths();
+  }, []);
 
   useEffect(() => {
     const fetchMeals = async () => {
-      const res = await Axios.get("/meal/plan");
-      const { meals } = res.data;
+      if (selectedMonth) {
+        const year = selectedMonth.split("-")[0];
+        const month = selectedMonth.split("-")[1];
+        const res = await Axios.get(`/meal/plan?year=${year}&month=${month}`);
+        const { meals } = res.data;
 
-      const day = new Date(meals[0].date).getDay();
-      const emptyDays = Array(day).fill(null);
-      meals.unshift(...emptyDays);
-      setMeals(meals);
+        const day = new Date(meals[0].date).getDay();
+        const emptyDays = Array(day).fill(null);
+        meals.unshift(...emptyDays);
+        setMeals(meals);
+      }
     };
     fetchMeals();
-  }, []);
+  }, [selectedMonth]);
 
   const handleMealUpdate = async (mealId, meal) => {
     try {
@@ -54,6 +72,19 @@ export default function MealPlan() {
     return dateToYYYYMMDD(availableDate);
   };
 
+  const handleMonthChange = useCallback(
+    (increment) => {
+      setSelectedMonth((prevMonth) => {
+        const index = distinctMonths.indexOf(prevMonth);
+        const newIndex = index + increment;
+        return distinctMonths[
+          newIndex >= 0 && newIndex < distinctMonths.length ? newIndex : index
+        ];
+      });
+    },
+    [distinctMonths]
+  );
+
   return (
     <div className="lg:my-10 mb-10 px-5 lg:mr-12">
       <h2 className="text-3xl font-semibold">Meal Plan</h2>
@@ -80,13 +111,30 @@ export default function MealPlan() {
         </div>
 
         <div className="flex justify-center items-center gap-10 md:mx-0 mx-auto">
-          <button>
+          <button
+            className={`${
+              selectedMonth === distinctMonths[0]
+                ? "opacity-25 pointer-events-none cursor-not-allowed disabled"
+                : ""
+            }`}
+            onClick={() => handleMonthChange(-1)}
+          >
             <ArrowLeftIcon className="h-6 w-6" />
           </button>
           <div>
-            <h2 className="text-xl font-semibold">September 2023</h2>
+            <h2 className="text-xl font-semibold">
+              {formatDate(selectedMonth)}
+            </h2>
           </div>
-          <button>
+          <button
+            className={`${
+              selectedMonth === distinctMonths.slice(-1)[0]
+                ? "opacity-25 pointer-events-none cursor-not-allowed disabled" +
+                  distinctMonths.slice(-1)
+                : "" + distinctMonths.slice(-1)
+            }`}
+            onClick={() => handleMonthChange(1)}
+          >
             <ArrowRightIcon className="h-6 w-6" />
           </button>
         </div>
