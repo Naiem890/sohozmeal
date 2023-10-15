@@ -5,27 +5,27 @@ const { validateToken } = require("../utils/validateToken");
 
 router.get("/plan", validateToken, async (req, res) => {
   const { studentId } = req.user;
-  console.log("studentId", studentId);
+  const { year, month } = req.query;
+
   try {
-    // sort meal with dates
+    let filter = { studentId: studentId };
+
+    if (year && month) {
+      filter.date = {
+        $regex: new RegExp(`^${year}-${month.padStart(2, "0")}-\\d{1,2}`),
+      };
+    }
 
     const meals = await Meal.aggregate([
       {
-        $match: { studentId: studentId }, // Your match criteria here
+        $match: filter,
       },
       {
         $addFields: {
           dateAsInt: {
-            $toInt: {
-              $dateToString: {
-                date: {
-                  $dateFromString: {
-                    dateString: "$date",
-                    format: "%Y-%m-%d",
-                  },
-                },
-                format: "%Y%m%d",
-              },
+            $dateFromString: {
+              dateString: "$date",
+              format: "%Y-%m-%d",
             },
           },
         },
@@ -42,8 +42,55 @@ router.get("/plan", validateToken, async (req, res) => {
 
     res.status(200).json({ message: "Meals retrieved successfully", meals });
   } catch (error) {
-    console.error("Error getting meal:", error);
-    res.status(500).json({ message: "An error occurred while getting meal" });
+    console.error("Error getting meals:", error);
+    res.status(500).json({ message: "An error occurred while getting meals" });
+  }
+});
+
+// I want to get all the distinct values of date field by only month and year
+
+router.get("/months", validateToken, async (req, res) => {
+  try {
+    const distinctMonthsResult = await Meal.aggregate([
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m",
+              date: { $dateFromString: { dateString: "$date" } },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          month: "$_id",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          distinctMonths: { $addToSet: "$month" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          distinctMonths: 1,
+        },
+      },
+    ]);
+
+    if (distinctMonthsResult.length > 0) {
+      res.json(distinctMonthsResult[0].distinctMonths);
+    } else {
+      res.json([]);
+    }
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching distinct months." });
   }
 });
 
