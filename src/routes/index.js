@@ -2,10 +2,12 @@ const router = require("express").Router();
 const authController = require("../controllers/authController");
 const studentController = require("../controllers/studentController");
 const mealController = require("../controllers/mealController");
+const routineController = require("../controllers/routineController");
 
 router.use("/auth", authController);
 router.use("/student", studentController);
 router.use("/meal", mealController);
+router.use("/meal", routineController);
 
 // write a test route to check the sms functionality
 // router.post("/test-sms", async (req, res) => {
