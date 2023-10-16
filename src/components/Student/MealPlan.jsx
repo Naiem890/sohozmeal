@@ -1,7 +1,4 @@
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-} from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { dateToDayConverter } from "../../Utils/dateToDayConverter";
@@ -168,7 +165,7 @@ export default function MealPlan() {
                   </span>
                 </div>
                 <div
-                  className={`flex justify-between gap-6 gap- md:gap-[0.65rem] flex-wrap ${
+                  className={`flex justify-between gap-6 md:gap-[0.65rem] flex-wrap ${
                     validDate() !== meal.date && "opacity-50"
                   }`}
                 >
