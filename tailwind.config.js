@@ -5,6 +5,7 @@ export default {
     extend: {},
     fontFamily: {
       sans: ["Helvetica", "ui-sans-serif", "system-ui"],
+      notoSerifBangla: ["Noto Serif Bengali", "serif"],
     },
   },
   daisyui: {

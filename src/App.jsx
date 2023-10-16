@@ -1,19 +1,19 @@
 import { Route, Routes } from "react-router-dom";
-import Dashboard from "./components/Student/Dashboard";
-import Navbar from "./components/Common/Navbar";
-import RequiredStudentAuth from "./components/Auth/RequiredStudentAuth";
-import BillPayment from "./components/Student/BillPayment";
-import MealRoutine from "./components/Student/MealRoutine";
-import MealPlan from "./components/Student/MealPlan";
-import Profile from "./components/Student/Profile";
-import AdminLogin from "./components/Auth/AdminLogin";
 import AdminDashboard from "./components/Admin/AdminDashboard";
-import RequiredAdminAuth from "./components/Auth/RequiredAdminAuth";
-import Login from "./components/Auth/Login";
-import ChangePassword from "./components/Auth/ChangePassword";
-import { StudentList } from "./components/Admin/StudentList";
-import { Stock } from "./components/Admin/Stock";
 import { Expenses } from "./components/Admin/Expenses";
+import { Stock } from "./components/Admin/Stock";
+import { StudentList } from "./components/Admin/StudentList";
+import AdminLogin from "./components/Auth/AdminLogin";
+import ChangePassword from "./components/Auth/ChangePassword";
+import Login from "./components/Auth/Login";
+import RequiredAdminAuth from "./components/Auth/RequiredAdminAuth";
+import RequiredStudentAuth from "./components/Auth/RequiredStudentAuth";
+import Navbar from "./components/Common/Navbar";
+import BillPayment from "./components/Student/BillPayment";
+import Dashboard from "./components/Student/Dashboard";
+import MealPlan from "./components/Student/MealPlan";
+import MealRoutine from "./components/Student/MealRoutine";
+import Profile from "./components/Student/Profile";
 
 function App() {
   return (

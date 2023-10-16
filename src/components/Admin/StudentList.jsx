@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { Axios } from "../../api/api";
 import {
   ArrowPathIcon,
   PencilIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import Swal from "sweetalert2";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import { DEPARTMENTS } from "../../Utils/constant";
+import { Axios } from "../../api/api";
 import { EditStudentModal } from "./EditStudentModal";
 
 export const StudentList = () => {
@@ -162,11 +162,11 @@ export const StudentList = () => {
             Total Students: {filteredStudents.length}
           </h3>
         </div>
-        <div>
+        <div className="flex items-end">
           <select
             value={department}
             onChange={(e) => setDepartment(e.target.value)}
-            className="input input-sm input-ghost outline-none focus:outline-none border-0 border-b-2 border-emerald-600 mr-10"
+            className="input input-sm input-ghost outline-none focus:outline-none border-0 border-b-2 border-emerald-600 mr-10 h-auto w-40 pb-0"
           >
             <option value="">All Departments</option>
             {DEPARTMENTS.map((department) => (
@@ -182,7 +182,7 @@ export const StudentList = () => {
             placeholder="Search Name, Roll or Hall Id"
             className="input input-sm input-ghost outline-none focus:outline-none border-0 border-b-2 border-emerald-600"
           />
-          <button className="btn btn-sm ml-8 btn-success">Add Student</button>
+          <button className="btn btn-sm ml-4 btn-success">Add Student</button>
         </div>
       </div>
       <div className="overflow-x-auto max-h-screen overflow-y-scroll">
