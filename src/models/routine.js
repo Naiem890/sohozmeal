@@ -16,6 +16,12 @@ const routineSchema = new mongoose.Schema({
     ],
     set: (day) => day.toUpperCase(),
   },
+  HallWing: {
+    type: String,
+    required: true,
+    enum: ["MALE", "FEMALE"],
+    set: (wing) => wing.toUpperCase(),
+  },
   breakfast: { type: String, required: true },
   lunch: { type: String, required: true },
   dinner: { type: String, required: true },
