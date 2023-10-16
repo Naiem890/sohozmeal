@@ -57,7 +57,7 @@ app.use((err, req, res, next) => {
 // Connect to the database
 dbConnect();
 
-// require("../temp/insertStudents");
+// require("../src/data/insertStudents");
 require("../cron/mealGenerate");
 
 app.listen(port, () => {

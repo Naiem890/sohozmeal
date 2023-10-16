@@ -24,6 +24,12 @@ const studentSchema = new mongoose.Schema({
     ],
     set: (department) => department.toUpperCase(),
   },
+  gender: {
+    type: String,
+    required: true,
+    enum: ["MALE", "FEMALE"],
+    set: (gender) => gender.toUpperCase(),
+  },
   batch: { type: Number },
   status: { default: "active", type: String, enum: ["active", "inactive"] },
   firstTimeLogin: { type: Boolean, required: true, default: true },
