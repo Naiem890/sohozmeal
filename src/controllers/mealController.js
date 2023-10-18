@@ -1,7 +1,18 @@
 const router = require("express").Router();
 const Meal = require("../models/meal");
 const Student = require("../models/student");
+const Routine = require("../models/routine");
 const { validateToken } = require("../utils/validateToken");
+
+router.get("/routine", validateToken, async (req, res) => {
+  try {
+    const routines = await Routine.find();
+    res.json(routines);
+  } catch (err) {
+    console.error("Error retrieving routines: ", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 router.get("/plan", validateToken, async (req, res) => {
   const { studentId } = req.user;
@@ -47,8 +58,6 @@ router.get("/plan", validateToken, async (req, res) => {
   }
 });
 
-// I want to get all the distinct values of date field by only month and year
-
 router.get("/months", validateToken, async (req, res) => {
   try {
     const distinctMonthsResult = await Meal.aggregate([
@@ -72,6 +81,26 @@ router.get("/months", validateToken, async (req, res) => {
         $group: {
           _id: null,
           distinctMonths: { $addToSet: "$month" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          distinctMonths: 1,
+        },
+      },
+      {
+        $unwind: "$distinctMonths",
+      },
+      {
+        $sort: {
+          distinctMonths: 1, // Sort in ascending order
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          distinctMonths: { $push: "$distinctMonths" },
         },
       },
       {
