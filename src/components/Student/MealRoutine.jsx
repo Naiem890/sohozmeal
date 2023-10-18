@@ -78,20 +78,28 @@ const MealRoutine = () => {
               {mealData.map((routine) => (
                 <tr
                   key={routine._id}
-                  className={`bg-gray-50 font-notoSerifBangla hover:bg-yellow-200 md:text-lg ${
+                  className={`bg-gray-50 font-notoSerifBangla md:text-lg ${
                     isToday(new Date()) && routine.day === currentDay
-                      ? "font-extrabold bg-emerald-400 hover:bg-emerald-400 md:text-lg"
+                      ? "font-extrabold bg-emerald-400 md:text-lg "
                       : ""
                   }`}
                 >
                   <th
                     className={`py-3  text-center border-2 border-slate-950 p-2 md:text-lg ${
                       isToday(new Date()) && routine.day === currentDay
-                        ? "font-extrabold bg-emerald-400 md:text-lg"
+                        ? "font-extrabold  md:text-lg"
                         : ""
                     }`}
                   >
-                    {dayNameMap[routine.day] || routine.day}
+                    <p
+                      className={`${
+                        isToday(new Date()) && routine.day === currentDay
+                          ? "font-extrabold  md:text-lg bg-slate-700 rounded-full text-white"
+                          : ""
+                      }`}
+                    >
+                      {dayNameMap[routine.day] || routine.day}
+                    </p>
                   </th>
                   <td
                     scope=""
