@@ -1,4 +1,5 @@
 import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { useCallback, useEffect, useState } from "react";
 import { dateToDayConverter } from "../../Utils/dateToDayConverter";
 import { dateToYYYYMMDD } from "../../Utils/dateToYYYYMMDD";
@@ -39,36 +40,31 @@ export default function MealPlan() {
     };
     fetchMeals();
   }, [selectedMonth]);
+
   const handleMealUpdate = async (mealId, meal) => {
     try {
-      toast.dismiss();
-      toast.loading("Meal Updating...");
-      const res = await Axios.put(`/meal/plan/${mealId}`, { meal });
-      const result = res.data;
-
-      setMeals((prevMeals) =>
-        prevMeals.map((prevMeal) => {
-          if (prevMeal?._id === mealId) {
-            return result.meal;
-          }
-          return prevMeal;
-        })
+      const result = await toast.promise(
+        Axios.put(`/meal/plan/${mealId}`, { meal }),
+        {
+          loading: "Meal Updating...",
+          success: ({ data }) => data.message || "Meal updated successfully!",
+          error: (error) =>
+            error.response.data.message || "Failed to update meal.",
+        }
       );
-      toast.dismiss();
 
-      result.message.includes("off")
-        ? toast.success(result.message, {
-            icon: "😢",
-          })
-        : toast.success(result.message, {
-            icon: "😋",
-          });
+      if (result.status === 200) {
+        setMeals((prevMeals) =>
+          prevMeals.map((prevMeal) =>
+            prevMeal?._id === mealId ? result.data.meal : prevMeal
+          )
+        );
+      }
     } catch (error) {
-      console.log(error);
-      toast.dismiss();
-      toast.error(error.response.data.message);
+      console.error(error);
     }
   };
+
   const validDate = () => {
     const today = new Date();
     const time = today.getHours();
@@ -92,29 +88,6 @@ export default function MealPlan() {
   );
   return (
     <div className="lg:my-10 mb-10 px-5 lg:mr-12">
-      <Toaster
-        position="top-center"
-        reverseOrder={false}
-        gutter={8}
-        containerClassName=""
-        containerStyle={{}}
-        toastOptions={{
-          className: "",
-          duration: 5000,
-          style: {
-            background: "#363636",
-            color: "#fff",
-          },
-          success: {
-            duration: 3000,
-            icon: "",
-            theme: {
-              primary: "green",
-              secondary: "black",
-            },
-          },
-        }}
-      />
       <h2 className="text-3xl font-semibold">Meal Plan</h2>
       <div className="divider"></div>
       <div className="flex justify-between items-center mb-6 gap-10 flex-wrap">

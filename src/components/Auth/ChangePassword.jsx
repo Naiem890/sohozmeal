@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import { Axios } from "../../api/api";
 import Swal from "sweetalert2";
 import { useLocation, useNavigate } from "react-router-dom";

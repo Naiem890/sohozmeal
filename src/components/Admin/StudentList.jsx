@@ -4,7 +4,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import React, { useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import Swal from "sweetalert2";
 import { DEPARTMENTS } from "../../Utils/constant";
 import { Axios } from "../../api/api";

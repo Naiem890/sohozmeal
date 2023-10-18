@@ -1,6 +1,6 @@
 import React from "react";
 import { Axios } from "../../api/api";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import Modal from "../Common/Modal";
 import { DEPARTMENTS } from "../../Utils/constant";
 

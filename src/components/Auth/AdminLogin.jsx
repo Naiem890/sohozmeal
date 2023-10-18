@@ -1,5 +1,5 @@
 import { useSignIn } from "react-auth-kit";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import MISTImage from "../../assets/MIST.png";
 import { useNavigate } from "react-router-dom";
 import { Axios } from "../../api/api";

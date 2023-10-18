@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import { Axios } from "../../api/api";
 import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
 
