@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Axios } from "../../api/api";
-import { format, isToday } from "date-fns"; // Import date-fns or another date library
+import { format, isToday } from "date-fns";
 
 const MealRoutine = () => {
   const [mealData, setMealData] = useState([]);
-  const currentDay = format(new Date(), "EEEE"); // Get the current day in the same format as routine.day
+  const currentDay = format(new Date(), "EEEE");
   const dayNameMap = {
     Sunday: "রবিবার",
     Monday: "সোমবার",
@@ -16,9 +16,7 @@ const MealRoutine = () => {
   };
   const fetchMealRoutineData = async () => {
     try {
-      const response = await Axios.get("/meal/routine"); // Replace with your API endpoint
-
-      // Define a custom sorting order for days of the week
+      const response = await Axios.get("/meal/routine");
       const daysOfWeekOrder = [
         "Sunday",
         "Monday",
@@ -28,8 +26,6 @@ const MealRoutine = () => {
         "Friday",
         "Saturday",
       ];
-
-      // Sort the data based on the custom sorting order
       const sortedData = response.data.sort((a, b) => {
         const dayA = daysOfWeekOrder.indexOf(a.day);
         const dayB = daysOfWeekOrder.indexOf(b.day);
@@ -50,12 +46,12 @@ const MealRoutine = () => {
     <div className="lg:my-10 mb-10 px-5 lg:mr-12">
       <h2 className="text-3xl font-semibold">Meal Routine</h2>
       <div className="divider"></div>
-      <div className="container flex justify-start">
-        <div className="relative container shadow-md">
-          <table className="w-full text-sm text-left text-black">
+      <div className="container flex justify-start min-w-full">
+        <div className="relative shadow-md min-w-full">
+          <table className="text-sm text-left text-black min-w-full">
             <thead className="text-xs uppercase shadow-[0_8px_30px_rgb(0,0,0,0.30)  text-black">
               <tr className=" font-notoSerifBangla font-extrabold text-base">
-                <th className="py-3 p-2 text-center text-black border-2 border-slate-950 md:text-lg">
+                <th className="py-3 p-2 text-center text-black table-auto border-2 border-slate-950 md:text-lg">
                   দিন
                 </th>
                 <th
@@ -118,5 +114,4 @@ const MealRoutine = () => {
     </div>
   );
 };
-
 export default MealRoutine;
