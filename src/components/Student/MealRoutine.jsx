@@ -5,6 +5,7 @@ import { format, isToday } from "date-fns";
 const MealRoutine = () => {
   const [mealData, setMealData] = useState([]);
   const currentDay = format(new Date(), "EEEE");
+
   const dayNameMap = {
     Sunday: "রবিবার",
     Monday: "সোমবার",
@@ -14,6 +15,7 @@ const MealRoutine = () => {
     Friday: "শুক্রবার",
     Saturday: "শনিবার",
   };
+
   const fetchMealRoutineData = async () => {
     try {
       const response = await Axios.get("/meal/routine");
@@ -26,6 +28,7 @@ const MealRoutine = () => {
         "Friday",
         "Saturday",
       ];
+
       const sortedData = response.data.sort((a, b) => {
         const dayA = daysOfWeekOrder.indexOf(a.day);
         const dayB = daysOfWeekOrder.indexOf(b.day);
@@ -42,33 +45,40 @@ const MealRoutine = () => {
     fetchMealRoutineData();
   }, []);
 
+  const getRandomColor = () => {
+    const colors = ["bg-gray-200", "bg-white", "bg-white", "bg-white"];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
+
   return (
     <div className="lg:my-10 mb-10 px-5 lg:mr-12">
       <h2 className="text-3xl font-semibold">Meal Routine</h2>
       <div className="divider"></div>
-      <div className="container flex justify-start min-w-full">
-        <div className="relative shadow-md min-w-full">
-          <table className="text-sm text-left text-black min-w-full">
-            <thead className="text-xs uppercase shadow-[0_8px_30px_rgb(0,0,0,0.30)  text-black">
-              <tr className=" font-notoSerifBangla font-extrabold text-base">
-                <th className="py-3 p-2 text-center text-black table-auto border-2 border-slate-950 md:text-lg">
+      <div className="container flex justify-start max-w-7xl">
+        <div className="relative shadow-md w-full">
+          <table className="text-sm text-left text-black w-full">
+            <thead className="text-xs uppercase shadow-[0_8px_30px_rgb(0,0,0,0.30) text-black w-full">
+              <tr className="font-notoSerifBangla font-extrabold text-base">
+                <th
+                  className={`text-center text-black table-auto border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3`}
+                >
                   দিন
                 </th>
                 <th
                   scope="col"
-                  className="text-black px-2 py-3 text-center border-2 border-slate-950 md:text-lg"
+                  className={`text-black text-center border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3 $`}
                 >
                   সকাল
                 </th>
                 <th
                   scope="col"
-                  className=" py-3 text-black text-center px-2 border-2 border-slate-950 md:text-lg"
+                  className={`text-black text-center px-2 border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3 `}
                 >
                   দুপুর
                 </th>
                 <th
                   scope="col"
-                  className="px-2 py-3 text-center text-black border-2 border-slate-950 md:text-lg"
+                  className={`text-center text-black border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3`}
                 >
                   রাত
                 </th>
@@ -80,12 +90,12 @@ const MealRoutine = () => {
                   key={routine._id}
                   className={`bg-gray-50 font-notoSerifBangla md:text-lg ${
                     isToday(new Date()) && routine.day === currentDay
-                      ? "font-extrabold bg-emerald-400 md:text-lg "
+                      ? "font-extrabold bg-emerald-400 md:text-lg"
                       : ""
                   }`}
                 >
                   <th
-                    className={`py-3  text-center border-2 border-slate-950 p-2 md:text-lg ${
+                    className={` text-center border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3 ${
                       isToday(new Date()) && routine.day === currentDay
                         ? "font-extrabold  md:text-lg"
                         : ""
@@ -94,7 +104,7 @@ const MealRoutine = () => {
                     <p
                       className={`${
                         isToday(new Date()) && routine.day === currentDay
-                          ? "font-extrabold  md:text-lg bg-slate-700 rounded-full text-white"
+                          ? "font-extrabold md:text-lg bg-slate-700 rounded-full text-white"
                           : ""
                       }`}
                     >
@@ -103,14 +113,18 @@ const MealRoutine = () => {
                   </th>
                   <td
                     scope=""
-                    className="py-4 border-2 border-slate-950 text-center md:text-lg"
+                    className={`p-0 text-center border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3 ${getRandomColor()}`}
                   >
                     {routine.breakfast}
                   </td>
-                  <td className="py-4 border-2 border-slate-950 text-center md:text-lg">
+                  <td
+                    className={`text-center border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3 ${getRandomColor()}`}
+                  >
                     {routine.lunch}
                   </td>
-                  <td className="py-4 border-2 border-slate-950 text-center md:text-lg">
+                  <td
+                    className={`text-center border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3 ${getRandomColor()}`}
+                  >
                     {routine.dinner}
                   </td>
                 </tr>
@@ -122,4 +136,5 @@ const MealRoutine = () => {
     </div>
   );
 };
+
 export default MealRoutine;
