@@ -7,6 +7,7 @@ import {
   ArrowRightOnRectangleIcon,
   ShoppingBagIcon,
   ShoppingCartIcon,
+  TableCellsIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import Logo from "../Common/Logo";
@@ -49,7 +50,11 @@ export default function Aside({ toggleDrawer }) {
       path: "/admin/dashboard/",
       icon: <UserGroupIcon className="h-6 w-6" />,
     },
-
+    {
+      link: "Meal Routine",
+      path: "/admin/dashboard/meal-routine",
+      icon: <TableCellsIcon className="w-6 h-6" />,
+    },
     {
       link: "Stock",
       path: "/admin/dashboard/stock",

@@ -44,6 +44,7 @@ function App() {
           <Route index element={<StudentList />} />
           <Route path="stock" element={<Stock />} />
           <Route path="expenses" element={<Expenses />} />
+          <Route path="meal-routine" element={<MealRoutineAdmin />} />
         </Route>
         <Route
           path="/dashboard/"
@@ -59,7 +60,6 @@ function App() {
 
           <Route path="bill-payment" element={<BillPayment />} />
           <Route path="meal-routine" element={<MealRoutine />} />
-          <Route path="meal-routine-admin" element={<MealRoutineAdmin />} />
         </Route>
       </Routes>
     </>
