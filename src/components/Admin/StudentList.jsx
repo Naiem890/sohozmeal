@@ -1,12 +1,17 @@
 import {
   ArrowPathIcon,
   PencilIcon,
+  PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import Swal from "sweetalert2";
-import { DEPARTMENTS } from "../../Utils/constant";
+import {
+  DEPARTMENTS,
+  fixedButtonClass,
+  fixedInputClass,
+} from "../../Utils/constant";
 import { Axios } from "../../api/api";
 import { EditStudentModal } from "./EditStudentModal";
 
@@ -16,10 +21,9 @@ export const StudentList = () => {
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [department, setDepartment] = useState("");
-
+  const [gender, setGender] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
-
   const [student, setStudent] = useState(null);
 
   useEffect(() => {
@@ -62,9 +66,18 @@ export const StudentList = () => {
       }
     };
 
+    const filterGender = (student) => {
+      if (gender === "") {
+        return student;
+      } else if (student.gender === gender) {
+        return student;
+      }
+    };
+
     const filteredResult = students
       .filter(filterSearch)
-      .filter(filterDepartment);
+      .filter(filterDepartment)
+      .filter(filterGender);
 
     if (sortBy) {
       filteredResult.sort((a, b) => {
@@ -80,7 +93,7 @@ export const StudentList = () => {
     console.log(filteredResult);
 
     setFilteredStudents(filteredResult);
-  }, [sortBy, sortAsc, search, department, students]);
+  }, [sortBy, sortAsc, search, department, students, gender]);
 
   const handleEditAccount = (student) => {
     setShowModal(true);
@@ -153,8 +166,8 @@ export const StudentList = () => {
   };
 
   return (
-    <div className="lg:my-10 lg:mx-12">
-      <h2 className="text-3xl font-semibold my-4">All Students</h2>
+    <div className="lg:my-10 mb-10 px-5 lg:mr-12">
+      <h2 className="text-3xl font-semibold">All Students</h2>
       <div className="divider"></div>
       <div className="flex justify-between items-center mb-6">
         <div className="">
@@ -162,13 +175,26 @@ export const StudentList = () => {
             Total Students: {filteredStudents.length}
           </h3>
         </div>
-        <div className="flex items-end">
+        <div className="flex gap-4">
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            className={`${fixedInputClass} h-10 w-auto`}
+          >
+            <option selected value="">
+              Gender
+            </option>
+            <option value="MALE">MALE</option>
+            <option value="FEMALE">FEMALE</option>
+          </select>
           <select
             value={department}
             onChange={(e) => setDepartment(e.target.value)}
-            className="input input-sm input-ghost outline-none focus:outline-none border-0 border-b-2 border-emerald-600 mr-10 h-auto w-40 pb-0"
+            className={`${fixedInputClass} h-10 w-auto`}
           >
-            <option value="">All Departments</option>
+            <option selected value="">
+              Departments
+            </option>
             {DEPARTMENTS.map((department) => (
               <option key={department} value={department}>
                 {department}
@@ -180,20 +206,25 @@ export const StudentList = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search Name, Roll or Hall Id"
-            className="input input-sm input-ghost outline-none focus:outline-none border-0 border-b-2 border-emerald-600"
+            className={`${fixedInputClass} h-10 w-56`}
           />
-          <button className="btn btn-sm ml-4 btn-success">Add Student</button>
+          <button className={`${fixedButtonClass} btn-sm h-10 !w-40 ml-4`}>
+            <PlusIcon className="w-4 h-4" /> Add Student
+          </button>
         </div>
       </div>
-      <div className="overflow-x-auto max-h-screen overflow-y-scroll">
-        <table className="table w-full">
-          <thead className="bg-white shadow-sm sticky top-0">
+      <div className="overflow-x-auto max-h-screen overflow-y-scroll px-1">
+        <table className="table table-sm table-hover w-full">
+          <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
             <tr className="">
+              <th onClick={() => toggleSort("hallId")} className="uppercase">
+                Hall Id {sortBy === "hallId" && (sortAsc ? "↑" : "↓")}
+              </th>
               <th onClick={() => toggleSort("studentId")} className="uppercase">
                 Student Id {sortBy === "studentId" && (sortAsc ? "↑" : "↓")}
               </th>
-              <th onClick={() => toggleSort("hallId")} className="uppercase">
-                Hall Id {sortBy === "hallId" && (sortAsc ? "↑" : "↓")}
+              <th onClick={() => toggleSort("gender")} className="uppercase">
+                Gender {sortBy === "gender" && (sortAsc ? "↑" : "↓")}
               </th>
               <th onClick={() => toggleSort("name")} className="uppercase">
                 Name {sortBy === "name" && (sortAsc ? "↑" : "↓")}
@@ -212,9 +243,13 @@ export const StudentList = () => {
           </thead>
           <tbody>
             {filteredStudents.map((student) => (
-              <tr className="text-lg" key={student._id}>
-                <td>{student.studentId}</td>
+              <tr
+                className=" hover:shadow-sm rounded-lg hover:bg-emerald-50 transition-all border-b-0"
+                key={student._id}
+              >
                 <td>{student.hallId}</td>
+                <td>{student.studentId}</td>
+                <td>{student.gender}</td>
                 <td>{student.name}</td>
                 <td>{`${student.department}`}</td>
                 <td>{`${student.batch || ""}`}</td>
