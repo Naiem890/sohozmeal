@@ -14,6 +14,58 @@ router.get("/routine", validateToken, async (req, res) => {
   }
 });
 
+router.post("/routine/initialize", async (req, res) => {
+  try {
+    const daysOfWeek = [
+      "SUNDAY",
+      "MONDAY",
+      "TUESDAY",
+      "WEDNESDAY",
+      "THURSDAY",
+      "FRIDAY",
+      "SATURDAY",
+    ];
+
+    for (const day of daysOfWeek) {
+      const routineData = {
+        day: day,
+        breakfast: "-",
+        lunch: "-",
+        dinner: "-",
+        HallWing: "MALE",
+      };
+
+      const routine = new Routine(routineData);
+      await routine.save();
+    }
+
+    res.status(200).json({ message: "Routine initialized successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+router.put("/routine", async (req, res) => {
+  try {
+    const dataToUpdate = req.body;
+    const queries = dataToUpdate.map((routineData) => {
+      const { _id, breakfast, lunch, dinner } = routineData;
+      return Routine.findOneAndUpdate({ _id }, { breakfast, lunch, dinner });
+    });
+
+    const results = await Promise.all(queries);
+
+    console.log("results:", results);
+    res
+      .status(200)
+      .json({ message: "Routine updated successfully", routines: results });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 router.get("/plan", validateToken, async (req, res) => {
   const { studentId } = req.user;
   const { year, month } = req.query;
