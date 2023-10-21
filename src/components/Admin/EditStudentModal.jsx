@@ -138,6 +138,28 @@ export const EditStudentModal = ({
             className="input input-bordered w-full"
           />
         </div>
+        <div className="form-control w-full">
+          <label className="label">
+            <span className="label-text uppercase text-gray-600">Gender</span>
+          </label>
+          <select
+            value={student?.gender}
+            onChange={(e) => {
+              setStudent({ ...student, gender: e.target.value });
+            }}
+            className="select select-bordered w-full"
+          >
+            <option disabled selected>
+              Select Gender
+            </option>
+            <option key="Male" value="MALE">
+              MALE
+            </option>
+            <option key="Female" value="FEMALE">
+              FEMALE
+            </option>
+          </select>
+        </div>
         <div className="mt-4 col-span-full flex justify-end gap-6">
           <div
             onClick={() => setShowModal((prev) => !prev)}
