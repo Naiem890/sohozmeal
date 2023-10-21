@@ -160,7 +160,7 @@ export const EditStudentModal = ({
             onChange={(e) => {
               setStudent({ ...student, gender: e.target.value });
             }}
-            className="select select-bordered w-full"
+            className={`${fixedInputClass} mt-2`}
           >
             <option disabled selected>
               Select Gender
