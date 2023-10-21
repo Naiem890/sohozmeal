@@ -39,7 +39,24 @@ export const EditStudentModal = ({
       setShowModal={setShowModal}
       className={`${showModal ? "" : "hidden"}`}
     >
-      <h3 className="font-bold text-lg">Edit Student Information</h3>
+      <button
+        onClick={() => setShowModal(false)}
+        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 cursor-pointer"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          fill="currentColor"
+          className="bi bi-x bg-success text-black w-8 h-8 rounded-full"
+          viewBox="0 0 16 16"
+        >
+          <path d="M3.293 3.293a1 1 0 011.414 0L8 6.586l3.293-3.293a1 1 0 111.414 1.414L9.414 8l3.293 3.293a1 1 0 01-1.414 1.414L8 9.414l-3.293 3.293a1 1 0 01-1.414-1.414L6.586 8 3.293 4.707a1 1 0 010-1.414z" />
+        </svg>
+      </button>
+      <h3 className="font-bold text-lg inline-block">
+        Edit Student Information
+      </h3>
       <div className="divide-2" />
       <form
         onSubmit={handleUpdateProfile}
