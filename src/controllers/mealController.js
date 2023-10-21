@@ -4,10 +4,26 @@ const Student = require("../models/student");
 const Routine = require("../models/routine");
 const { validateToken } = require("../utils/validateToken");
 
+const weekDays = [
+  "SATURDAY",
+  "SUNDAY",
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+];
+
 router.get("/routine", validateToken, async (req, res) => {
   try {
     const routines = await Routine.find();
-    res.json(routines);
+
+    // Sort the routines in the desired order
+    const sortedRoutines = weekDays.map((day) =>
+      routines.find((routine) => routine.day === day)
+    );
+
+    res.json(sortedRoutines);
   } catch (err) {
     console.error("Error retrieving routines: ", err);
     res.status(500).json({ error: "Internal server error" });
@@ -16,17 +32,7 @@ router.get("/routine", validateToken, async (req, res) => {
 
 router.post("/routine/initialize", async (req, res) => {
   try {
-    const daysOfWeek = [
-      "SUNDAY",
-      "MONDAY",
-      "TUESDAY",
-      "WEDNESDAY",
-      "THURSDAY",
-      "FRIDAY",
-      "SATURDAY",
-    ];
-
-    for (const day of daysOfWeek) {
+    for (const day of weekDays) {
       const routineData = {
         day: day,
         breakfast: "-",
