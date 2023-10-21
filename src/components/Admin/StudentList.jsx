@@ -105,7 +105,7 @@ export const StudentList = () => {
       title: "Are you sure?",
       html: `<div>
         You want to reset password for
-        <p style="color:skyblue;">
+        <p style="color:#f27474;">
           <br /> 
           Name: ${student.name} 
           <br /> 
@@ -137,7 +137,7 @@ export const StudentList = () => {
       title: "Are you sure?",
       html: `<div>
         You want to delete account for
-        <p style="color:skyblue;">
+        <p style="color:#f27474;">
           <br /> 
           Name: ${student.name} 
           <br /> 
@@ -169,17 +169,17 @@ export const StudentList = () => {
     <div className="lg:my-10 mb-10 px-5 lg:mr-12">
       <h2 className="text-3xl font-semibold">All Students</h2>
       <div className="divider"></div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 gap-12">
         <div className="">
-          <h3 className="text-xl font-semibold mr-4">
+          <h3 className="text-xl font-semibold mr-4 basis-1/3">
             Total Students: {filteredStudents.length}
           </h3>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-2 basis-2/3">
           <select
             value={gender}
             onChange={(e) => setGender(e.target.value)}
-            className={`${fixedInputClass} h-10 w-auto`}
+            className={`${fixedInputClass} h-auto basis-1/4`}
           >
             <option selected value="">
               Gender
@@ -190,7 +190,7 @@ export const StudentList = () => {
           <select
             value={department}
             onChange={(e) => setDepartment(e.target.value)}
-            className={`${fixedInputClass} h-10 w-auto`}
+            className={`${fixedInputClass} h-auto basis-1/4`}
           >
             <option selected value="">
               Departments
@@ -205,10 +205,10 @@ export const StudentList = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search Name, Roll or Hall Id"
-            className={`${fixedInputClass} h-10 w-56`}
+            placeholder="Search Name, Roll, Hall ID"
+            className={`${fixedInputClass} h-auto basis-2/4`}
           />
-          <button className={`${fixedButtonClass} btn-sm h-10 !w-40 ml-4`}>
+          <button className={`${fixedButtonClass} btn-sm h-auto basis-40 ml-2`}>
             <PlusIcon className="w-4 h-4" /> Add Student
           </button>
         </div>

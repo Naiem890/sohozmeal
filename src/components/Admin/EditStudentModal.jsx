@@ -2,7 +2,11 @@ import React from "react";
 import { Axios } from "../../api/api";
 import { toast } from "react-hot-toast";
 import Modal from "../Common/Modal";
-import { DEPARTMENTS } from "../../Utils/constant";
+import {
+  DEPARTMENTS,
+  fixedButtonClass,
+  fixedInputClass,
+} from "../../Utils/constant";
 
 export const EditStudentModal = ({
   showModal,
@@ -39,27 +43,23 @@ export const EditStudentModal = ({
       <div className="divide-2" />
       <form
         onSubmit={handleUpdateProfile}
-        className="grid lg:grid-cols-2 gap-2 lg:gap-x-8"
+        className="grid lg:grid-cols-2 gap-4 lg:gap-x-8 mt-4"
       >
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">
-              Full Name
-            </span>
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Full Name
           </label>
           <input
             type="text"
             value={student?.name}
             onChange={(e) => setStudent({ ...student, name: e.target.value })}
             placeholder="Type here"
-            className="input input-bordered w-full"
+            className={`${fixedInputClass} mt-2`}
           />
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">
-              Phone Number
-            </span>
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Phone Number
           </label>
           <input
             type="text"
@@ -68,14 +68,12 @@ export const EditStudentModal = ({
               setStudent({ ...student, phoneNumber: e.target.value })
             }
             placeholder="eg: 01712345678"
-            className="input input-bordered w-full"
+            className={`${fixedInputClass} mt-2`}
           />
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">
-              Student Id
-            </span>
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Student Id
           </label>
           <input
             type="text"
@@ -87,12 +85,12 @@ export const EditStudentModal = ({
               setStudent({ ...student, newStudentId: e.target.value })
             }
             placeholder="Type here"
-            className="input input-bordered w-full"
+            className={`${fixedInputClass} mt-2`}
           />
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">Hall Id</span>
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Hall Id
           </label>
           <input
             type="text"
@@ -100,21 +98,19 @@ export const EditStudentModal = ({
             value={student?.hallId}
             onChange={(e) => setStudent({ ...student, hallId: e.target.value })}
             placeholder="Type here"
-            className="input input-bordered w-full"
+            className={`${fixedInputClass} mt-2`}
           />
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">
-              Department
-            </span>
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Department
           </label>
           <select
             value={student?.department}
             onChange={(e) =>
               setStudent({ ...student, department: e.target.value })
             }
-            className="select select-bordered w-full"
+            className={`${fixedInputClass} mt-2`}
           >
             <option disabled selected>
               Select Department
@@ -126,16 +122,16 @@ export const EditStudentModal = ({
             ))}
           </select>
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">Batch</span>
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Batch
           </label>
           <input
             type="number"
             value={student?.batch}
             onChange={(e) => setStudent({ ...student, batch: +e.target.value })}
             placeholder="Type here"
-            className="input input-bordered w-full"
+            className={`${fixedInputClass} mt-2`}
           />
         </div>
         <div className="form-control w-full">
@@ -163,11 +159,11 @@ export const EditStudentModal = ({
         <div className="mt-4 col-span-full flex justify-end gap-6">
           <div
             onClick={() => setShowModal((prev) => !prev)}
-            className="btn bg-gray-200"
+            className={`${fixedButtonClass} w-auto bg-gray-200 text-gray-950 hover:bg-gray-300`}
           >
             Close
           </div>
-          <button type="submit" className="btn btn-success text-white">
+          <button type="submit" className={`${fixedButtonClass} w-auto`}>
             Update Changes
           </button>
         </div>

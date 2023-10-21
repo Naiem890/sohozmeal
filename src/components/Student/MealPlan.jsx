@@ -5,7 +5,7 @@ import { dateToDayConverter } from "../../Utils/dateToDayConverter";
 import { dateToYYYYMMDD } from "../../Utils/dateToYYYYMMDD";
 import formatDate from "../../Utils/formatDateString";
 import { Axios } from "../../api/api";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 export default function MealPlan() {
   const [meals, setMeals] = useState([]);
@@ -61,6 +61,7 @@ export default function MealPlan() {
         );
       }
     } catch (error) {
+      toast.error(error.response.data.message);
       console.error(error);
     }
   };
