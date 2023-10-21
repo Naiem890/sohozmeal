@@ -69,6 +69,7 @@ router.put("/", validateToken, async (req, res) => {
     newStudentId,
     studentId,
     phoneNumber,
+    gender,
     department,
     batch,
     status,
@@ -88,6 +89,7 @@ router.put("/", validateToken, async (req, res) => {
         student.hallId = hallId;
         student.studentId = newStudentId ? newStudentId : studentId;
         student.status = status;
+        student.gender = gender;
       }
       console.log("student:", student);
       await student.save();
