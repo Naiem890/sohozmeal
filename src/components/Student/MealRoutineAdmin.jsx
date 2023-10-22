@@ -1,12 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Axios } from "../../api/api";
 import { format, isToday, set } from "date-fns";
 import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
 import toast from "react-hot-toast";
+import { useReactToPrint } from "react-to-print";
 
 const MealRoutineAdmin = () => {
   const [mealData, setMealData] = useState([]);
   const currentDay = format(new Date(), "EEEE").toUpperCase();
+  const mealRef = useRef();
+  const handlePrint = useReactToPrint({
+    content: () => mealRef.current,
+    documentTitle: "Meal Routine",
+    onAfterPrint: () => {
+      toast.success("Meal routine printed successfully!");
+    },
+  });
 
   const dayNameMap = {
     SUNDAY: "রবিবার",
@@ -47,7 +56,7 @@ const MealRoutineAdmin = () => {
     console.log(mealData);
   };
 
-  const handleSubmit = async() => {
+  const handleSubmit = async () => {
     try {
       const { data: response } = await Axios.put("/meal/routine", mealData);
       console.log(response);
@@ -63,7 +72,7 @@ const MealRoutineAdmin = () => {
     <div className="lg:my-10 mb-10 px-5 lg:mr-12">
       <h2 className="text-3xl font-semibold">Meal Routine</h2>
       <div className="divider"></div>
-      <div className="container flex justify-start max-w-7xl">
+      <div ref={mealRef} className="container flex justify-start max-w-7xl">
         <div className="relative shadow-md w-full">
           <table className="text-sm text-left text-black w-full">
             <thead className="text-xs uppercase shadow-[0_8px_30px_rgb(0,0,0,0.30) text-black w-full">
@@ -159,12 +168,15 @@ const MealRoutineAdmin = () => {
         </div>
       </div>
 
-      <div className="flex justify-end mt-6">
+      <div className="flex justify-between mt-6">
         <button
           onClick={handleSubmit}
           className={`${fixedButtonClass} sm:w-44`}
         >
           Update Changes
+        </button>
+        <button onClick={handlePrint} className={`${fixedButtonClass} sm:w-44`}>
+          Export PDF
         </button>
       </div>
     </div>
