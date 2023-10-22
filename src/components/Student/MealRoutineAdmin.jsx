@@ -4,6 +4,7 @@ import { format, isToday, set } from "date-fns";
 import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
 import toast from "react-hot-toast";
 import { useReactToPrint } from "react-to-print";
+import Swal from "sweetalert2";
 
 const MealRoutineAdmin = () => {
   const [mealData, setMealData] = useState([]);
@@ -56,15 +57,36 @@ const MealRoutineAdmin = () => {
     console.log(mealData);
   };
 
+  // const handleSubmit = async () => {
+  //   try {
+  //     const { data: response } = await Axios.put("/meal/routine", mealData);
+  //     console.log(response);
+  //     toast.success(response.message);
+  //     setMealData(response.routines);
+  //   } catch (error) {
+  //     toast.error(error.response.data.message);
+  //     console.error("Error updating meal routine data:", error);
+  //   }
+  // };
+
   const handleSubmit = async () => {
-    try {
-      const { data: response } = await Axios.put("/meal/routine", mealData);
-      console.log(response);
-      toast.success(response.message);
-      setMealData(response.routines);
-    } catch (error) {
-      toast.error(error.response.data.message);
-      console.error("Error updating meal routine data:", error);
+    const result = await Swal.fire({
+      title: "Do you want to save the changes?",
+      showDenyButton: true,
+      confirmButtonText: "Save",
+      denyButtonText: `Don't save`,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const { data: response } = await Axios.put("/meal/routine", mealData);
+        console.log(response);
+        toast.success(response.message);
+        setMealData(response.routines);
+      } catch (error) {
+        toast.error(error.response.data.message);
+        console.error("Error updating meal routine data:", error);
+      }
     }
   };
 
