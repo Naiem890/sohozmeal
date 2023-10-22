@@ -37,34 +37,34 @@ const MealRoutine = () => {
 
   return (
     <>
-      <div ref={mealRef} className=" lg:mt-10 mb-4 px-5 lg:mr-12">
+      <div className=" lg:mt-10 mb-4 px-5 lg:mr-12">
         <h2 className="text-3xl font-semibold">Meal Routine</h2>
         <div className="divider"></div>
-        <div className="container flex justify-start max-w-7xl">
+        <div ref={mealRef} className="container flex justify-start max-w-7xl">
           <div className="relative shadow-md w-full">
             <table className="text-sm text-left text-black w-full">
               <thead className="text-xs uppercase shadow-[0_8px_30px_rgb(0,0,0,0.30) text-black w-full">
                 <tr className="font-notoSerifBangla font-extrabold text-base">
                   <th
-                    className={`text-center text-black table-auto border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3`}
+                    className={`text-center text-black table-auto border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3`}
                   >
                     দিন
                   </th>
                   <th
                     scope="col"
-                    className={`text-black text-center border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3 $`}
+                    className={`text-black text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3 $`}
                   >
                     সকাল
                   </th>
                   <th
                     scope="col"
-                    className={`text-black text-center px-2 border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3 `}
+                    className={`text-black text-center px-2 border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3 `}
                   >
                     দুপুর
                   </th>
                   <th
                     scope="col"
-                    className={`text-center text-black border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3`}
+                    className={`text-center text-black border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3`}
                   >
                     রাত
                   </th>
@@ -81,7 +81,7 @@ const MealRoutine = () => {
                     }`}
                   >
                     <th
-                      className={` text-center border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3 ${
+                      className={` text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3 ${
                         isToday(new Date()) && routine.day === currentDay
                           ? "font-extrabold  md:text-lg"
                           : ""
@@ -90,7 +90,7 @@ const MealRoutine = () => {
                       <p
                         className={`${
                           isToday(new Date()) && routine.day === currentDay
-                            ? "font-extrabold md:text-lg bg-slate-700 rounded-full text-white"
+                            ? "font-extrabold md:text-lg bg-emerald-700 rounded-full text-white"
                             : ""
                         }`}
                       >
@@ -99,17 +99,17 @@ const MealRoutine = () => {
                     </th>
                     <td
                       scope=""
-                      className={`p-0 text-center border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3`}
+                      className={`p-0 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3`}
                     >
                       {routine.breakfast}
                     </td>
                     <td
-                      className={`text-center border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3 `}
+                      className={`text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3 `}
                     >
                       {routine.lunch}
                     </td>
                     <td
-                      className={`text-center border-2 border-slate-950 md:text-lg md:px-4 sm:px-2 sm:py-3`}
+                      className={`text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3`}
                     >
                       {routine.dinner}
                     </td>
