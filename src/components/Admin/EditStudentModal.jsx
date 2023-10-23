@@ -7,6 +7,7 @@ import {
   fixedButtonClass,
   fixedInputClass,
 } from "../../Utils/constant";
+import { XCircleIcon } from "@heroicons/react/24/outline";
 
 export const EditStudentModal = ({
   showModal,
@@ -42,21 +43,9 @@ export const EditStudentModal = ({
       <button
         type="button"
         onClick={() => setShowModal(false)}
-        className="absolute top-4 right-4 text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:outline-none focus:ring-emerald-200 font-medium rounded-full text-sm p-2.5 text-center inline-flex items-center "
+        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 cursor-pointer"
       >
-        <svg
-          className="w-4 h-4 text-white"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <path
-            className="stroke-current stroke-2 stroke-linecap-round stroke-linejoin-round"
-            d="M6 18L18 6M6 6L18 18"
-          ></path>
-        </svg>
-
-        <span className="sr-only">Icon description</span>
+        <XCircleIcon className="w-8 h-8 hover:text-red-600" />
       </button>
       <h3 className="font-bold text-lg inline-block">
         Edit Student Information
