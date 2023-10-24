@@ -9,7 +9,7 @@ const stockItemSchema = new mongoose.Schema({
   },
   unit: {
     type: String,
-    enum: ["PCS", "KG", "LTR", "PACKET", "BOTTLE", "BAG"],
+    enum: ["PCS", "KG", "LTR"],
     set: (value) => value.toUpperCase(),
     required: true,
   },
