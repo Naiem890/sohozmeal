@@ -158,7 +158,7 @@ export const StockItemsList = ({
         className=""
       >
         <div className="flex gap-2">
-          <div className="w-full">
+          <div className="grow">
             <label className="block text-sm font-medium leading-6 text-gray-600">
               Name
             </label>
@@ -172,7 +172,7 @@ export const StockItemsList = ({
               className={`${fixedInputClass} !text-xs h-9 mt-2`}
             />
           </div>
-          <div className="w-full">
+          <div className="">
             <label className="block text-sm font-medium leading-6 text-gray-600">
               Unit
             </label>
@@ -193,7 +193,7 @@ export const StockItemsList = ({
               ))}
             </select>
           </div>
-          <div className="w-full">
+          <div className="">
             <label className="block text-sm font-medium leading-6 text-gray-600">
               Category
             </label>

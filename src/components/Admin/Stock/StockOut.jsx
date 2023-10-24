@@ -1,51 +1,113 @@
 import React, { useState } from "react";
 import { fixedButtonClass, fixedInputClass } from "../../../Utils/constant";
+import { Axios } from "../../../api/api";
+import toast from "react-hot-toast";
 
-export const StockOut = () => {
-  const [itemName, setItemName] = useState("");
-  const [quantity, setQuantity] = useState(0);
-  const [unit, setUnit] = useState("");
+export const StockOut = ({ stockItems, refetchHandler }) => {
+  const [selectedItem, setSelectedItem] = useState(null);
+
+  const handleStockOut = async (e) => {
+    e.preventDefault();
+    const quantity = +e.target.quantity.value;
+    const price = +e.target.price.value;
+    const item = selectedItem._id;
+    console.log(item, quantity, price);
+
+    try {
+      await Axios.post("/stock", {
+        stock: {
+          item,
+          quantity,
+          price,
+        },
+      });
+      toast.success("Stock added successfully!");
+      refetchHandler();
+      reset();
+      e.target.reset();
+    } catch (error) {
+      console.error("Error while adding stock:", error);
+      toast.error(error.response.data.error);
+    }
+  };
+
+  const reset = () => {
+    setSelectedItem(null);
+  };
+
   return (
-    <div className="grid grid-cols-3 gap-x-6 gap-y-3">
-      <div className="">
-        <label className="block text-sm font-medium leading-6 text-gray-600">
-          Item Name
-        </label>
-        <input
-          type="text"
-          value={itemName}
-          onChange={(e) => setItemName(e.target.value)}
-          placeholder="Type here"
-          className={`${fixedInputClass} mt-2 h-10`}
-        />
+    <form onSubmit={handleStockOut} className="">
+      <div className="flex gap-2">
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Date
+          </label>
+          <input
+            className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
+            type="date"
+            placeholder="eg: kg"
+          />
+        </div>
+        <div className="grow">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Meal
+          </label>
+          <select
+            required
+            name="unit"
+            className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 disabled:bg-gray-200-200 mt-2`}
+          >
+            <option value="" disabled selected>
+              Meal
+            </option>
+            {["BREAKFAST", "LUNCH", "DINNER"].map((meal) => (
+              <option key={meal} value={meal}>
+                {meal}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Item
+          </label>
+          <select
+            required
+            name="unit"
+            className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 disabled:bg-gray-200-200 mt-2`}
+          >
+            <option value="" disabled selected>
+              Item
+            </option>
+            {stockItems.map((item) => (
+              <option key={item._id} value={item._id}>
+                {item.name} - {item.unit}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Quantity
+          </label>
+          <input
+            className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
+            type="number"
+            name="quantity"
+            placeholder="eg: 10"
+            required
+          />
+        </div>
       </div>
-      <div className="">
-        <label className="block text-sm font-medium leading-6 text-gray-600">
-          Quantity
-        </label>
-        <input
-          type="number"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          placeholder="Type here"
-          className={`${fixedInputClass} mt-2 h-10`}
-        />
+      <div className="flex justify-end gap-3 mt-4">
+        <button
+          type="submit"
+          className={`${fixedButtonClass} btn-xs sm:w-24 !h-9`}
+        >
+          Stock Out
+        </button>
       </div>
-      <div className="">
-        <label className="block text-sm font-medium leading-6 text-gray-600">
-          Unit
-        </label>
-        <input
-          type="text"
-          value={unit}
-          onChange={(e) => setUnit(e.target.value)}
-          placeholder="Type here"
-          className={`${fixedInputClass} mt-2 h-10`}
-        />
-      </div>
-      <div className="col-span-full flex justify-end">
-        <button className={`${fixedButtonClass} btn-md sm:w-32`}>Update</button>
-      </div>
-    </div>
+    </form>
   );
 };

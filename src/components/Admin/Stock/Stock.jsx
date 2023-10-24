@@ -88,7 +88,7 @@ export const Stock = () => {
       <div className="grid grid-cols-2 gap-16">
         <StockSummaryTable stocks={stocks} />
         <div>
-          <div className="mb-8 ">
+          <div className="mb-8">
             <div className="join join-vertical lg:join-horizontal">
               <button
                 onClick={() => setMode(MODE.STOCK_IN)}

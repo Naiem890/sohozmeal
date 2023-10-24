@@ -8,7 +8,6 @@ export const StockIn = ({ stockItems, refetchHandler }) => {
 
   const handleStockIn = async (e) => {
     e.preventDefault();
-    console.log(selectedItem);
     const quantity = +e.target.quantity.value;
     const price = +e.target.price.value;
     const item = selectedItem._id;
@@ -38,7 +37,7 @@ export const StockIn = ({ stockItems, refetchHandler }) => {
   return (
     <form onSubmit={handleStockIn} className="">
       <div className="flex gap-2">
-        <div className="">
+        <div className="grow">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Item
           </label>
@@ -58,23 +57,12 @@ export const StockIn = ({ stockItems, refetchHandler }) => {
             </option>
             {stockItems.map((item) => (
               <option key={item._id} value={item._id}>
-                {item.name}
+                {item.name} - {item.unit}
               </option>
             ))}
           </select>
         </div>
-        <div className="">
-          <label className="block text-sm font-medium leading-6 text-gray-600">
-            Unit
-          </label>
-          <input
-            className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
-            type="text"
-            value={selectedItem?.unit}
-            placeholder="eg: kg"
-            disabled
-          />
-        </div>
+
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Quantity
