@@ -33,8 +33,10 @@ router.post("/item", validateToken, async (req, res) => {
 // Get all Stock Items
 router.get("/item", validateToken, async (req, res) => {
   try {
-    const stockItems = await StockItem.find();
-    res.json(stockItems);
+    const stockItems = await StockItem.find().sort({ category: -1 });
+    const unitEnum = StockItem.schema.path("unit").enumValues;
+    const categoryEnum = StockItem.schema.path("category").enumValues;
+    res.json({ stockItems, units: unitEnum, categories: categoryEnum });
   } catch (error) {
     res.status(500).json({ error: "Error retrieving stock items" });
   }
@@ -44,7 +46,8 @@ router.get("/item", validateToken, async (req, res) => {
 router.put("/item/:id", validateToken, async (req, res) => {
   try {
     const itemId = req.params.id;
-    const itemData = req.body;
+    const { item: itemData } = req.body;
+    console.log(itemData);
     const updatedItem = await StockItem.findByIdAndUpdate(itemId, itemData, {
       new: true,
     });
@@ -79,7 +82,8 @@ router.delete("/item/:id", validateToken, async (req, res) => {
       return res.status(404).json({ error: "Stock item not found" });
     }
 
-    res.json(deletedItem);
+    // write a success message to the response
+    res.json({ message: "Stock item deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Error deleting stock item" });
   }
@@ -94,15 +98,36 @@ router.post("/", validateToken, async (req, res) => {
         .json({ error: "Stock data is missing in the request body" });
     }
 
-    const stockData = req.body?.stock;
-    const stock = new Stock(stockData);
+    const stockData = req.body.stock;
+    const { item: itemId } = stockData;
+    const stock = await Stock.findOne({ item: itemId });
 
-    // Save the Stock using a promise
-    const savedStock = await stock.save();
+    if (!stock) {
+      // If the stock doesn't exist, create a new one with the given data
+      const newStock = new Stock(stockData);
+      const savedStock = await newStock.save();
+      return res.status(201).json(savedStock);
+    }
 
-    res.status(201).json(savedStock);
+    // Calculate the new price based on the previous price and quantity
+    const { price: prevPrice, quantity: prevQuantity } = stock;
+    const { quantity: newQuantity, price: newPrice } = stockData;
+    const totalPrice = prevPrice * prevQuantity + newPrice * newQuantity;
+    const newPricePerUnit = (totalPrice / (prevQuantity + newQuantity)).toFixed(
+      2
+    );
+
+    // Update the stock with the new quantity and price
+    const updatedStock = await Stock.findOneAndUpdate(
+      { item: itemId },
+      { quantity: prevQuantity + newQuantity, price: newPricePerUnit },
+      { new: true }
+    );
+
+    res.json(updatedStock);
   } catch (error) {
-    res.status(500).json({ error: "Error creating stock" });
+    console.log("error =>", error);
+    res.status(500).json({ error: "Error creating/updating stock" });
   }
 });
 
