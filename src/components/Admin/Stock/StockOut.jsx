@@ -4,35 +4,28 @@ import { Axios } from "../../../api/api";
 import toast from "react-hot-toast";
 
 export const StockOut = ({ stockItems, refetchHandler }) => {
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItem, setSelectedItemId] = useState(stockItems[0]);
 
   const handleStockOut = async (e) => {
     e.preventDefault();
     const quantity = +e.target.quantity.value;
-    const price = +e.target.price.value;
     const item = selectedItem._id;
-    console.log(item, quantity, price);
-
     try {
-      await Axios.post("/stock", {
-        stock: {
-          item,
-          quantity,
-          price,
-        },
+      const response = await Axios.post(`/stock/out/${item}`, {
+        quantityToReduce: quantity,
       });
-      toast.success("Stock added successfully!");
+      toast.success("Stock out completed successfully!");
       refetchHandler();
-      reset();
-      e.target.reset();
     } catch (error) {
-      console.error("Error while adding stock:", error);
       toast.error(error.response.data.error);
     }
   };
-
-  const reset = () => {
-    setSelectedItem(null);
+  const handleItemSelect = (event) => {
+    const selectedItem = event.target.value;
+    const selectedItemObject = stockItems.find(
+      (item) => item._id === selectedItem
+    );
+    setSelectedItemId(selectedItemObject);
   };
 
   return (
@@ -75,6 +68,7 @@ export const StockOut = ({ stockItems, refetchHandler }) => {
             required
             name="unit"
             className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 disabled:bg-gray-200-200 mt-2`}
+            onChange={handleItemSelect}
           >
             <option value="" disabled selected>
               Item
