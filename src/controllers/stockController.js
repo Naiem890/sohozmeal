@@ -177,3 +177,38 @@ router.delete("/:id", validateToken, async (req, res) => {
 });
 
 module.exports = router;
+
+// Stock Out API
+router.post("/out/:id", validateToken, async (req, res) => {
+  try {
+    const itemId = req.params.id;
+    const { quantityToReduce } = req.body;
+    if (isNaN(quantityToReduce) || quantityToReduce <= 0) {
+      return res.status(400).json({ error: "Invalid quantity to reduce" });
+    }
+    const stockItem = await Stock.findOne({ item: itemId });
+    console.log(stockItem);
+
+    if (!stockItem) {
+      return res.status(404).json({ error: "Stock item not found" });
+    }
+    const currentQuantity = stockItem.quantity;
+    const newQuantity = currentQuantity - quantityToReduce;
+    console.log(
+      "newQuantity:",
+      newQuantity,
+      "currentQuantity:",
+      currentQuantity,
+      stockItem
+    );
+
+    if (newQuantity < 0) {
+      return res.status(400).json({ error: "Stock Limit exceed." });
+    }
+    stockItem.quantity = newQuantity;
+    await stockItem.save();
+    res.json({ message: "Stock out completed successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Error during stock out process" });
+  }
+});
