@@ -6,6 +6,7 @@ import { StockOut } from "./StockOut";
 import { StockItemsList } from "./StockItemsList";
 import toast from "react-hot-toast";
 import { StockSummaryTable } from "./StockSummaryTable";
+import { NonStock } from "./NonStock";
 
 const MODE = {
   STOCK_IN: "stockIn",
@@ -63,7 +64,12 @@ export const Stock = () => {
         );
       case MODE.STOCK_OUT:
         return (
-          <StockOut refetchHandler={refetchHandler} stockItems={stockItems} />
+          <StockOut
+            refetchHandler={refetchHandler}
+            stockItems={stockItems.filter((item) => {
+              return item.category === "STORED";
+            })}
+          />
         );
       case MODE.ITEMS_LIST:
         return (
@@ -75,7 +81,14 @@ export const Stock = () => {
           />
         );
       case MODE.NON_STOCK_ITEMS:
-        return;
+        return (
+          <NonStock
+            refetchHandler={refetchHandler}
+            stockItems={stockItems.filter((item) => {
+              return item.category === "NON_STORED";
+            })}
+          />
+        );
       default:
         return null;
     }

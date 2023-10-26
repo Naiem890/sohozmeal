@@ -55,11 +55,14 @@ export const StockIn = ({ stockItems, refetchHandler }) => {
             <option value="" disabled selected>
               Item
             </option>
-            {stockItems.map((item) => (
-              <option key={item._id} value={item._id}>
-                {item.name} - {item.unit}
-              </option>
-            ))}
+            {stockItems.map(
+              (item) =>
+                item.category === "STORED" && (
+                  <option key={item._id} value={item._id}>
+                    {item.name} - {item.unit}
+                  </option>
+                )
+            )}
           </select>
         </div>
 
