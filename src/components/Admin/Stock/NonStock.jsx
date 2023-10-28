@@ -39,6 +39,7 @@ export const NonStock = ({ stockItems, refetchHandler }) => {
             Date
           </label>
           <input
+            required
             className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
             type="date"
             placeholder="eg: kg"

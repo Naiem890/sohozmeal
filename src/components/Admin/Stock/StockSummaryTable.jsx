@@ -26,6 +26,7 @@ export const StockSummaryTable = ({ stocks }) => {
                 <td>{stock.quantity}</td>
                 <td>{stock.item.unit}</td>
                 <td>{stock.price}</td>
+                {/* TODO: need to change the property name */}
               </tr>
             ))}
           </tbody>

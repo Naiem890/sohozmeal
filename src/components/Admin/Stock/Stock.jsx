@@ -60,7 +60,10 @@ export const Stock = () => {
     switch (mode) {
       case MODE.STOCK_IN:
         return (
-          <StockIn refetchHandler={refetchHandler} stockItems={stockItems} />
+          <StockIn
+            refetchHandler={refetchHandler}
+            stockItems={stockItems.filter((item) => item.category === "STORED")}
+          />
         );
       case MODE.STOCK_OUT:
         return (

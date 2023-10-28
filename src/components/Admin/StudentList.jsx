@@ -27,7 +27,7 @@ export const StudentList = () => {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [search, setSearch] = useState("");
   const [student, setStudent] = useState(null);
-  const [hallId, setHallId] = useState("");
+  const [refetch, setRefetch] = useState(false);
 
   useEffect(() => {
     fetchStudents();
@@ -37,7 +37,7 @@ export const StudentList = () => {
       console.log("students", result.data);
       setStudents(result.data);
     }
-  }, []);
+  }, [refetch]);
 
   const toggleSort = (column) => {
     if (sortBy === column) {
@@ -46,6 +46,10 @@ export const StudentList = () => {
       setSortBy(column);
       setSortAsc(true);
     }
+  };
+
+  const refetchHandler = () => {
+    setRefetch((prev) => !prev);
   };
 
   useEffect(() => {
@@ -102,14 +106,8 @@ export const StudentList = () => {
     setShowModal(true);
     setStudent(student);
   };
-  const handleAddAccount = async () => {
-    try {
-      const response = await Axios.get("/student/hallId");
-      setHallId(response.data.hallId);
-      setShowAddStudentModal(true);
-    } catch (error) {
-      console.log(error);
-    }
+  const handleAddAccount = () => {
+    setShowAddStudentModal(true);
   };
 
   const handleResetPassword = async (student) => {
@@ -302,8 +300,7 @@ export const StudentList = () => {
       <AddStudentModal
         showAddStudentModal={showAddStudentModal}
         setShowAddStudentModal={setShowAddStudentModal}
-        setStudents={setStudents}
-        hallId={hallId}
+        refetchHandler={refetchHandler}
       />
       <EditStudentModal
         showModal={showModal}

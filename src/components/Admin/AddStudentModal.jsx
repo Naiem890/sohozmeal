@@ -8,72 +8,50 @@ import {
   fixedInputClass,
 } from "../../Utils/constant";
 import { XCircleIcon } from "@heroicons/react/24/outline";
-import { set } from "date-fns";
 
 export const AddStudentModal = ({
   showAddStudentModal,
   setShowAddStudentModal,
-  setStudents,
-  hallId,
+  refetchHandler,
 }) => {
-  const [student, setStudent] = useState({
-    name: "",
-    phoneNumber: "",
-    studentId: "",
-    department: "CSE",
-    batch: "",
-    gender: "MALE",
-    hallId: hallId,
-  });
+  const [hallId, setHallId] = useState("");
+
   useEffect(() => {
-    setStudent((prevStudent) => ({
-      ...prevStudent,
-      hallId: hallId,
-    }));
-  }, [hallId]);
+    const getHallId = async () => {
+      const response = await Axios.get("/student/hallId");
+      setHallId(response.data.hallId);
+    };
+    getHallId();
+  }, []);
+
   const handleAddStudent = async (e) => {
     e.preventDefault();
     try {
+      const name = e.target.name.value;
+      const phoneNumber = e.target.phoneNumber.value;
+      const studentId = e.target.studentId.value;
+      const department = e.target.department.value;
+      const batch = e.target.batch.value;
+      const gender = e.target.gender.value;
+
+      const student = {
+        name,
+        phoneNumber,
+        studentId,
+        department,
+        batch,
+        hallId,
+        gender,
+      };
+
       console.log(student);
-      const response = await Axios.post("student/addStudent", student);
-      setStudents((students) => [...students, response.data.student]);
-      setStudent({
-        name: "",
-        phoneNumber: "",
-        studentId: "",
-        department: "CSE",
-        batch: "",
-        gender: "MALE",
-      });
+
+      const response = await Axios.post("student/add", student);
       setShowAddStudentModal(false);
+      refetchHandler();
       toast.success(response.data.message);
     } catch (error) {
       toast.error(error.response.data.message);
-    }
-  };
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-
-    if (name === "batch") {
-      let parsedBatch;
-      if (/^\d+$/.test(value)) {
-        if (value !== "0") {
-          parsedBatch = parseInt(value, 10);
-        } else {
-          parsedBatch = 0;
-        }
-      } else {
-        parsedBatch = "";
-      }
-      setStudent((prevStudent) => ({
-        ...prevStudent,
-        [name]: parsedBatch,
-      }));
-    } else {
-      setStudent((prevStudent) => ({
-        ...prevStudent,
-        [name]: value,
-      }));
     }
   };
 
@@ -102,8 +80,6 @@ export const AddStudentModal = ({
           <input
             type="text"
             name="name"
-            value={student.name}
-            onChange={handleInputChange}
             placeholder="Type here"
             className={`${fixedInputClass} mt-2`}
           />
@@ -115,8 +91,6 @@ export const AddStudentModal = ({
           <input
             type="text"
             name="phoneNumber"
-            value={student.phoneNumber}
-            onChange={handleInputChange}
             placeholder="eg: 01712345678"
             className={`${fixedInputClass} mt-2`}
           />
@@ -128,8 +102,6 @@ export const AddStudentModal = ({
           <input
             type="text"
             name="studentId"
-            value={student.studentId}
-            onChange={handleInputChange}
             placeholder="Type here"
             className={`${fixedInputClass} mt-2`}
           />
@@ -152,12 +124,7 @@ export const AddStudentModal = ({
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Department
           </label>
-          <select
-            name="department"
-            value={student.department}
-            onChange={handleInputChange}
-            className={`${fixedInputClass} mt-2`}
-          >
+          <select name="department" className={`${fixedInputClass} mt-2`}>
             <option disabled selected>
               Select Department
             </option>
@@ -175,8 +142,6 @@ export const AddStudentModal = ({
           <input
             type="number"
             name="batch"
-            value={student.batch}
-            onChange={handleInputChange}
             placeholder="Type here"
             className={`${fixedInputClass} mt-2`}
           />
@@ -185,21 +150,12 @@ export const AddStudentModal = ({
           <label className="label">
             <span className="label-text uppercase text-gray-600">Gender</span>
           </label>
-          <select
-            name="gender"
-            value={student.gender}
-            onChange={handleInputChange}
-            className={`${fixedInputClass} mt-2`}
-          >
+          <select name="gender" className={`${fixedInputClass} mt-2`}>
             <option disabled selected>
               Select Gender
             </option>
-            <option key="Male" value="MALE">
-              MALE
-            </option>
-            <option key="Female" value="FEMALE">
-              FEMALE
-            </option>
+            <option value="MALE">MALE</option>
+            <option value="FEMALE">FEMALE</option>
           </select>
         </div>
         <div className="mt-4 col-span-full flex justify-end gap-6">

@@ -144,9 +144,9 @@ export const EditStudentModal = ({
             className={`${fixedInputClass} mt-2`}
           />
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">Gender</span>
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Gender
           </label>
           <select
             value={student?.gender}
@@ -158,12 +158,8 @@ export const EditStudentModal = ({
             <option disabled selected>
               Select Gender
             </option>
-            <option key="Male" value="MALE">
-              MALE
-            </option>
-            <option key="Female" value="FEMALE">
-              FEMALE
-            </option>
+            <option value="MALE">MALE</option>
+            <option value="FEMALE">FEMALE</option>
           </select>
         </div>
         <div className="mt-4 col-span-full flex justify-end gap-6">
