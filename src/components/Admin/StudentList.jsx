@@ -14,7 +14,8 @@ import {
 } from "../../Utils/constant";
 import { Axios } from "../../api/api";
 import { EditStudentModal } from "./EditStudentModal";
-
+import { AddStudentModal } from "./AddStudentModal";
+import { set } from "date-fns";
 export const StudentList = () => {
   const [sortBy, setSortBy] = useState(null);
   const [sortAsc, setSortAsc] = useState(true);
@@ -23,8 +24,10 @@ export const StudentList = () => {
   const [department, setDepartment] = useState("");
   const [gender, setGender] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [search, setSearch] = useState("");
   const [student, setStudent] = useState(null);
+  const [hallId, setHallId] = useState("");
 
   useEffect(() => {
     fetchStudents();
@@ -98,6 +101,15 @@ export const StudentList = () => {
   const handleEditAccount = (student) => {
     setShowModal(true);
     setStudent(student);
+  };
+  const handleAddAccount = async () => {
+    try {
+      const response = await Axios.get("/student/hallId");
+      setHallId(response.data.hallId);
+      setShowAddStudentModal(true);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handleResetPassword = async (student) => {
@@ -208,7 +220,12 @@ export const StudentList = () => {
             placeholder="Search Name, Roll, Hall ID"
             className={`${fixedInputClass} h-auto basis-2/4`}
           />
-          <button className={`${fixedButtonClass} btn-sm h-auto basis-40 ml-2`}>
+          <button
+            onClick={() => {
+              handleAddAccount();
+            }}
+            className={`${fixedButtonClass} btn-sm h-auto basis-40 ml-2`}
+          >
             <PlusIcon className="w-4 h-4" /> Add Student
           </button>
         </div>
@@ -282,6 +299,12 @@ export const StudentList = () => {
         </table>
       </div>
 
+      <AddStudentModal
+        showAddStudentModal={showAddStudentModal}
+        setShowAddStudentModal={setShowAddStudentModal}
+        setStudents={setStudents}
+        hallId={hallId}
+      />
       <EditStudentModal
         showModal={showModal}
         setShowModal={setShowModal}
