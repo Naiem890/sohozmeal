@@ -44,6 +44,7 @@ router.delete(
     }
   }
 );
+
 router.get("/all", validateToken, checkAdminRole, async (req, res) => {
   try {
     // Fetch all students from the database
@@ -101,6 +102,7 @@ router.put("/", validateToken, async (req, res) => {
     res.status(500).json({ message: "An error occurred" });
   }
 });
+
 router.get("/hallId", async (req, res) => {
   try {
     const existingHallIds = await Student.distinct("hallId").exec();
@@ -117,7 +119,7 @@ router.get("/hallId", async (req, res) => {
   }
 });
 
-router.post("/addStudent", validateToken, checkAdminRole, async (req, res) => {
+router.post("/add", validateToken, checkAdminRole, async (req, res) => {
   try {
     const newStudent = new Student(req.body);
     console.log("newStudent:", newStudent);
