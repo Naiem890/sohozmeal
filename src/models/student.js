@@ -1,11 +1,18 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+
 
 const studentSchema = new mongoose.Schema({
   studentId: { type: String, required: true, unique: true },
   phoneNumber: { type: String, unique: true, default: null },
   hallId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
-  password: { type: String, required: true },
+  password: {
+    type: String,
+    default: function () {
+      return bcrypt.hashSync(this.studentId, 10);
+    }
+  },
   department: {
     type: String,
     enum: [

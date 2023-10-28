@@ -74,7 +74,6 @@ router.put("/", validateToken, async (req, res) => {
     batch,
     status,
   } = req.body;
-  console.log("here", studentId);
   try {
     const student = await Student.findOne({ studentId }, { password: 0 });
     if (!student) {
@@ -100,6 +99,42 @@ router.put("/", validateToken, async (req, res) => {
   } catch (error) {
     console.log("error:", error);
     res.status(500).json({ message: "An error occurred" });
+  }
+});
+router.get("/hallId", async (req, res) => {
+  try {
+    const existingHallIds = await Student.distinct("hallId").exec();
+    const existingSet = new Set(existingHallIds);
+    console.log(existingSet, "existingSet");
+    let availableId = 1000;
+    while (existingSet.has(availableId.toString())) {
+      availableId++;
+    }
+    res.status(200).json({ hallId: availableId.toString() });
+  } catch (error) {
+    console.error("An error occurred:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+router.post("/addStudent", validateToken, checkAdminRole, async (req, res) => {
+  try {
+    const newStudent = new Student(req.body);
+    console.log("newStudent:", newStudent);
+    await newStudent.save();
+    res
+      .status(201)
+      .json({ message: "Student added successfully", student: newStudent });
+  } catch (error) {
+    if (error.code === 11000 && error.name === "MongoError") {
+      return res
+        .status(400)
+        .json({ message: "Duplicate student ID, phone number, or hall ID" });
+    } else {
+      res
+        .status(500)
+        .json({ message: "Error adding the student", error: error.message });
+    }
   }
 });
 
