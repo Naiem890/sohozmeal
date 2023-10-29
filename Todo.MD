@@ -1,19 +1,22 @@
 # Student
 
-- Meal Plan table responsiveness
-- Toast notification library change(make it smaller)
-- Meal Routine view (shovo)
+- * Meal Plan table responsiveness
+- * Toast notification library change(make it smaller)
+- * Meal Routine view (shovo)
 - Mess bill
 
 # Admin
 
-- Add student
+- * Add student
   - Redesign the whole table
   - Add new student to db
-- Meal Routine edit page (shovo)
-- Get the clear idea about stock and how it works
-- Get the clear idea about meal generate
-- Stock in/out page
+- * Meal Routine edit page (shovo)
+- * Get the clear idea about stock and how it works
+- * Get the clear idea about meal generate
+- * Stock in/out page
+- Expense (Stock Out + Non Stock + Extra cost) calculation
+- Bill Generation
+- Meal page (admin) Update meal and lock
 - Room allocation (optional)
 - Complain system (optional)
 
