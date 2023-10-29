@@ -13,16 +13,17 @@ export const AddStudentModal = ({
   showAddStudentModal,
   setShowAddStudentModal,
   refetchHandler,
+  setRefetchHallIdHandler,
+  refetchHallIdHandler,
 }) => {
   const [hallId, setHallId] = useState("");
-
   useEffect(() => {
     const getHallId = async () => {
       const response = await Axios.get("/student/hallId");
       setHallId(response.data.hallId);
     };
     getHallId();
-  }, []);
+  }, [refetchHallIdHandler]);
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
@@ -48,7 +49,9 @@ export const AddStudentModal = ({
 
       const response = await Axios.post("student/add", student);
       setShowAddStudentModal(false);
+      e.target.reset();
       refetchHandler();
+      setRefetchHallIdHandler((prev) => !prev);
       toast.success(response.data.message);
     } catch (error) {
       toast.error(error.response.data.message);

@@ -28,6 +28,7 @@ export const StudentList = () => {
   const [search, setSearch] = useState("");
   const [student, setStudent] = useState(null);
   const [refetch, setRefetch] = useState(false);
+  const [refetchHallIdHandler, setRefetchHallIdHandler] = useState(false);
 
   useEffect(() => {
     fetchStudents();
@@ -167,6 +168,7 @@ export const StudentList = () => {
       try {
         const result = await Axios.delete(`/student/${student.studentId}`);
         toast.success(result.data.message);
+        setRefetchHallIdHandler((prev) => !prev);
         setStudents(students.filter((s) => s._id !== student._id));
       } catch (error) {
         console.log(error);
@@ -301,6 +303,8 @@ export const StudentList = () => {
         showAddStudentModal={showAddStudentModal}
         setShowAddStudentModal={setShowAddStudentModal}
         refetchHandler={refetchHandler}
+        setRefetchHallIdHandler={setRefetchHallIdHandler}
+        refetchHallIdHandler={refetchHallIdHandler}
       />
       <EditStudentModal
         showModal={showModal}
