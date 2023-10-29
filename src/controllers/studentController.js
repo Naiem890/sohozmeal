@@ -102,36 +102,42 @@ router.put("/", validateToken, async (req, res) => {
     res.status(500).json({ message: "An error occurred" });
   }
 });
-
-router.get("/hallId", async (req, res) => {
+//get the last hall id and increment by 1
+router.get("/hallId", validateToken, checkAdminRole, async (req, res) => {
   try {
-    const existingHallIds = await Student.distinct("hallId").exec();
-    const existingSet = new Set(existingHallIds);
-    console.log(existingSet, "existingSet");
-    let availableId = 1000;
-    while (existingSet.has(availableId.toString())) {
-      availableId++;
-    }
+    const lastHallId = await Student.aggregate([
+      { $group: { _id: null, maxHallId: { $max: "$hallId" } } },
+      { $project: { _id: 0, maxHallId: 1 } },
+    ]);
+
+    let availableId =
+      lastHallId.length > 0 ? parseInt(lastHallId[0].maxHallId) + 1 : 1000;
+
     res.status(200).json({ hallId: availableId.toString() });
   } catch (error) {
     console.error("An error occurred:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
+//add student
 router.post("/add", validateToken, checkAdminRole, async (req, res) => {
   try {
     const newStudent = new Student(req.body);
-    console.log("newStudent:", newStudent);
     await newStudent.save();
     res
       .status(201)
       .json({ message: "Student added successfully", student: newStudent });
   } catch (error) {
-    if (error.code === 11000 && error.name === "MongoError") {
-      return res
-        .status(400)
-        .json({ message: "Duplicate student ID, phone number, or hall ID" });
+    if (error.name === "MongoServerError" && error.code === 11000) {
+      let errorMessage = "Unknown error occurred";
+      if (error.message.includes("studentId")) {
+        errorMessage = "Duplicate student ID";
+      } else if (error.message.includes("phoneNumber")) {
+        errorMessage = "Duplicate phone number";
+      } else if (error.message.includes("hallId")) {
+        errorMessage = "Duplicate hall ID";
+      }
+      res.status(400).json({ message: errorMessage });
     } else {
       res
         .status(500)
