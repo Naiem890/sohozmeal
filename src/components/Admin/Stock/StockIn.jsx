@@ -11,6 +11,7 @@ export const StockIn = ({ stockItems, refetchHandler }) => {
     const quantity = +e.target.quantity.value;
     const price = +e.target.price.value;
     const item = selectedItem._id;
+    const date = e.target.date.value;
     console.log(item, quantity, price);
 
     try {
@@ -19,6 +20,7 @@ export const StockIn = ({ stockItems, refetchHandler }) => {
           item,
           quantity,
           price,
+          date,
         },
       });
       toast.success("Stock added successfully!");
@@ -37,6 +39,18 @@ export const StockIn = ({ stockItems, refetchHandler }) => {
   return (
     <form onSubmit={handleStockIn} className="">
       <div className="flex gap-2">
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Date
+          </label>
+          <input
+            required
+            className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
+            type="date"
+            name="date"
+            defaultValue={new Date().toISOString().split("T")[0]}
+          />
+        </div>
         <div className="grow">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Item

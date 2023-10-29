@@ -22,6 +22,7 @@ export const Stock = () => {
   const [units, setUnits] = useState([]);
   const [categories, setCategories] = useState([]);
   const [refetch, setRefetch] = useState(false);
+  const [stockTransaction, setStockTransaction] = useState([]);
 
   useEffect(() => {
     const fetchStocks = async () => {
@@ -48,8 +49,19 @@ export const Stock = () => {
       }
     };
 
+    const fetchStockTransaction = async () => {
+      try {
+        const res = await Axios("/stock/transaction");
+        setStockTransaction(res.data);
+      } catch (error) {
+        console.error("Error while fetching stock items:", error);
+        toast.error(error.response.data.error);
+      }
+    };
+
     fetchStockItems();
     fetchStocks();
+    fetchStockTransaction();
   }, [refetch]);
 
   const refetchHandler = () => {
@@ -66,14 +78,7 @@ export const Stock = () => {
           />
         );
       case MODE.STOCK_OUT:
-        return (
-          <StockOut
-            refetchHandler={refetchHandler}
-            stockItems={stockItems.filter((item) => {
-              return item.category === "STORED";
-            })}
-          />
-        );
+        return <StockOut refetchHandler={refetchHandler} stocks={stocks} />;
       case MODE.ITEMS_LIST:
         return (
           <StockItemsList
@@ -149,6 +154,42 @@ export const Stock = () => {
             </div>
           </div>
           {renderModeComponent()}
+        </div>
+      </div>
+      <div className="">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Stock Transaction</h2>
+        </div>
+        <div className="overflow-x-auto max-h-screen px-1 mt-4">
+          <table className="table table-sm w-full">
+            <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
+              <tr className="">
+                <th className="uppercase">Name</th>
+                <th className="uppercase">Quantity Change</th>
+                <th className="uppercase">Type</th>
+                <th className="uppercase">Meal</th>
+                <th className="uppercase">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stockTransaction.map((stock) => (
+                <tr
+                  className={`hover:shadow-sm rounded-lg transition-all border-b-0 ${
+                    stock.type === "IN" ? "bg-green-100" : "bg-red-100"
+                  }`}
+                  key={stock._id}
+                >
+                  <td>{stock.item.name}</td>
+                  <td>
+                    {stock.quantityChange} {stock.item.unit}
+                  </td>
+                  <td>{stock.type}</td>
+                  <td>{stock.meal}</td>
+                  <td>{stock.date.split("T")[0]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

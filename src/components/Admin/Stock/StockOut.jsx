@@ -3,34 +3,31 @@ import { fixedButtonClass, fixedInputClass } from "../../../Utils/constant";
 import { Axios } from "../../../api/api";
 import toast from "react-hot-toast";
 
-export const StockOut = ({ stockItems, refetchHandler }) => {
-  const [selectedItem, setSelectedItemId] = useState(stockItems[0]);
-
+export const StockOut = ({ stocks, refetchHandler }) => {
   const handleStockOut = async (e) => {
     e.preventDefault();
+
     const quantity = +e.target.quantity.value;
-    const item = selectedItem._id;
+    const stockId = e.target.item.value;
+    const meal = e.target.meal.value;
+    const date = e.target.date.value;
+
     try {
-      const response = await Axios.post(`/stock/out/${item}`, {
+      const response = await Axios.post(`/stock/out/${stockId}`, {
         quantityToReduce: quantity,
+        meal,
+        date,
       });
-      toast.success("Stock out completed successfully!");
+      toast.success(response.data.message);
       refetchHandler();
     } catch (error) {
       toast.error(error.response.data.error);
     }
   };
-  const handleItemSelect = (event) => {
-    const selectedItem = event.target.value;
-    const selectedItemObject = stockItems.find(
-      (item) => item._id === selectedItem
-    );
-    setSelectedItemId(selectedItemObject);
-  };
 
   return (
     <form onSubmit={handleStockOut} className="">
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Date
@@ -39,16 +36,17 @@ export const StockOut = ({ stockItems, refetchHandler }) => {
             required
             className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
             type="date"
-            placeholder="eg: kg"
+            name="date"
+            defaultValue={new Date().toISOString().split("T")[0]}
           />
         </div>
-        <div className="grow">
+        <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Meal
           </label>
           <select
             required
-            name="unit"
+            name="meal"
             className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 disabled:bg-gray-200-200 mt-2`}
           >
             <option value="" disabled selected>
@@ -67,15 +65,14 @@ export const StockOut = ({ stockItems, refetchHandler }) => {
           </label>
           <select
             required
-            name="unit"
+            name="item"
             className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 disabled:bg-gray-200-200 mt-2`}
-            onChange={handleItemSelect}
           >
             <option value="" disabled selected>
               Item
             </option>
-            {stockItems.map((item) => (
-              <option key={item._id} value={item._id}>
+            {stocks.map(({ item, _id }) => (
+              <option key={_id} value={_id}>
                 {item.name} - {item.unit}
               </option>
             ))}
