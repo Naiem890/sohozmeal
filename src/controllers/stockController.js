@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { Stock, StockItem } = require("../models/stock");
+const { Stock, StockItem, StockTransaction } = require("../models/stock");
 const { validateToken } = require("../utils/validateToken");
 
 // Create a new Stock Item
@@ -89,7 +89,17 @@ router.delete("/item/:id", validateToken, async (req, res) => {
   }
 });
 
-// Create a new Stock
+// Get all Stocks
+router.get("/", validateToken, async (req, res) => {
+  try {
+    const stocks = await Stock.find().populate("item");
+    res.json(stocks);
+  } catch (error) {
+    res.status(500).json({ error: "Error retrieving stocks" });
+  }
+});
+
+// Create a new Stock or update an existing one
 router.post("/", validateToken, async (req, res) => {
   try {
     if (!req.body?.stock) {
@@ -99,7 +109,8 @@ router.post("/", validateToken, async (req, res) => {
     }
 
     const stockData = req.body.stock;
-    const { item: itemId } = stockData;
+    const { item: itemId, date } = stockData;
+    delete stockData.date;
     const stock = await Stock.findOne({ item: itemId });
 
     if (!stock) {
@@ -124,20 +135,22 @@ router.post("/", validateToken, async (req, res) => {
       { new: true }
     );
 
-    res.json(updatedStock);
+    // Create a new StockTransaction record for stock in
+    const newStockTransaction = new StockTransaction({
+      item: itemId,
+      quantityChange: newQuantity,
+      type: "IN",
+      meal: "-", // Set meal type as needed
+      date: new Date(date),
+    });
+
+    // Save the newStockTransaction
+    await newStockTransaction.save();
+
+    res.json({ updatedStock, newStockTransaction });
   } catch (error) {
     console.log("error =>", error);
     res.status(500).json({ error: "Error creating/updating stock" });
-  }
-});
-
-// Get all Stocks
-router.get("/", validateToken, async (req, res) => {
-  try {
-    const stocks = await Stock.find().populate("item");
-    res.json(stocks);
-  } catch (error) {
-    res.status(500).json({ error: "Error retrieving stocks" });
   }
 });
 
@@ -176,39 +189,157 @@ router.delete("/:id", validateToken, async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // Stock Out API
-router.post("/out/:id", validateToken, async (req, res) => {
+router.post("/out/:stockId", validateToken, async (req, res) => {
   try {
-    const itemId = req.params.id;
-    const { quantityToReduce } = req.body;
+    const stockId = req.params.stockId;
+    const { quantityToReduce, date, meal } = req.body;
+
     if (isNaN(quantityToReduce) || quantityToReduce <= 0) {
       return res.status(400).json({ error: "Invalid quantity to reduce" });
     }
-    const stockItem = await Stock.findOne({ item: itemId });
-    console.log(stockItem);
 
+    const stockItem = await Stock.findOne({ _id: stockId });
     if (!stockItem) {
       return res.status(404).json({ error: "Stock item not found" });
     }
+
+    const itemId = stockItem.item;
     const currentQuantity = stockItem.quantity;
     const newQuantity = currentQuantity - quantityToReduce;
-    console.log(
-      "newQuantity:",
-      newQuantity,
-      "currentQuantity:",
-      currentQuantity,
-      stockItem
-    );
 
     if (newQuantity < 0) {
-      return res.status(400).json({ error: "Stock Limit exceed." });
+      return res.status(400).json({ error: "Stock Limit exceeded." });
     }
+
+    // Update the stock item's quantity
     stockItem.quantity = newQuantity;
     await stockItem.save();
+
+    // Create a new StockTransaction record for stock out
+    const newStockTransaction = new StockTransaction({
+      item: itemId,
+      quantityChange: quantityToReduce,
+      type: "OUT",
+      meal,
+      date: new Date(date),
+    });
+
+    // Calculate the transaction amount for stock out (assuming you have price information)
+    const stockItemPrice = stockItem.price; // Assuming you have a price field in your stock item schema
+    newStockTransaction.transactionAmount = quantityToReduce * stockItemPrice;
+
+    // Save the stock transaction
+    await newStockTransaction.save();
+
     res.json({ message: "Stock out completed successfully" });
   } catch (error) {
     res.status(500).json({ error: "Error during stock out process" });
   }
 });
+
+// Get all Stock Transactions
+router.get("/transaction", validateToken, async (req, res) => {
+  try {
+    const stockTransactions = await StockTransaction.find()
+      .sort({ date: -1 })
+      .populate("item");
+    res.json(stockTransactions);
+  } catch (error) {
+    res.status(500).json({ error: "Error retrieving stock transactions" });
+  }
+});
+
+// Update a stock transaction
+router.put("/transaction/:id", validateToken, async (req, res) => {
+  try {
+    const transactionId = req.params.id;
+    const { quantityChange, date, meal } = req.body;
+
+    if (isNaN(quantityChange)) {
+      return res.status(400).json({ error: "Invalid quantity change" });
+    }
+
+    // Find the stock transaction by ID
+    const stockTransaction = await StockTransaction.findById(transactionId);
+
+    if (!stockTransaction) {
+      return res.status(404).json({ error: "Stock transaction not found" });
+    }
+
+    // Update the stock transaction fields
+    const prevQuantityChange = stockTransaction.quantityChange;
+    stockTransaction.quantityChange = parseFloat(quantityChange).toFixed(2);
+    if (date) {
+      stockTransaction.date = new Date(date);
+    }
+    if (meal) {
+      stockTransaction.meal = meal;
+    }
+
+    // Find the associated stock item
+    const stockItem = await Stock.findOne({ item: stockTransaction.item });
+
+    let updatedQuantityChange = stockItem.quantity;
+
+    if (stockTransaction.type === "IN") {
+      updatedQuantityChange += quantityChange - prevQuantityChange;
+    } else {
+      updatedQuantityChange += prevQuantityChange - quantityChange;
+    }
+
+    if (updatedQuantityChange < 0) {
+      return res.status(400).json({ error: "Stock Limit exceeded." });
+    }
+
+    stockItem.quantity = updatedQuantityChange;
+
+    // Save the updated stock item
+    await stockItem.save();
+
+    // Save the updated stock transaction
+    const updatedTransaction = await stockTransaction.save();
+
+    res.json(updatedTransaction);
+  } catch (error) {
+    res.status(500).json({ error: "Error updating stock transaction" });
+  }
+});
+
+// Delete a stock transaction
+router.delete("/transaction/:id", validateToken, async (req, res) => {
+  try {
+    const transactionId = req.params.id;
+
+    // Find the stock transaction by ID
+    const stockTransaction = await StockTransaction.findById(transactionId);
+
+    if (!stockTransaction) {
+      return res.status(404).json({ error: "Stock transaction not found" });
+    }
+
+    // Find the associated stock item
+    const stockItem = await Stock.findOne({ item: stockTransaction.item });
+
+    if (stockTransaction.type === "IN") {
+      // If it's a stock-in transaction, update the stock quantity accordingly
+      stockItem.quantity -= stockTransaction.quantityChange;
+    } else {
+      // If it's a stock-out transaction, update the stock quantity
+      stockItem.quantity += stockTransaction.quantityChange;
+    }
+
+    // Save the updated stock item
+    await stockItem.save();
+
+    // Delete the stock transaction
+    await StockTransaction.deleteOne({ _id: stockTransaction._id });
+
+    res.json({ message: "Stock transaction deleted successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Error deleting stock transaction" });
+  }
+});
+
+module.exports = router;

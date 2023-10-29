@@ -51,4 +51,46 @@ stockSchema.index({ item: 1 }, { unique: true });
 
 const Stock = mongoose.model("Stock", stockSchema);
 
-module.exports = { Stock, StockItem };
+const stockTransactionSchema = new mongoose.Schema(
+  {
+    item: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "StockItem",
+      required: true,
+    },
+    quantityChange: {
+      type: Number,
+      required: true,
+    },
+    date: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
+    type: {
+      type: String,
+      required: true,
+      enum: ["IN", "OUT"],
+    },
+    meal: {
+      type: String,
+      required: true,
+      enum: ["BREAKFAST", "LUNCH", "DINNER", "-"], // "-" for stock in transactions
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Add a virtual field to calculate expenseAmount
+stockTransactionSchema.virtual("transactionAmount").get(() => {
+  return this.quantityChange * this.item.price;
+});
+
+const StockTransaction = mongoose.model(
+  "StockTransaction",
+  stockTransactionSchema
+);
+
+module.exports = { Stock, StockItem, StockTransaction };
