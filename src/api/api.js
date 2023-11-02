@@ -6,14 +6,20 @@ export const Axios = axios.create({
   // baseURL: "http://localhost:5000/api",
 });
 
-// attach the auth token to every request
+// Attach the auth token to every request and handle file uploads
 Axios.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("_auth");
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
-    config.headers["Content-Type"] = "application/json";
+
+    // Check if the request has file data and set the appropriate Content-Type
+    if (config.data instanceof FormData) {
+      config.headers["Content-Type"] = "multipart/form-data";
+    } else {
+      config.headers["Content-Type"] = "application/json";
+    }
 
     return config;
   },

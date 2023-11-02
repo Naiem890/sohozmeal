@@ -16,7 +16,17 @@ export const AddStudentModal = ({
   setRefetchHallIdHandler,
   refetchHallIdHandler,
 }) => {
+  const [profileImage, setProfileImage] = useState(null);
+  const [image, setImage] = useState("");
   const [hallId, setHallId] = useState("");
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
   useEffect(() => {
     const getHallId = async () => {
       const response = await Axios.get("/student/hallId");
@@ -28,26 +38,18 @@ export const AddStudentModal = ({
   const handleAddStudent = async (e) => {
     e.preventDefault();
     try {
-      const name = e.target.name.value;
-      const phoneNumber = e.target.phoneNumber.value;
-      const studentId = e.target.studentId.value;
-      const department = e.target.department.value;
-      const batch = e.target.batch.value;
-      const gender = e.target.gender.value;
+      const formData = new FormData();
+      formData.append("profileImage", profileImage);
+      formData.append("name", e.target.name.value);
+      formData.append("phoneNumber", e.target.phoneNumber.value);
+      formData.append("studentId", e.target.studentId.value);
+      formData.append("department", e.target.department.value);
+      formData.append("batch", e.target.batch.value);
+      formData.append("gender", e.target.gender.value);
+      formData.append("hallId", e.target.hallId.value);
 
-      const student = {
-        name,
-        phoneNumber,
-        studentId,
-        department,
-        batch,
-        hallId,
-        gender,
-      };
+      const response = await Axios.post("/student/add", formData);
 
-      console.log(student);
-
-      const response = await Axios.post("student/add", student);
       setShowAddStudentModal(false);
       e.target.reset();
       refetchHandler();
@@ -76,27 +78,45 @@ export const AddStudentModal = ({
         onSubmit={handleAddStudent}
         className="grid lg:grid-cols-2 gap-4 lg:gap-x-8 mt-4"
       >
-        <div className="">
-          <label className="block text-sm font-medium leading-6 text-gray-600">
-            Full Name
-          </label>
+        <div>
+          <div className="w-32 h-32 bg-slate-600 mb-4 rounded-md">
+            <img src={image} className="w-full h-full object-contain"></img>
+          </div>
           <input
-            type="text"
-            name="name"
-            placeholder="Type here"
-            className={`${fixedInputClass} mt-2`}
+            type="file"
+            name="profileImage"
+            accept="image/*"
+            onChange={(e) => {
+              fileToBase64(e.target.files[0]).then((res) => {
+                setImage(res);
+              });
+              return setProfileImage(e.target.files[0]);
+            }}
           />
         </div>
-        <div className="">
-          <label className="block text-sm font-medium leading-6 text-gray-600">
-            Phone Number
-          </label>
-          <input
-            type="text"
-            name="phoneNumber"
-            placeholder="eg: 01712345678"
-            className={`${fixedInputClass} mt-2`}
-          />
+        <div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium leading-6 text-gray-600">
+              Full Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              placeholder="Type here"
+              className={`${fixedInputClass} mt-2`}
+            />
+          </div>
+          <div className="">
+            <label className="block text-sm font-medium leading-6 text-gray-600">
+              Phone Number
+            </label>
+            <input
+              type="text"
+              name="phoneNumber"
+              placeholder="eg: 01712345678"
+              className={`${fixedInputClass} mt-2`}
+            />
+          </div>
         </div>
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">

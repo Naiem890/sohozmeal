@@ -88,7 +88,7 @@ export const NonStock = ({ stockItems, refetchHandler }) => {
 
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
-            Price
+            Price (per unit)
           </label>
           <input
             className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
@@ -99,10 +99,22 @@ export const NonStock = ({ stockItems, refetchHandler }) => {
           />
         </div>
       </div>
-      <div className="flex justify-end gap-3 mt-4">
+      <div className="flex justify-between gap-3 mt-4">
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Quantity
+          </label>
+          <input
+            className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
+            type="number"
+            name="quantity"
+            placeholder="eg: 100"
+            required
+          />
+        </div>
         <button
           type="submit"
-          className={`${fixedButtonClass} btn-xs sm:w-24 !h-9`}
+          className={`${fixedButtonClass} btn-xs sm:w-24 !h-9 self-end`}
         >
           Stock Out
         </button>
