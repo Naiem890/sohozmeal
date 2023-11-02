@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
-
 const studentSchema = new mongoose.Schema({
   studentId: { type: String, required: true, unique: true },
   phoneNumber: { type: String, unique: true, default: null },
@@ -11,7 +10,7 @@ const studentSchema = new mongoose.Schema({
     type: String,
     default: function () {
       return bcrypt.hashSync(this.studentId, 10);
-    }
+    },
   },
   department: {
     type: String,
@@ -40,6 +39,7 @@ const studentSchema = new mongoose.Schema({
   batch: { type: Number },
   status: { default: "active", type: String, enum: ["active", "inactive"] },
   firstTimeLogin: { type: Boolean, required: true, default: true },
+  profileImage: { type: Buffer },
 });
 
 const Student = mongoose.model("Student", studentSchema);
