@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Axios } from "../../api/api";
 import { toast } from "react-hot-toast";
 import Modal from "../Common/Modal";
@@ -19,6 +19,7 @@ export const EditStudentModal = ({
   const [prevImage, setPrevImage] = useState(null);
   const [image, setImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
+  const fileInputRef = useRef(null);
 
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -35,6 +36,11 @@ export const EditStudentModal = ({
     const url = URL.createObjectURL(blob);
     return url;
   };
+  const clearFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''; // This resets the input value, clearing the selected file
+    }
+  };
 
   useEffect(() => {
     if (student?.profileImage) {
@@ -49,6 +55,8 @@ export const EditStudentModal = ({
       setImage(null);
       setPrevImage(null);
     }
+    setImageFile(null);
+    clearFileInput();
   }, [student]);
 
   const handleImageChange = async (e) => {
@@ -98,6 +106,7 @@ export const EditStudentModal = ({
     setImage(prevImage);
     setImageFile(null);
     setShowModal(false);
+    clearFileInput();
   };
 
   return (
@@ -128,6 +137,7 @@ export const EditStudentModal = ({
             type="file"
             name="profileImage"
             accept="image/*"
+            ref={fileInputRef}
             onChange={handleImageChange}
           />
         </div>
