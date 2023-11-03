@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Axios } from "../../api/api";
 import { toast } from "react-hot-toast";
 import Modal from "../Common/Modal";
@@ -15,12 +15,65 @@ export const EditStudentModal = ({
   student,
   setStudents,
   setStudent,
+  setRefetch,
+  refetch,
 }) => {
+  const [image, setImage] = useState(student);
+  const [imageFile, setImageFile] = useState(null);
+
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const createObjectURL = (buffer) => {
+    const bufferArray = new Uint8Array(buffer);
+    const blob = new Blob([bufferArray], { type: "image/jpeg" });
+    const url = URL.createObjectURL(blob);
+    return url;
+  };
+
+  useEffect(() => {
+    if (student?.profileImage) {
+      const imageUrl = student.profileImage
+        ? createObjectURL(student.profileImage.data)
+        : null;
+      setImage(imageUrl);
+    }
+  }, [student]);
+
+  const handleImageChange = async (e) => {
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const base64Image = await fileToBase64(file);
+      setImageFile(file);
+      setImage(base64Image);
+    }
+  };
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
+    const formData = new FormData();
+    formData.append("name", student.name ? student.name : "");
+    formData.append(
+      "phoneNumber",
+      student.phoneNumber ? student.phoneNumber : ""
+    );
+    formData.append("studentId", student.newStudentId || student.studentId);
+    formData.append("hallId", student.hallId ? student.hallId : "");
+    formData.append("department", student.department ? student.department : "");
+    formData.append("batch", student.batch ? student.batch : "");
+    formData.append("gender", student.gender);
+    if (imageFile) {
+      formData.append("profileImage", imageFile); // Append the updated image file
+    }
 
     try {
-      const res = await Axios.put("/student", student);
+      const res = await Axios.put("/student", formData);
       const response = res.data;
       const updatedStudent = response.student;
       setStudents((prevStudents) =>
@@ -35,6 +88,13 @@ export const EditStudentModal = ({
       toast.error(err.response.data.message);
     }
   };
+  const handleModalClose = () => {
+    setImage(null);
+    setImageFile(null);
+    setRefetch((prev) => !prev);
+    setShowModal(false); // Close the modal
+  };
+
   return (
     <Modal
       setShowModal={setShowModal}
@@ -42,7 +102,7 @@ export const EditStudentModal = ({
     >
       <button
         type="button"
-        onClick={() => setShowModal(false)}
+        onClick={handleModalClose}
         className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 cursor-pointer"
       >
         <XCircleIcon className="w-8 h-8 hover:text-red-600" />
@@ -55,31 +115,44 @@ export const EditStudentModal = ({
         onSubmit={handleUpdateProfile}
         className="grid lg:grid-cols-2 gap-4 lg:gap-x-8 mt-4"
       >
-        <div className="">
-          <label className="block text-sm font-medium leading-6 text-gray-600">
-            Full Name
-          </label>
+        <div>
+          <div className="w-32 h-32 bg-slate-600 mb-4 rounded-md">
+            <img src={image} className="w-full h-full object-contain"></img>
+          </div>
           <input
-            type="text"
-            value={student?.name}
-            onChange={(e) => setStudent({ ...student, name: e.target.value })}
-            placeholder="Type here"
-            className={`${fixedInputClass} mt-2`}
+            type="file"
+            name="profileImage"
+            accept="image/*"
+            onChange={handleImageChange}
           />
         </div>
-        <div className="">
-          <label className="block text-sm font-medium leading-6 text-gray-600">
-            Phone Number
-          </label>
-          <input
-            type="text"
-            value={student?.phoneNumber}
-            onChange={(e) =>
-              setStudent({ ...student, phoneNumber: e.target.value })
-            }
-            placeholder="eg: 01712345678"
-            className={`${fixedInputClass} mt-2`}
-          />
+        <div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium leading-6 text-gray-600">
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={student?.name}
+              onChange={(e) => setStudent({ ...student, name: e.target.value })}
+              placeholder="Type here"
+              className={`${fixedInputClass} mt-2`}
+            />
+          </div>
+          <div className="">
+            <label className="block text-sm font-medium leading-6 text-gray-600">
+              Phone Number
+            </label>
+            <input
+              type="text"
+              value={student?.phoneNumber == null ? "" : student?.phoneNumber}
+              onChange={(e) =>
+                setStudent({ ...student, phoneNumber: e.target.value })
+              }
+              placeholder="eg: 01712345678"
+              className={`${fixedInputClass} mt-2`}
+            />
+          </div>
         </div>
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
