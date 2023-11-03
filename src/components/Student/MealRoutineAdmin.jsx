@@ -42,11 +42,6 @@ const MealRoutineAdmin = () => {
     fetchMealRoutineData();
   }, []);
 
-  const getRandomColor = () => {
-    const colors = ["bg-gray-200", "bg-white", "bg-white", "bg-white"];
-    return colors[Math.floor(Math.random() * colors.length)];
-  };
-
   const handleInputChange = (e, index, mealType) => {
     const newValue = e.target.value;
     setMealData((prevData) => {
@@ -56,18 +51,6 @@ const MealRoutineAdmin = () => {
     });
     console.log(mealData);
   };
-
-  // const handleSubmit = async () => {
-  //   try {
-  //     const { data: response } = await Axios.put("/meal/routine", mealData);
-  //     console.log(response);
-  //     toast.success(response.message);
-  //     setMealData(response.routines);
-  //   } catch (error) {
-  //     toast.error(error.response.data.message);
-  //     console.error("Error updating meal routine data:", error);
-  //   }
-  // };
 
   const handleSubmit = async () => {
     const result = await Swal.fire({
@@ -153,7 +136,7 @@ const MealRoutineAdmin = () => {
                   </th>
                   <td
                     scope=""
-                    className={`text-center border-2 border-slate-950 md:text-lg ${getRandomColor()} h-1 p-0`}
+                    className={`text-center border-2 border-slate-950 md:text-lg h-1 p-0`}
                   >
                     <input
                       type="text"
@@ -164,7 +147,7 @@ const MealRoutineAdmin = () => {
                     {/* md:px-4 sm:px-2 sm:py-3 */}
                   </td>
                   <td
-                    className={`text-center p-0 border-2 border-slate-950 md:text-lg ${getRandomColor()} h-1 p-0`}
+                    className={`text-center p-0 border-2 border-slate-950 md:text-lg h-1`}
                   >
                     <input
                       type="text"
@@ -174,7 +157,7 @@ const MealRoutineAdmin = () => {
                     />
                   </td>
                   <td
-                    className={`text-center border-2 border-slate-950 md:text-lg  ${getRandomColor()}  h-1 p-0`}
+                    className={`text-center border-2 border-slate-950 md:text-lg h-1 p-0`}
                   >
                     <input
                       type="text"

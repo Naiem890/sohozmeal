@@ -6,8 +6,33 @@ import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
 
 export default function Profile() {
   const auth = useAuthUser();
+  const [image, setImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   const [student, setStudent] = useState(null);
 
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+  const createObjectURL = (buffer) => {
+    const bufferArray = new Uint8Array(buffer);
+    const blob = new Blob([bufferArray], { type: "image/jpeg" });
+    const url = URL.createObjectURL(blob);
+    return url;
+  };
+
+  const handleImageChange = async (e) => {
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const base64Image = await fileToBase64(file);
+      setImageFile(file);
+      setImage(base64Image);
+    }
+  };
   const fetchStudentProfile = async () => {
     try {
       const res = await Axios.get("/student");
@@ -20,6 +45,15 @@ export default function Profile() {
   useEffect(() => {
     fetchStudentProfile();
   }, []);
+
+  useEffect(() => {
+    if (student?.profileImage) {
+      const imageUrl = student.profileImage
+        ? createObjectURL(student.profileImage.data)
+        : null;
+      setImage(imageUrl);
+    }
+  }, [student]);
 
   const departments = [
     "CSE",
@@ -36,20 +70,48 @@ export default function Profile() {
     "ARCH",
   ];
 
+  // const handleUpdateProfile = async (e) => {
+  //   e.preventDefault();
+  //   console.log("student", student);
+  //   try {
+  //     const res = await Axios.put("/student", student);
+  //     console.log(res.data);
+  //     // fetchStudentProfile();
+  //     setStudent(res?.data?.student);
+  //     toast.success(res.data.message);
+  //   } catch (err) {
+  //     console.log(err);
+  //     toast.error(err.response.data.message);
+  //   }
+  // };
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    console.log("student", student);
+  
+    const formData = new FormData();
+    formData.append("name", student.name || "");
+    formData.append("phoneNumber", student.phoneNumber || "");
+    formData.append("studentId", student.newStudentId || student.studentId || "");
+    formData.append("hallId", student.hallId || "");
+    formData.append("department", student.department || "");
+    formData.append("batch", student.batch || "");
+    formData.append("gender", student.gender || "");
+    if (imageFile) {
+      formData.append("profileImage", imageFile);
+    }
+
     try {
-      const res = await Axios.put("/student", student);
-      console.log(res.data);
-      // fetchStudentProfile();
-      setStudent(res?.data?.student);
-      toast.success(res.data.message);
+      const res = await Axios.put("/student", formData);
+      const response = res.data;
+      const updatedStudent = response.student;
+      setStudent(updatedStudent); // Update the single student data
+      toast.success(response.message);
     } catch (err) {
       console.log(err);
       toast.error(err.response.data.message);
     }
   };
+  
 
   return (
     <div className="mb-10 lg:my-10 px-5 lg:mr-12">
@@ -60,30 +122,44 @@ export default function Profile() {
         className="grid lg:grid-cols-2 lg:w-2/3 gap-3 lg:gap-6"
       >
         <div>
-          <label className="block text-sm font-medium leading-6 text-gray-600">
-            Full Name
-          </label>
+          {/* {console.log("student", student)} */}
+          <div className="w-32 h-32 bg-slate-600 mb-4 rounded-md">
+            <img src={image} className="w-full h-full object-contain"></img>
+          </div>
           <input
-            type="text"
-            value={student?.name}
-            disabled
-            placeholder="Type here"
-            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
+            type="file"
+            name="profileImage"
+            accept="image/*"
+            onChange={handleImageChange}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium leading-6 text-gray-600">
-            Phone Number
-          </label>
-          <input
-            type="text"
-            value={student?.phoneNumber}
-            onChange={(e) =>
-              setStudent({ ...student, phoneNumber: e.target.value })
-            }
-            placeholder="eg: 01712345678"
-            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
-          />
+          <div>
+            <label className="block text-sm font-medium leading-6 text-gray-600">
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={student?.name}
+              disabled
+              placeholder="Type here"
+              className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium leading-6 text-gray-600">
+              Phone Number
+            </label>
+            <input
+              type="text"
+              value={student?.phoneNumber}
+              onChange={(e) =>
+                setStudent({ ...student, phoneNumber: e.target.value })
+              }
+              placeholder="eg: 01712345678"
+              className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
+            />
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium leading-6 text-gray-600">

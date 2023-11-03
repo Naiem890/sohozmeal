@@ -67,7 +67,11 @@ export const AddStudentModal = ({
     >
       <button
         type="button"
-        onClick={() => setShowAddStudentModal(false)}
+        onClick={() => {
+          setImage("");
+          setProfileImage(null);
+          setShowAddStudentModal(false);
+        }}
         className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 cursor-pointer"
       >
         <XCircleIcon className="w-8 h-8 hover:text-red-600" />

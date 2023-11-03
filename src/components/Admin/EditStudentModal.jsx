@@ -15,10 +15,9 @@ export const EditStudentModal = ({
   student,
   setStudents,
   setStudent,
-  setRefetch,
-  refetch,
 }) => {
-  const [image, setImage] = useState(student);
+  const [prevImage, setPrevImage] = useState(null);
+  const [image, setImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
 
   const fileToBase64 = (file) => {
@@ -43,10 +42,12 @@ export const EditStudentModal = ({
         ? createObjectURL(student.profileImage.data)
         : null;
       setImage(imageUrl);
+      setPrevImage(imageUrl);
     }
   }, [student]);
 
   const handleImageChange = async (e) => {
+    setPrevImage(image);
     if (e.target.files.length > 0) {
       const file = e.target.files[0];
       const base64Image = await fileToBase64(file);
@@ -89,10 +90,9 @@ export const EditStudentModal = ({
     }
   };
   const handleModalClose = () => {
-    setImage(null);
+    setImage(prevImage);
     setImageFile(null);
-    setRefetch((prev) => !prev);
-    setShowModal(false); // Close the modal
+    setShowModal(false);
   };
 
   return (

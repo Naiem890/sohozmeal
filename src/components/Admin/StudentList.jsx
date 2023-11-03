@@ -312,8 +312,6 @@ export const StudentList = () => {
         student={student}
         setStudents={setStudents}
         setStudent={setStudent}
-        setRefetch={setRefetch}
-        refetch={refetch}
       />
     </div>
   );
