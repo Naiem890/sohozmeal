@@ -44,6 +44,11 @@ export const EditStudentModal = ({
       setImage(imageUrl);
       setPrevImage(imageUrl);
     }
+    else
+    {
+      setImage(null);
+      setPrevImage(null);
+    }
   }, [student]);
 
   const handleImageChange = async (e) => {
