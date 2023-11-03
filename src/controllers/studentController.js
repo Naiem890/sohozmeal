@@ -73,28 +73,49 @@ router.get("/all", validateToken, checkAdminRole, async (req, res) => {
 });
 
 // router to update student profile
-router.put("/", validateToken, async (req, res) => {
-  const { role } = req.user;
-  console.log("role", role);
-  const {
-    name,
-    hallId,
-    newStudentId,
-    studentId,
-    phoneNumber,
-    gender,
-    department,
-    batch,
-    status,
-  } = req.body;
-  try {
-    const student = await Student.findOne({ studentId }, { password: 0 });
-    if (!student) {
-      res.status(404).json({ message: "Student not found" });
-    } else {
+
+router.put(
+  "/",
+  validateToken,
+  upload.single("profileImage"), // Upload a new profile image
+  async (req, res) => {
+    const { role } = req.user;
+    const {
+      name,
+      hallId,
+      newStudentId,
+      studentId,
+      phoneNumber,
+      gender,
+      department,
+      batch,
+      status,
+    } = req.body;
+
+    try {
+      const student = await Student.findOne({ studentId }, { password: 0 });
+      if (!student) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+
       student.phoneNumber = phoneNumber;
       student.department = department;
       student.batch = batch;
+
+      if (req.file) {
+        const compressedImage = await sharp(req.file.path)
+          .resize({ width: 300 }) // Resize the image
+          .jpeg({ quality: 30 }) // Set the JPEG quality to 30 (adjust as needed)
+          .toBuffer();
+        student.profileImage = compressedImage; // Update image in the student data
+        // Clean up: Delete the temporarily uploaded file
+        fs.unlink(req.file.path, (err) => {
+          if (err) {
+            console.error("Error deleting file:", err);
+            return res.status(500).send("Error deleting uploaded file.");
+          }
+        });
+      }
 
       if (role === "admin") {
         student.name = name;
@@ -103,17 +124,18 @@ router.put("/", validateToken, async (req, res) => {
         student.status = status;
         student.gender = gender;
       }
-      console.log("student:", student);
+
       await student.save();
       res
         .status(200)
         .json({ student, message: "Profile updated successfully" });
+    } catch (error) {
+      console.log("error:", error);
+      res.status(500).json({ message: "An error occurred" });
     }
-  } catch (error) {
-    console.log("error:", error);
-    res.status(500).json({ message: "An error occurred" });
   }
-});
+);
+
 //get the last hall id and increment by 1
 router.get("/hallId", validateToken, checkAdminRole, async (req, res) => {
   try {
@@ -168,12 +190,14 @@ router.post(
       const newStudent = new Student(studentData);
       await newStudent.save();
       //Clean up: Delete the temporarily uploaded file
-      fs.unlink(req.file.path, (err) => {
-        if (err) {
-          console.error("Error deleting file:", err);
-          return res.status(500).send("Error deleting uploaded file.");
-        }
-      });
+      if (profileImage) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) {
+            console.error("Error deleting file:", err);
+            return res.status(500).send("Error deleting uploaded file.");
+          }
+        });
+      }
       res
         .status(201)
         .json({ message: "Student added successfully", student: newStudent });
