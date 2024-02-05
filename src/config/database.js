@@ -11,7 +11,7 @@ async function dbConnect () {
       useUnifiedTopology: true,
       useNewUrlParser: true,
     });
-    console.log("Database connected");
+    console.log(`Database connected in ${NODE_ENV} mode!`);
   } catch (error) {
     console.error("Error connecting to the database:", error);
   }
