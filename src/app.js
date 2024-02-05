@@ -26,7 +26,7 @@ app.use(middleware);
 
 // Default route
 app.get("/", (req, res) => {
-  res.send("Welcome to the Sohoz Meal!");
+  res.send("Welcome to the Sohoz Meal App!");
 });
 
 // Api routes
