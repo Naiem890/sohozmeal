@@ -31,6 +31,8 @@ app.get("/", (req, res) => {
 
 // Api routes
 app.use("/api", apiRoutes);
+
+// Test route to check the sms functionality
 app.get("/test-sms", async (req, res) => {
   console.log("test-sms route");
   try {
@@ -38,8 +40,13 @@ app.get("/test-sms", async (req, res) => {
       req.body.message || "Message working from Sohoz Meal App",
       "01790732717"
     );
-    console.log("SMS sent successfully!", result);
-    res.status(200).json({ message: "SMS sent successfully!" });
+
+    if (result.data.success_message) {
+      res.status(200).json({ message: result.data.success_message });
+    } else {
+      res.status(500).json({ message: "SMS sending failed!" });
+      console.log("Reason: ", result.data.error_message);
+    }
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "An error occurred", error });
