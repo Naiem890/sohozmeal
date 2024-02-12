@@ -72,6 +72,12 @@ const stockTransactionSchema = new mongoose.Schema(
       required: true,
       enum: ["IN", "OUT"],
     },
+    category: {
+      type: String,
+      // required: true,
+      enum: ["STORED", "NON_STORED"],
+      set: (value) => value.toUpperCase(),
+    },
     meal: {
       type: String,
       required: true,
