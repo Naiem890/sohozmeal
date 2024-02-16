@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Axios } from "../../../api/api";
-import { fixedButtonClass, fixedInputClass } from "../../../Utils/constant";
-import { StockIn } from "./StockIn";
-import { StockOut } from "./StockOut";
-import { StockItemsList } from "./StockItemsList";
 import toast from "react-hot-toast";
-import { StockSummaryTable } from "./StockSummaryTable";
+import { fixedButtonClass } from "../../../Utils/constant";
+import { Axios } from "../../../api/api";
 import { NonStock } from "./NonStock";
+import { StockIn } from "./StockIn";
+import { StockItemsList } from "./StockItemsList";
+import { StockOut } from "./StockOut";
+import { StockSummaryTable } from "./StockSummaryTable";
 
 const MODE = {
   STOCK_IN: "stockIn",
@@ -28,6 +28,7 @@ export const Stock = () => {
     const fetchStocks = async () => {
       try {
         const res = await Axios("/stock");
+        console.log(res.data);
         setStocks(res.data);
       } catch (error) {
         console.error("Error while fetching stocks:", error);
@@ -156,38 +157,39 @@ export const Stock = () => {
           {renderModeComponent()}
         </div>
       </div>
-      <div className="">
+      <div className="mt-20">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">Stock Transaction</h2>
         </div>
-        <div className="overflow-x-auto max-h-screen px-1 mt-4">
-          <table className="table table-sm w-full">
-            <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
+        <div className="overflow-x-auto max-h-72 mt-4">
+          <table className="table-fixed w-full">
+            <thead className="bg-white shadow-sm sticky top-0 border-b border-gray-200 h-12">
               <tr className="">
-                <th className="uppercase">Name</th>
-                <th className="uppercase">Quantity Change</th>
-                <th className="uppercase">Type</th>
-                <th className="uppercase">Meal</th>
-                <th className="uppercase">Date</th>
+                <th className="uppercase px-4 py-2">Name</th>
+                <th className="uppercase px-4 py-2">Quantity Change</th>
+                <th className="uppercase px-4 py-2">Type</th>
+                <th className="uppercase px-4 py-2">Meal</th>
+                <th className="uppercase px-4 py-2">Date</th>
               </tr>
             </thead>
-            <tbody>
-              {stockTransaction.map((stock) => (
-                <tr
-                  className={`hover:shadow-sm rounded-lg transition-all border-b-0 ${
-                    stock.type === "IN" ? "bg-green-100" : "bg-red-100"
-                  }`}
-                  key={stock._id}
-                >
-                  <td>{stock.item.name}</td>
-                  <td>
-                    {stock.quantityChange} {stock.item.unit}
-                  </td>
-                  <td>{stock.type}</td>
-                  <td>{stock.meal}</td>
-                  <td>{stock.date.split("T")[0]}</td>
-                </tr>
-              ))}
+            <tbody className="max-h-full overflow-y-auto">
+              {stockTransaction &&
+                stockTransaction.map((stock) => (
+                  <tr
+                    className={`hover:shadow-sm rounded-lg transition-all border-b border-gray-200 ${
+                      stock.type === "IN" ? "bg-green-100" : "bg-red-100"
+                    }`}
+                    key={stock._id}
+                  >
+                    <td className="px-4 py-2">{stock.item?.name}</td>
+                    <td className="px-4 py-2">
+                      {stock.quantityChange} {stock.item?.unit}
+                    </td>
+                    <td className="px-4 py-2">{stock.type}</td>
+                    <td className="px-4 py-2">{stock.meal}</td>
+                    <td className="px-4 py-2">{stock.date.split("T")[0]}</td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
