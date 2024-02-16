@@ -179,9 +179,9 @@ export const Stock = () => {
                   }`}
                   key={stock._id}
                 >
-                  <td>{stock.item.name}</td>
+                  <td>{stock.item?.name}</td>
                   <td>
-                    {stock.quantityChange} {stock.item.unit}
+                    {stock.quantityChange} {stock.item?.unit}
                   </td>
                   <td>{stock.type}</td>
                   <td>{stock.meal}</td>
