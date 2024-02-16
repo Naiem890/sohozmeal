@@ -152,7 +152,7 @@ export const StockItemsList = ({
           </tbody>
         </table>
       </div>
-      <div className="divider mb-6"></div>
+      <div className="divider mb-9"></div>
       <form
         onSubmit={editItemId ? handleUpdateItem : handleAddItem}
         className=""
