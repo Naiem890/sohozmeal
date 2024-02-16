@@ -265,6 +265,127 @@ router.delete("/:id", validateToken, async (req, res) => {
 //     res.status(500).json({ error: "Error during stock out process" });
 //   }
 // });
+// router.post("/out/:stockId", validateToken, async (req, res) => {
+//   try {
+//     const stockId = req.params.stockId;
+//     const { quantityToReduce, date, meal, category } = req.body;
+
+//     // Validate quantityToReduce
+//     if (isNaN(quantityToReduce) || quantityToReduce <= 0) {
+//       return res.status(400).json({ error: "Invalid quantity to reduce" });
+//     }
+
+//     if (category === "STORED") {
+//       // Process for stored category
+//       await processStoredCategory(stockId, quantityToReduce, date, meal, res);
+//     } else if (category === "NON_STORED") {
+//       // Process for non-stored category
+//       await processNonStoredCategory(
+//         stockId,
+//         quantityToReduce,
+//         date,
+//         meal,
+//         req.body.price,
+//         res
+//       );
+//     } else {
+//       // Unknown category
+//       res.status(400).json({ error: "Invalid category" });
+//     }
+//   } catch (error) {
+//     console.error("Error during stock out process:", error);
+//     res.status(500).json({ error: "Error during stock out process" });
+//   }
+// });
+
+// async function processStoredCategory(
+//   stockId,
+//   quantityToReduce,
+//   date,
+//   meal,
+//   res
+// ) {
+//   try {
+//     // Find the stock item by its reference in the Stock model
+//     const stock = await Stock.findById(stockId).populate("item");
+//     if (!stock) {
+//       return res.status(404).json({ error: "Stock not found" });
+//     }
+
+//     const stockItem = stock.item;
+
+//     // Calculate new quantity
+//     const currentQuantity = stock.quantity;
+//     const newQuantity = currentQuantity - quantityToReduce;
+
+//     if (newQuantity < 0) {
+//       return res.status(400).json({ error: "Stock Limit exceeded." });
+//     }
+
+//     // Update the stock item's quantity
+//     stock.quantity = newQuantity;
+//     await stock.save();
+
+//     // Create a new StockTransaction record for stock out
+//     const newStockTransaction = new StockTransaction({
+//       item: stockItem._id,
+//       quantityChange: quantityToReduce,
+//       type: "OUT",
+//       category: "STORED",
+//       meal,
+//       date: new Date(date),
+//       transactionAmount: quantityToReduce * stock.price,
+//     });
+
+//     // Calculate the transaction amount for stock out
+//     // newStockTransaction.transactionAmount = quantityToReduce * stockItemPrice;
+//     // Save the stock transaction
+//     await newStockTransaction.save();
+//     res.json({
+//       message: "Stock out completed successfully",
+//       newStockTransaction,
+//     });
+//   } catch (error) {
+//     throw new Error("Error processing stored category: " + error.message);
+//   }
+// }
+
+// async function processNonStoredCategory(
+//   stockId,
+//   quantityToReduce,
+//   date,
+//   meal,
+//   price,
+//   res
+// ) {
+//   try {
+//     const stockItem = await StockItem.findById(stockId);
+//     if (!stockItem) {
+//       return res.status(404).json({ error: "Stock item not found" });
+//     }
+
+//     // Create a new StockTransaction record for stock out
+//     const newStockTransaction = new StockTransaction({
+//       item: stockItem._id,
+//       quantityChange: quantityToReduce,
+//       type: "OUT",
+//       category: "NON_STORED",
+//       meal,
+//       date: new Date(date),
+//       transactionAmount: quantityToReduce * price,
+//     });
+//     // Save the stock transaction
+//     await newStockTransaction.save();
+
+//     res.json({
+//       message:  "Stock out completed successfully",
+//       newStockTransaction,
+//     });
+//   } catch (error) {
+//     throw new Error("Error processing non-stored category: " + error.message);
+//   }
+// }
+
 router.post("/out/:stockId", validateToken, async (req, res) => {
   try {
     const stockId = req.params.stockId;
@@ -275,95 +396,67 @@ router.post("/out/:stockId", validateToken, async (req, res) => {
       return res.status(400).json({ error: "Invalid quantity to reduce" });
     }
 
-    if (category === "STORED") {
-      // Process for stored category
-      await processStoredCategory(stockId, quantityToReduce, date, meal, res);
-    } else if (category === "NON_STORED") {
-      // Process for non-stored category
-      await processNonStoredCategory(stockId, quantityToReduce, date, meal, req.body.price, res);
-    } else {
-      // Unknown category
-      res.status(400).json({ error: "Invalid category" });
+    if (!["STORED", "NON_STORED"].includes(category)) {
+      return res.status(400).json({ error: "Invalid category" });
     }
 
+    let stockItem;
+    let transactionAmount;
+    let stockTransactionCategory;
+    if (category === "STORED") {
+      // Find the stock item by its reference in the Stock model
+      const stock = await Stock.findById(stockId).populate("item");
+      if (!stock) {
+        return res.status(404).json({ error: "Stock not found" });
+      }
+      stockItem = stock.item;
+
+      // Calculate new quantity
+      const currentQuantity = stock.quantity;
+      const newQuantity = currentQuantity - quantityToReduce;
+
+      if (newQuantity < 0) {
+        return res.status(400).json({ error: "Stock Limit exceeded." });
+      }
+
+      // Update the stock item's quantity
+      stock.quantity = newQuantity;
+      await stock.save();
+
+      // Set transaction amount
+      transactionAmount = quantityToReduce * stock.price;
+      stockTransactionCategory = "STORED";
+    } else if (category === "NON_STORED") {
+      stockItem = await StockItem.findById(stockId);
+      if (!stockItem) {
+        return res.status(404).json({ error: "Stock item not found" });
+      }
+
+      // Set transaction amount
+      transactionAmount = quantityToReduce * req.body.price;
+      stockTransactionCategory = "NON_STORED";
+    }
+
+    // Create a new StockTransaction record for stock out
+    const newStockTransaction = new StockTransaction({
+      item: stockItem._id,
+      quantityChange: quantityToReduce,
+      type: "OUT",
+      category: stockTransactionCategory,
+      meal,
+      date: new Date(date),
+      transactionAmount,
+    });
+
+    // Save the stock transaction
+    await newStockTransaction.save();
+
+    res.json({ message: "Stock out completed successfully", newStockTransaction });
   } catch (error) {
     console.error("Error during stock out process:", error);
     res.status(500).json({ error: "Error during stock out process" });
   }
 });
-
-async function processStoredCategory(stockId, quantityToReduce, date, meal, res) {
-  try {
-    // Find the stock item by its reference in the Stock model
-    const stock = await Stock.findById(stockId).populate("item");
-    if (!stock) {
-      return res.status(404).json({ error: "Stock not found" });
-    }
-
-    const stockItem = stock.item;
-
-    // Calculate new quantity
-    const currentQuantity = stock.quantity;
-    const newQuantity = currentQuantity - quantityToReduce;
-
-    if (newQuantity < 0) {
-      return res.status(400).json({ error: "Stock Limit exceeded." });
-    }
-
-    // Update the stock item's quantity
-    stock.quantity = newQuantity;
-    await stock.save();
-
-    // Create a new StockTransaction record for stock out
-    const newStockTransaction = new StockTransaction({
-      item: stockItem._id,
-      quantityChange: quantityToReduce,
-      type: "OUT",
-      category: "STORED",
-      meal,
-      date: new Date(date),
-    });
-
-    // Calculate the transaction amount for stock out
-    const stockItemPrice = stockItem.price; // Assuming you have a price field in your stock item schema
-    newStockTransaction.transactionAmount = quantityToReduce * stockItemPrice;
-
-    // Save the stock transaction
-    await newStockTransaction.save();
-
-    res.json({ message: "Stock out completed successfully" });
-  } catch (error) {
-    throw new Error("Error processing stored category: " + error.message);
-  }
-}
-
-async function processNonStoredCategory(stockId, quantityToReduce, date, meal, price, res) {
-  try {
-    const stockItem = await StockItem.findById(stockId);
-    if (!stockItem) {
-      return res.status(404).json({ error: "Stock item not found" });
-    }
-
-    // Create a new StockTransaction record for stock out
-    const newStockTransaction = new StockTransaction({
-      item: stockItem._id,
-      quantityChange: quantityToReduce,
-      type: "OUT",
-      category: "NON_STORED",
-      meal,
-      date: new Date(date),
-    });
-
-    newStockTransaction.transactionAmount = quantityToReduce * price;
-
-    // Save the stock transaction
-    await newStockTransaction.save();
-
-    res.json({ message: "Stock out completed successfully" });
-  } catch (error) {
-    throw new Error("Error processing non-stored category: " + error.message);
-  }
-}
 
 // Get all Stock Transactions
 router.get("/transaction", validateToken, async (req, res) => {

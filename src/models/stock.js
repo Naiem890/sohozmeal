@@ -83,16 +83,15 @@ const stockTransactionSchema = new mongoose.Schema(
       required: true,
       enum: ["BREAKFAST", "LUNCH", "DINNER", "-"], // "-" for stock in transactions
     },
+    transactionAmount: {
+      type: Number,
+      required: true,
+    },
   },
   {
     timestamps: true,
   }
 );
-
-// Add a virtual field to calculate expenseAmount
-stockTransactionSchema.virtual("transactionAmount").get(() => {
-  return this.quantityChange * this.item.price;
-});
 
 const StockTransaction = mongoose.model(
   "StockTransaction",
