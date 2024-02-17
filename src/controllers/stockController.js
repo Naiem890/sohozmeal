@@ -67,12 +67,14 @@ router.delete("/item/:id", validateToken, async (req, res) => {
   try {
     const itemId = req.params.id;
 
-    // Check if the item is associated with any existing stocks
+    // Check if any stock is associated with the item
     const associatedStock = await Stock.findOne({ item: itemId });
+    // Check if any previous transaction is listed for this item or not
+    const associatedTransaction = await StockTransaction.findOne({ item: itemId });
 
-    if (associatedStock) {
+    if (associatedStock || associatedTransaction) {
       return res.status(400).json({
-        error: "Cannot delete this item because it is associated with a stock.",
+        error: "Cannot delete this item because it is associated with a stock or transactions.",
       });
     }
 

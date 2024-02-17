@@ -2,19 +2,27 @@ const router = require("express").Router();
 const { validateToken } = require("../utils/validateToken");
 const Student = require("../models/student");
 const { checkAdminRole } = require("../utils/checkAdminRole");
+const fs = require('fs');
 const multer = require("multer");
-// const upload = multer({ dest: "./uploads/" });
+// Check if the uploads directory exists, if not, create it
+const uploadDirectory = "./uploads/";
+if (!fs.existsSync(uploadDirectory)) {
+  fs.mkdirSync(uploadDirectory);
+}
+
+// Define multer storage configuration
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    return cb(null, "./uploads/");
+    cb(null, uploadDirectory);
   },
   filename: function (req, file, cb) {
-    return cb(null, file.originalname);
+    cb(null, file.originalname);
   },
 });
+
+// Create the multer instance with the defined storage configuration
 const upload = multer({ storage: storage });
 const sharp = require("sharp");
-const fs = require("fs"); // Import the Node.js file system module
 router.get("/", validateToken, async (req, res) => {
   const { studentId } = req.user;
   console.log("studentId:", studentId);

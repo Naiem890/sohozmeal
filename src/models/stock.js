@@ -24,6 +24,20 @@ const stockItemSchema = new mongoose.Schema({
 // Define a unique index on the 'name' field
 stockItemSchema.index({ name: 1 }, { unique: true });
 
+// Middleware to ensure no StockItem _id is present in Stock or StockTransaction models before deleting
+stockItemSchema.pre('remove', { document: true, query: false }, async function(next) {
+  const itemId = this._id;
+  const stockCount = await mongoose.model('Stock').countDocuments({ item: itemId });
+  const transactionCount = await mongoose.model('StockTransaction').countDocuments({ item: itemId });
+
+  if (stockCount > 0 || transactionCount > 0) {
+    const error = new Error('Cannot delete StockItem because it is referenced in Stock or StockTransaction.');
+    return next(error);
+  }
+
+  next();
+});
+
 const StockItem = mongoose.model("StockItem", stockItemSchema);
 
 const stockSchema = new mongoose.Schema(
