@@ -70,11 +70,14 @@ router.delete("/item/:id", validateToken, async (req, res) => {
     // Check if any stock is associated with the item
     const associatedStock = await Stock.findOne({ item: itemId });
     // Check if any previous transaction is listed for this item or not
-    const associatedTransaction = await StockTransaction.findOne({ item: itemId });
+    const associatedTransaction = await StockTransaction.findOne({
+      item: itemId,
+    });
 
     if (associatedStock || associatedTransaction) {
       return res.status(400).json({
-        error: "Cannot delete this item because it is associated with a stock or transactions.",
+        error:
+          "Cannot delete this item because it is associated with a stock or transactions.",
       });
     }
 
@@ -144,8 +147,9 @@ router.post("/", validateToken, async (req, res) => {
       type: "IN",
       meal: "-", // Set meal type as needed
       date: new Date(date),
+      transactionAmount: newQuantity * newPricePerUnit,
     });
-
+    console.log(newStockTransaction, "shovo");
     // Save the newStockTransaction
     await newStockTransaction.save();
 
@@ -453,7 +457,10 @@ router.post("/out/:stockId", validateToken, async (req, res) => {
     // Save the stock transaction
     await newStockTransaction.save();
 
-    res.json({ message: "Stock out completed successfully", newStockTransaction });
+    res.json({
+      message: "Stock out completed successfully",
+      newStockTransaction,
+    });
   } catch (error) {
     console.error("Error during stock out process:", error);
     res.status(500).json({ error: "Error during stock out process" });
