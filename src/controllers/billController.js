@@ -4,7 +4,8 @@ const Meal = require("../models/meal");
 const { StockTransaction } = require("../models/stock");
 const { validateToken } = require("../utils/validateToken");
 
-router.get("/", validateToken, async (req, res) => {
+// Fetch all bills for a specific date
+router.post("/", validateToken, async (req, res) => {
   const { date } = req.query;
   try {
     // Convert the query strings into Date objects
@@ -137,9 +138,10 @@ router.get("/", validateToken, async (req, res) => {
   }
 });
 
-//Not Yet Implemented,60% completed.
+// Fetch bills for a specific student
 router.get("/student", validateToken, async (req, res) => {
-  const { month, year, studentId } = req.query;
+  const { studentId } = req.user;
+  const { month, year } = req.query;
   try {
     // Validate month and year
     if (!month || !year || isNaN(month) || isNaN(year)) {
@@ -149,6 +151,7 @@ router.get("/student", validateToken, async (req, res) => {
     // Calculate start and end dates of the month
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
+    console.log(startDate, endDate);
     // Calculate start and end dates of the month
     const start = new Date(year, month - 1, 1).toISOString().split("T")[0];
     const end = new Date(year, month, 0).toISOString().split("T")[0];
@@ -171,6 +174,9 @@ router.get("/student", validateToken, async (req, res) => {
           __v: 1,
         },
       },
+      {
+        $sort: { date: 1 }, // Sort by date in ascending order
+      },
     ]);
 
     // Aggregate pipeline to fetch meals
@@ -189,11 +195,46 @@ router.get("/student", validateToken, async (req, res) => {
           meal: 1,
         },
       },
+      {
+        $sort: { date: 1 }, // Sort by date in ascending order
+      },
     ]);
-    console.log("meals", meals, "bills", bills, "shohan");
+    const mealMap = {};
+    // Index meals by date for faster lookup
+    for (const meal of meals) {
+      mealMap[meal.date] = meal;
+    }
+    const combinedMealBill = bills.map((bill) => {
+      const meal = mealMap[bill.date];
+      if (meal) {
+        const perHeadCost = {
+          breakfast:
+            bill.mealCounts.breakfast !== 0
+              ? bill.mealCosts.breakfast / bill.mealCounts.breakfast
+              : 0,
+          lunch:
+            bill.mealCounts.lunch !== 0
+              ? bill.mealCosts.lunch / bill.mealCounts.lunch
+              : 0,
+          dinner:
+            bill.mealCounts.dinner !== 0
+              ? bill.mealCosts.dinner / bill.mealCounts.dinner
+              : 0,
+        };
+
+        return {
+          date: bill.date,
+          mealCosts: bill.mealCosts,
+          mealCounts: bill.mealCounts,
+          meal: meal.meal,
+          perHeadCosts: perHeadCost,
+        };
+      }
+    });
 
     res.status(200).json({
-      message: "Bills and meals fetched successfully"
+      message: `Bills and meals fetched successfully for student ${studentId}`,
+      mealBilldata: combinedMealBill,
     });
   } catch (error) {
     console.error(error);

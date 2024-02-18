@@ -4,6 +4,7 @@ const billSchema = new mongoose.Schema({
   date: {
     type: Date,
     required: true,
+    unique: true,
   },
   mealCosts: {
     type: {
