@@ -156,11 +156,10 @@ router.get("/student", validateToken, async (req, res) => {
 
     // Calculate start and end dates of the month
     const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
+    const endDate = new Date(year, month);
     // Calculate start and end dates of the month
     const start = new Date(year, month - 1, 1).toISOString().split("T")[0];
-    const end = new Date(year, month, 0).toISOString().split("T")[0];
-
+    const end = new Date(year, month).toISOString().split("T")[0];
     // Aggregate pipeline to fetch bills
     const bills = await Bill.aggregate([
       {

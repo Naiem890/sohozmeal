@@ -7,38 +7,38 @@ const billSchema = new mongoose.Schema({
     unique: true,
   },
   mealCosts: {
-    type: {
-      breakfast: {
-        type: Number,
-        default: 0,
-      },
-      lunch: {
-        type: Number,
-        default: 0,
-      },
-      dinner: {
-        type: Number,
-        default: 0,
-      },
+    breakfast: {
+      type: Number,
+      required: true,
+      default: 0,
     },
-    required: true,
+    lunch: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    dinner: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
   },
   mealCounts: {
-    type: {
-      breakfast: {
-        type: Number,
-        default: 0,
-      },
-      lunch: {
-        type: Number,
-        default: 0,
-      },
-      dinner: {
-        type: Number,
-        default: 0,
-      },
+    breakfast: {
+      type: Number,
+      required: true,
+      default: 0,
     },
-    required: true,
+    lunch: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    dinner: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
   },
 });
 
