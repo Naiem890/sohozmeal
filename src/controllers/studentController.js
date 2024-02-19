@@ -2,7 +2,7 @@ const router = require("express").Router();
 const { validateToken } = require("../utils/validateToken");
 const Student = require("../models/student");
 const { checkAdminRole } = require("../utils/checkAdminRole");
-const fs = require('fs');
+const fs = require("fs");
 const multer = require("multer");
 // Check if the uploads directory exists, if not, create it
 const uploadDirectory = "./uploads/";
@@ -23,6 +23,7 @@ const storage = multer.diskStorage({
 // Create the multer instance with the defined storage configuration
 const upload = multer({ storage: storage });
 const sharp = require("sharp");
+const createMealForNextDay = require("../utils/mealInitializer");
 router.get("/", validateToken, async (req, res) => {
   const { studentId } = req.user;
   console.log("studentId:", studentId);
@@ -167,7 +168,7 @@ router.post(
   validateToken,
   checkAdminRole,
   upload.single("profileImage"),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const {
         studentId,
@@ -197,6 +198,7 @@ router.post(
       }
       const newStudent = new Student(studentData);
       await newStudent.save();
+      await createMealForNextDay(req, res, next);
       //Clean up: Delete the temporarily uploaded file
       if (profileImage) {
         fs.unlink(req.file.path, (err) => {
