@@ -140,8 +140,14 @@ router.post("/", validateToken, async (req, res) => {
 
 // Fetch bills for a specific student
 router.get("/student", validateToken, async (req, res) => {
-  const { studentId } = req.user;
+  let studentId = req.user.studentId;
   const { month, year } = req.query;
+  if (req.user.role === "admin") {
+    studentId = req.query.studentId;
+    if (!studentId) {
+      return res.status(400).json({ error: "Student Id is required" });
+    }
+  }
   try {
     // Validate month and year
     if (!month || !year || isNaN(month) || isNaN(year)) {
@@ -151,7 +157,6 @@ router.get("/student", validateToken, async (req, res) => {
     // Calculate start and end dates of the month
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
-    console.log(startDate, endDate);
     // Calculate start and end dates of the month
     const start = new Date(year, month - 1, 1).toISOString().split("T")[0];
     const end = new Date(year, month, 0).toISOString().split("T")[0];
