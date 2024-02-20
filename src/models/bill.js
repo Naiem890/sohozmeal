@@ -6,59 +6,62 @@ const billSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  mealCosts: {
+  mealBill: {
     breakfast: {
-      type: Number,
-      required: true,
-      default: 0,
+      totalCost: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      totalStudent: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
     },
     lunch: {
-      type: Number,
-      required: true,
-      default: 0,
+      totalCost: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      totalStudent: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
     },
     dinner: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-  },
-  mealCounts: {
-    breakfast: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-    lunch: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-    dinner: {
-      type: Number,
-      required: true,
-      default: 0,
+      totalCost: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      totalStudent: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
     },
   },
 });
 
-// Define virtual property to calculate perHeadCost for each meal type
-billSchema.virtual("perHeadCosts").get(function () {
-  const perHeadCosts = {
-    breakfast:
-      this.mealCounts.breakfast !== 0
-        ? this.mealCosts.breakfast / this.mealCounts.breakfast
-        : 0,
-    lunch:
-      this.mealCounts.lunch !== 0
-        ? this.mealCosts.lunch / this.mealCounts.lunch
-        : 0,
-    dinner:
-      this.mealCounts.dinner !== 0
-        ? this.mealCosts.dinner / this.mealCounts.dinner
-        : 0,
-  };
-  return perHeadCosts;
+billSchema.virtual("mealBill.breakfast.perheadCost").get(function () {
+  return this.mealBill.breakfast.totalStudent !== 0
+    ? this.mealBill.breakfast.totalCost / this.mealBill.breakfast.totalStudent
+    : 0;
+});
+
+billSchema.virtual("mealBill.lunch.perheadCost").get(function () {
+  return this.mealBill.lunch.totalStudent !== 0
+    ? this.mealBill.lunch.totalCost / this.mealBill.lunch.totalStudent
+    : 0;
+});
+
+billSchema.virtual("mealBill.dinner.perheadCost").get(function () {
+  return this.mealBill.dinner.totalStudent !== 0
+    ? this.mealBill.dinner.totalCost / this.mealBill.dinner.totalStudent
+    : 0;
 });
 
 const Bill = mongoose.model("Bill", billSchema);

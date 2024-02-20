@@ -16,11 +16,34 @@ router.post("/", validateToken, async (req, res) => {
       return res.status(400).json({ error: "Invalid date format" });
     }
 
-    // Aggregate meals within the specified date range
-    const mealCost = await StockTransaction.aggregate([
+    // Aggregate meal counts for the specified date
+    const mealCounts = await Meal.aggregate([
       {
         $match: {
-          date: { $eq: dateObj },
+          date: date,
+        },
+      },
+      {
+        $group: {
+          _id: "$date",
+          breakfastCount: {
+            $sum: { $cond: [{ $eq: ["$meal.breakfast", true] }, 1, 0] },
+          },
+          lunchCount: {
+            $sum: { $cond: [{ $eq: ["$meal.lunch", true] }, 1, 0] },
+          },
+          dinnerCount: {
+            $sum: { $cond: [{ $eq: ["$meal.dinner", true] }, 1, 0] },
+          },
+        },
+      },
+    ]);
+
+    // Aggregate meal costs for the specified date
+    const mealCosts = await StockTransaction.aggregate([
+      {
+        $match: {
+          date: dateObj,
         },
       },
       {
@@ -43,51 +66,7 @@ router.post("/", validateToken, async (req, res) => {
           },
         },
       },
-      {
-        $project: {
-          _id: 0,
-          breakfastCost: 1,
-          lunchCost: 1,
-          dinnerCost: 1,
-        },
-      },
-      {
-        $sort: { date: 1 }, // Sort by date in ascending order
-      },
     ]);
-    const mealCounts = await Meal.aggregate([
-      {
-        $match: {
-          date: { $eq: date },
-        },
-      },
-      {
-        $group: {
-          _id: "$date",
-          breakfastCount: {
-            $sum: { $cond: [{ $eq: ["$meal.breakfast", true] }, 1, 0] },
-          },
-          lunchCount: {
-            $sum: { $cond: [{ $eq: ["$meal.lunch", true] }, 1, 0] },
-          },
-          dinnerCount: {
-            $sum: { $cond: [{ $eq: ["$meal.dinner", true] }, 1, 0] },
-          },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          breakfastCount: 1,
-          lunchCount: 1,
-          dinnerCount: 1,
-        },
-      },
-      {
-        $sort: { date: 1 },
-      },
-    ]);
-
     // Fetch or create a bill
     let bill = await Bill.findOne({ date: dateObj });
 
@@ -95,28 +74,36 @@ router.post("/", validateToken, async (req, res) => {
     if (!bill) {
       bill = new Bill({
         date: dateObj,
-        mealCosts: {
-          breakfast: mealCost[0]?.breakfastCost || 0,
-          lunch: mealCost[0]?.lunchCost || 0,
-          dinner: mealCost[0]?.dinnerCost || 0,
-        },
-        mealCounts: {
-          breakfast: mealCounts[0]?.breakfastCount || 0,
-          lunch: mealCounts[0]?.lunchCount || 0,
-          dinner: mealCounts[0]?.dinnerCount || 0,
+        mealBill: {
+          breakfast: {
+            totalCost: mealCosts[0]?.breakfastCost || 0,
+            totalStudent: mealCounts[0]?.breakfastCount || 0,
+          },
+          lunch: {
+            totalCost: mealCosts[0]?.lunchCost || 0,
+            totalStudent: mealCounts[0]?.lunchCount || 0,
+          },
+          dinner: {
+            totalCost: mealCosts[0]?.dinnerCost || 0,
+            totalStudent: mealCounts[0]?.dinnerCount || 0,
+          },
         },
       });
     } else {
       // Update the existing bill
-      bill.mealCosts = {
-        breakfast: mealCost[0]?.breakfastCost || 0,
-        lunch: mealCost[0]?.lunchCost || 0,
-        dinner: mealCost[0]?.dinnerCost || 0,
-      };
-      bill.mealCounts = {
-        breakfast: mealCounts[0]?.breakfastCount || 0,
-        lunch: mealCounts[0]?.lunchCount || 0,
-        dinner: mealCounts[0]?.dinnerCount || 0,
+      bill.mealBill = {
+        breakfast: {
+          totalCost: mealCosts[0]?.breakfastCost || 0,
+          totalStudent: mealCounts[0]?.breakfastCount || 0,
+        },
+        lunch: {
+          totalCost: mealCosts[0]?.lunchCost || 0,
+          totalStudent: mealCounts[0]?.lunchCount || 0,
+        },
+        dinner: {
+          totalCost: mealCosts[0]?.dinnerCost || 0,
+          totalStudent: mealCounts[0]?.dinnerCount || 0,
+        },
       };
     }
 
@@ -126,9 +113,7 @@ router.post("/", validateToken, async (req, res) => {
     res.status(200).json({
       message: `Bill generated successfully`,
       date: dateObj,
-      mealCost: mealCost[0] || {},
-      mealCounts: mealCounts[0] || {},
-      perHeadCosts: bill.perHeadCosts, // Include the virtual column in the response
+      mealBill: bill.mealBill,
     });
   } catch (error) {
     console.error(error);
@@ -160,6 +145,7 @@ router.get("/student", validateToken, async (req, res) => {
     // Calculate start and end dates of the month
     const start = new Date(year, month - 1, 1).toISOString().split("T")[0];
     const end = new Date(year, month).toISOString().split("T")[0];
+
     // Aggregate pipeline to fetch bills
     const bills = await Bill.aggregate([
       {
@@ -172,10 +158,7 @@ router.get("/student", validateToken, async (req, res) => {
           date: {
             $dateToString: { format: "%Y-%m-%d", date: "$date" },
           },
-          mealCosts: 1,
-          mealCounts: 1,
-          perHeadCosts: 1,
-          __v: 1,
+          mealBill: 1,
         },
       },
       {
@@ -194,8 +177,6 @@ router.get("/student", validateToken, async (req, res) => {
       {
         $project: {
           date: 1,
-          _id: 0,
-          studentId: 1,
           meal: 1,
         },
       },
@@ -203,35 +184,50 @@ router.get("/student", validateToken, async (req, res) => {
         $sort: { date: 1 }, // Sort by date in ascending order
       },
     ]);
-    const mealMap = {};
     // Index meals by date for faster lookup
+    const mealMap = {};
     for (const meal of meals) {
       mealMap[meal.date] = meal;
     }
+
+    // Combine bills and meals data
     const combinedMealBill = bills.map((bill) => {
       const meal = mealMap[bill.date];
       if (meal) {
-        const perHeadCost = {
+        const perHeadCosts = {
           breakfast:
-            bill.mealCounts.breakfast !== 0
-              ? bill.mealCosts.breakfast / bill.mealCounts.breakfast
+            bill.mealBill.breakfast.totalStudent !== 0
+              ? bill.mealBill.breakfast.totalCost /
+                bill.mealBill.breakfast.totalStudent
               : 0,
           lunch:
-            bill.mealCounts.lunch !== 0
-              ? bill.mealCosts.lunch / bill.mealCounts.lunch
+            bill.mealBill.lunch.totalStudent !== 0
+              ? bill.mealBill.lunch.totalCost / bill.mealBill.lunch.totalStudent
               : 0,
           dinner:
-            bill.mealCounts.dinner !== 0
-              ? bill.mealCosts.dinner / bill.mealCounts.dinner
+            bill.mealBill.dinner.totalStudent !== 0
+              ? bill.mealBill.dinner.totalCost /
+                bill.mealBill.dinner.totalStudent
               : 0,
         };
 
         return {
           date: bill.date,
-          mealCosts: bill.mealCosts,
-          mealCounts: bill.mealCounts,
           meal: meal.meal,
-          perHeadCosts: perHeadCost,
+          mealBill: {
+            breakfast: {
+              ...bill.mealBill.breakfast,
+              perHeadCost: perHeadCosts.breakfast,
+            },
+            lunch: {
+              ...bill.mealBill.lunch,
+              perHeadCost: perHeadCosts.lunch,
+            },
+            dinner: {
+              ...bill.mealBill.dinner,
+              perHeadCost: perHeadCosts.dinner,
+            },
+          },
         };
       }
     });
