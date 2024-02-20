@@ -11,12 +11,14 @@ export const StockOut = ({ stocks, refetchHandler }) => {
     const stockId = e.target.item.value;
     const meal = e.target.meal.value;
     const date = e.target.date.value;
+    const category = "STORED";
 
     try {
       const response = await Axios.post(`/stock/out/${stockId}`, {
         quantityToReduce: quantity,
         meal,
         date,
+        category
       });
       toast.success(response.data.message);
       refetchHandler();

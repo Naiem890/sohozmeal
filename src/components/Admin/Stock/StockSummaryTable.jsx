@@ -2,18 +2,18 @@ import React from "react";
 
 export const StockSummaryTable = ({ stocks }) => {
   return (
-    <div className="">
+    <div className="mb-24">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Stock Summary</h2>
       </div>
-      <div className="overflow-x-auto max-h-screen px-1 mt-4">
+      <div className="overflow-x-auto max-h-96 mt-4">
         <table className="table table-sm table-hover w-full">
           <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
             <tr className="">
               <th className="uppercase">Name</th>
               <th className="uppercase">Quantity</th>
-              <th>Unit</th>
-              <th>Price</th>
+              <th className="uppercase">Unit</th>
+              <th className="uppercase">Price</th>
             </tr>
           </thead>
           <tbody>

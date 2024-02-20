@@ -8,20 +8,26 @@ export const NonStock = ({ stockItems, refetchHandler }) => {
 
   const handleStockOut = async (e) => {
     e.preventDefault();
-    const quantity = +e.target.price.value;
+    const quantity = +e.target.quantity.value;
     const item = selectedItem._id;
     const meal = e.target.mealType.value;
     const date = e.target.date.value;
+    const price = e.target.price.value;
+    const category = "NON_STORED";
     console.log(quantity, item, meal, date);
-    // try {
-    //   const response = await Axios.post(`/stock/out/${item}`, {
-    //     quantityToReduce: quantity,
-    //   });
-    //   toast.success("Stock out completed successfully!");
-    //   refetchHandler();
-    // } catch (error) {
-    //   toast.error(error.response.data.error);
-    // }
+    try {
+      const response = await Axios.post(`/stock/out/${item}`, {
+        quantityToReduce: quantity,
+        category,
+        meal,
+        date,
+        price
+      });
+      toast.success("Stock out completed successfully!");
+      refetchHandler();
+    } catch (error) {
+      toast.error(error.response.data.error);
+    }
   };
   const handleItemSelect = (event) => {
     const selectedItem = event.target.value;
