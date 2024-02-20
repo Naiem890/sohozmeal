@@ -218,19 +218,41 @@ router.put("/plan/:mealId", validateToken, async (req, res) => {
     res.status(500).json({ message: "An error occurred while updating meal" });
   }
 });
-
+//generate meal for all or specific student
 router.post("/generate-meal", async (req, res) => {
   const { date } = req.body;
+  const { studentId } = req.query;
+
   try {
-    // Fetch all students' studentId
+    // If studentId is provided in the query, generate meal for that student only
+    if (studentId) {
+      const existingMeal = await Meal.findOne({ studentId, date });
+      if (existingMeal) {
+        return res.status(400).json({ error: "Meal already generated for this student on the specified date" });
+      }
+
+      const meal = new Meal({
+        studentId,
+        date,
+      });
+      const savedMeal = await meal.save();
+      return res.status(201).json({ message: "Meal generated successfully", meal: savedMeal });
+    }
+
+    // If no studentId is provided, generate meals for all students
     const students = await Student.find({}, { studentId: 1 });
     if (students.length === 0) {
-      return res.status(404).json({ message: "No students found" });
+      return res.status(404).json({ error: "No students found" });
     }
 
     const studentsIds = students.map((student) => student.studentId);
-    // Create a meal for each student
+
     const mealPromises = studentsIds.map(async (studentId) => {
+      const existingMeal = await Meal.findOne({ studentId, date });
+      if (existingMeal) {
+        return null; // Skip if meal already exists for this student on the specified date
+      }
+
       const meal = new Meal({
         studentId,
         date,
@@ -239,16 +261,15 @@ router.post("/generate-meal", async (req, res) => {
     });
 
     // Wait for all meal creation promises to resolve
-    const savedMeals = await Promise.all(mealPromises);
+    const savedMeals = await Promise.all(mealPromises.filter(meal => meal !== null));
 
-    res.json({ message: "Meal generated successfully", savedMeals });
+    return res.status(201).json({ message: "Meals generated successfully", meals: savedMeals });
   } catch (error) {
     console.error("Error generating meal:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while generating meal" });
+    return res.status(500).json({ error: "An error occurred while generating meal" });
   }
 });
+
 
 // add route to delete all meal by date
 router.delete("/plan", async (req, res) => {
