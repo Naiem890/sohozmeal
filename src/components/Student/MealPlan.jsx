@@ -174,7 +174,7 @@ export default function MealPlan() {
                     validDate() !== meal.date && "opacity-50"
                   }`}
                 >
-                  {["breakfast", "lunch", "dinner"].map((mealType) => (
+                  {["breakfast", "lunch", "dinner"].map((mealType, i) => (
                     <div
                       className="text-center checkbox-wrapper-26"
                       key={mealType}
@@ -188,6 +188,7 @@ export default function MealPlan() {
                         }
                         type="checkbox"
                         id={`_checkbox-${meal._id}-${mealType}`}
+                        className={`${meal.permission[i] ? "locked" : ""}`}
                       />
                       <label htmlFor={`_checkbox-${meal._id}-${mealType}`}>
                         <div className="tick_mark"></div>
