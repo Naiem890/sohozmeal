@@ -213,19 +213,21 @@ router.get("/student", validateToken, async (req, res) => {
 
         return {
           date: bill.date,
-          meal: meal.meal,
           mealBill: {
             breakfast: {
               ...bill.mealBill.breakfast,
               perHeadCost: perHeadCosts.breakfast,
+              status: meal.meal.breakfast,
             },
             lunch: {
               ...bill.mealBill.lunch,
               perHeadCost: perHeadCosts.lunch,
+              status: meal.meal.lunch,
             },
             dinner: {
               ...bill.mealBill.dinner,
               perHeadCost: perHeadCosts.dinner,
+              status: meal.meal.dinner,
             },
           },
         };
@@ -244,4 +246,7 @@ router.get("/student", validateToken, async (req, res) => {
   }
 });
 
+// get admin bills
+// api/bill/admin?month=02&year=2024
+  
 module.exports = router;

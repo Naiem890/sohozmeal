@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-const sendSMS = async (message, phone) => {
+const sendSMS = async (message, phones) => {
   // eslint-disable-next-line no-undef
   const apiKey = process.env.API_KEY;
   // eslint-disable-next-line no-undef
@@ -14,7 +14,7 @@ const sendSMS = async (message, phone) => {
   return await axios.post(`http://bulksmsbd.net/api/smsapi`, {
     api_key: apiKey,
     type: "text",
-    number: phone,
+    number: phones.join(","),
     senderid: senderId,
     message: message,
   });
