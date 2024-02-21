@@ -15,6 +15,7 @@ import MealPlan from "./components/Student/MealPlan";
 import MealRoutine from "./components/Student/MealRoutine";
 import Profile from "./components/Student/Profile";
 import MealRoutineAdmin from "./components/Student/MealRoutineAdmin";
+import BillCount from './components/Student/BillCount';
 
 function App() {
   return (
@@ -57,8 +58,8 @@ function App() {
           <Route index element={<MealPlan />} />
           <Route path="profile" element={<Profile />} />
           <Route path="change-password" element={<ChangePassword />} />
-
           <Route path="bill-payment" element={<BillPayment />} />
+          <Route path="bill-count" element={<BillCount />} />
           <Route path="meal-routine" element={<MealRoutine />} />
         </Route>
       </Routes>
