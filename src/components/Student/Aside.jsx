@@ -9,6 +9,7 @@ import {
   TableCellsIcon,
   UserCircleIcon,
   UserIcon,
+  CalculatorIcon
 } from "@heroicons/react/24/outline";
 import { MealIcon } from "../../assets/Icons";
 import Logo from "../Common/Logo";
@@ -60,6 +61,11 @@ export default function Aside({ toggleDrawer }) {
       link: "Bill Payment",
       path: "/dashboard/bill-payment",
       icon: <CreditCardIcon className="h-6 w-6" />,
+    },
+    {
+      link: "Bill Count",
+      path: "/dashboard/bill-count",
+      icon: <CalculatorIcon className="h-6 w-6" />,
     },
     {
       link: "Profile",
