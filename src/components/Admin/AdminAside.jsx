@@ -1,17 +1,18 @@
-import { useSignOut } from "react-auth-kit";
-import { Link, useNavigate } from "react-router-dom";
-import { toast } from "react-hot-toast";
-import Swal from "sweetalert2";
-import { Axios } from "../../api/api";
 import {
   ArrowRightOnRectangleIcon,
+  CurrencyDollarIcon,
   ShoppingBagIcon,
   ShoppingCartIcon,
   TableCellsIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
-import Logo from "../Common/Logo";
+import { useSignOut } from "react-auth-kit";
+import { toast } from "react-hot-toast";
+import { Link, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import { Axios } from "../../api/api";
 import MISTImage from "../../assets/MIST.png";
+import Logo from "../Common/Logo";
 
 export default function Aside({ toggleDrawer }) {
   // const auth = useAuthUser();
@@ -61,6 +62,11 @@ export default function Aside({ toggleDrawer }) {
       icon: <ShoppingBagIcon className="h-6 w-6" />,
     },
     {
+      link: "Total Bill",
+      path: "/admin/dashboard/totalBill",
+      icon: <CurrencyDollarIcon className="h-6 w-6" />,
+    },
+    {
       link: "Expenses",
       path: "/admin/dashboard/expenses",
       icon: <ShoppingCartIcon className="h-6 w-6" />,
@@ -96,7 +102,7 @@ export default function Aside({ toggleDrawer }) {
         <li className="px-4 text-base">
           <button
             onClick={handleSignOut}
-            className="active:!bg-red-600 py-4 active:text-white rounded-lg  text-red-600 hover:text-white hover:bg-red-600"
+            className="active:!bg-red-600 py-4 active:text-white rounded-lg text-red-600 hover:text-white hover:bg-red-600"
           >
             <ArrowRightOnRectangleIcon className="h-6 w-6" />
             <span className="ml-2">Logout</span>

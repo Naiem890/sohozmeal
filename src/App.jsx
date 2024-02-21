@@ -16,6 +16,7 @@ import MealRoutine from "./components/Student/MealRoutine";
 import Profile from "./components/Student/Profile";
 import MealRoutineAdmin from "./components/Student/MealRoutineAdmin";
 import BillCount from './components/Student/BillCount';
+import TotalBill from './components/Admin/TotalBill';
 
 function App() {
   return (
@@ -45,7 +46,9 @@ function App() {
           <Route index element={<StudentList />} />
           <Route path="stock" element={<Stock />} />
           <Route path="expenses" element={<Expenses />} />
+          <Route path="totalBill" element={<TotalBill />} />
           <Route path="meal-routine" element={<MealRoutineAdmin />} />
+       
         </Route>
         <Route
           path="/dashboard/"
