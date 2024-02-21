@@ -123,16 +123,16 @@ router.post("/", validateToken, async (req, res) => {
   }
 });
 
-// Fetch bills for a specific student
+// Fetch {bills for a specific student(as an admin)} || {monthly bill} || {by student's bearer token get his meal and bill details}
 router.get("/student", validateToken, async (req, res) => {
-  let studentId = req.user.studentId;
-  const { month, year } = req.query;
-  if (req.user.role === "admin") {
-    studentId = req.query.studentId;
-    if (!studentId) {
-      return res.status(400).json({ error: "Student Id is required" });
-    }
+  let studentId = req.user.studentId; // Default to the logged-in user's studentId
+  const { month, year, studentId: queryStudentId } = req.query; // Destructure query parameters
+
+  // If the user is an admin and a studentId is provided in the query, use it
+  if (req.user.role === "admin" && queryStudentId) {
+    studentId = queryStudentId;
   }
+
   try {
     // Validate month and year
     if (!month || !year || isNaN(month) || isNaN(year)) {
@@ -141,16 +141,54 @@ router.get("/student", validateToken, async (req, res) => {
 
     // Calculate start and end dates of the month
     const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month);
-    // Calculate start and end dates of the month
-    const start = new Date(year, month - 1, 1).toISOString().split("T")[0];
-    const end = new Date(year, month).toISOString().split("T")[0];
-
+    const endDate = new Date(year, month, 0); // Last day of the month
+    const start = startDate.toISOString().split("T")[0];
+    const end = endDate.toISOString().split("T")[0];
     // Aggregate pipeline to fetch bills
-    const bills = await Bill.aggregate([
+    const billsPipeline = [
       {
         $match: {
           date: { $gt: startDate, $lte: endDate },
+        },
+      },
+      {
+        $addFields: {
+          "mealBill.breakfast.perHeadCost": {
+            $cond: [
+              { $ne: ["$mealBill.breakfast.totalStudent", 0] },
+              {
+                $divide: [
+                  "$mealBill.breakfast.totalCost",
+                  "$mealBill.breakfast.totalStudent",
+                ],
+              },
+              0,
+            ],
+          },
+          "mealBill.lunch.perHeadCost": {
+            $cond: [
+              { $ne: ["$mealBill.lunch.totalStudent", 0] },
+              {
+                $divide: [
+                  "$mealBill.lunch.totalCost",
+                  "$mealBill.lunch.totalStudent",
+                ],
+              },
+              0,
+            ],
+          },
+          "mealBill.dinner.perHeadCost": {
+            $cond: [
+              { $ne: ["$mealBill.dinner.totalStudent", 0] },
+              {
+                $divide: [
+                  "$mealBill.dinner.totalCost",
+                  "$mealBill.dinner.totalStudent",
+                ],
+              },
+              0,
+            ],
+          },
         },
       },
       {
@@ -164,79 +202,73 @@ router.get("/student", validateToken, async (req, res) => {
       {
         $sort: { date: 1 }, // Sort by date in ascending order
       },
-    ]);
+    ];
 
-    // Aggregate pipeline to fetch meals
-    const meals = await Meal.aggregate([
-      {
-        $match: {
-          date: { $gt: start, $lte: end },
-          studentId: studentId,
+    // Fetch bills
+    const bills = await Bill.aggregate(billsPipeline).exec();
+    console.log(bills);
+    // Fetch meals
+    let combinedMealBill = [];
+    if (studentId) {
+      const mealsPipeline = [
+        {
+          $match: {
+            date: { $gt: start, $lte: end },
+            studentId: studentId,
+          },
         },
-      },
-      {
-        $project: {
-          date: 1,
-          meal: 1,
+        {
+          $project: {
+            date: 1,
+            meal: 1,
+          },
         },
-      },
-      {
-        $sort: { date: 1 }, // Sort by date in ascending order
-      },
-    ]);
-    // Index meals by date for faster lookup
-    const mealMap = {};
-    for (const meal of meals) {
-      mealMap[meal.date] = meal;
+        {
+          $sort: { date: 1 }, // Sort by date in ascending order
+        },
+      ];
+
+      const meals = await Meal.aggregate(mealsPipeline).exec();
+      // Index meals by date for faster lookup
+      const mealMap = {};
+      for (const meal of meals) {
+        mealMap[meal.date] = meal;
+      }
+
+      // Combine bills and meals data
+      combinedMealBill = bills.map((bill) => {
+        const meal = mealMap[bill.date];
+        if (meal) {
+          return {
+            date: bill.date,
+            mealBill: {
+              breakfast: {
+                ...bill.mealBill.breakfast,
+                perHeadCost: bill.mealBill.breakfast.perHeadCost,
+                status: meal.meal.breakfast,
+              },
+              lunch: {
+                ...bill.mealBill.lunch,
+                perHeadCost: bill.mealBill.lunch.perHeadCost,
+                status: meal.meal.lunch,
+              },
+              dinner: {
+                ...bill.mealBill.dinner,
+                perHeadCost: bill.mealBill.dinner.perHeadCost,
+                status: meal.meal.dinner,
+              },
+            },
+          };
+        }
+      });
+    } else {
+      // If no studentId is provided, simply return bills without combining with meals
+      combinedMealBill = bills;
     }
 
-    // Combine bills and meals data
-    const combinedMealBill = bills.map((bill) => {
-      const meal = mealMap[bill.date];
-      if (meal) {
-        const perHeadCosts = {
-          breakfast:
-            bill.mealBill.breakfast.totalStudent !== 0
-              ? bill.mealBill.breakfast.totalCost /
-                bill.mealBill.breakfast.totalStudent
-              : 0,
-          lunch:
-            bill.mealBill.lunch.totalStudent !== 0
-              ? bill.mealBill.lunch.totalCost / bill.mealBill.lunch.totalStudent
-              : 0,
-          dinner:
-            bill.mealBill.dinner.totalStudent !== 0
-              ? bill.mealBill.dinner.totalCost /
-                bill.mealBill.dinner.totalStudent
-              : 0,
-        };
-
-        return {
-          date: bill.date,
-          mealBill: {
-            breakfast: {
-              ...bill.mealBill.breakfast,
-              perHeadCost: perHeadCosts.breakfast,
-              status: meal.meal.breakfast,
-            },
-            lunch: {
-              ...bill.mealBill.lunch,
-              perHeadCost: perHeadCosts.lunch,
-              status: meal.meal.lunch,
-            },
-            dinner: {
-              ...bill.mealBill.dinner,
-              perHeadCost: perHeadCosts.dinner,
-              status: meal.meal.dinner,
-            },
-          },
-        };
-      }
-    });
-
     res.status(200).json({
-      message: `Bills and meals fetched successfully for student ${studentId}`,
-      mealBilldata: combinedMealBill,
+      message: `Bills and meals fetched successfully`,
+      mealBillData: combinedMealBill,
     });
   } catch (error) {
     console.error(error);
@@ -246,7 +278,4 @@ router.get("/student", validateToken, async (req, res) => {
   }
 });
 
-// get admin bills
-// api/bill/admin?month=02&year=2024
-  
 module.exports = router;
