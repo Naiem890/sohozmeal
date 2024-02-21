@@ -172,7 +172,100 @@ export default function BillCount() {
           </table>
         </div>
       </div>
-      <div className="md:mt-16"></div>
+      <div className="md:mt-16">
+        <div className="overflow-x-auto max-h-screen overflow-y-scroll px-1">
+          <table className="table table-sm table-hover w-full">
+            <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
+              <tr className="">
+                <th>Date</th>
+                <th>Breakfast</th>
+                <th>Lunch</th>
+                <th>Dinner</th>
+                <th>Total Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mealBillData.map((item, index) => (
+                <React.Fragment key={item.date}>
+                  <tr className="hover:shadow-sm rounded-lg hover:bg-emerald-50 transition-all border-b-0">
+                    <td className="font-bold text-xl">
+                      {new Date(item.date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </td>
+                    <td
+                      style={{
+                        color: item.mealBill.breakfast.status ? "red" : "green",
+                      }}
+                    >
+                      <span className="font-bold text-xl">
+                        {item.mealBill.breakfast.perHeadCost} ৳
+                      </span>
+                    </td>
+                    <td
+                      style={{
+                        color: item.mealBill.lunch.status ? "red" : "green",
+                      }}
+                    >
+                      <span className="font-bold text-xl">
+                        {item.mealBill.lunch.perHeadCost} ৳
+                      </span>
+                    </td>
+                    <td
+                      style={{
+                        color: item.mealBill.dinner.status ? "red" : "green",
+                      }}
+                    >
+                      <span className="font-bold text-xl">
+                        {item.mealBill.dinner.perHeadCost} ৳
+                      </span>
+                    </td>
+                    <td>
+                      <span className="font-bold text-xl">
+                        {(
+                          item.mealBill.breakfast.perHeadCost +
+                          item.mealBill.lunch.perHeadCost +
+                          item.mealBill.dinner.perHeadCost
+                        ).toFixed(2)}{" "}
+                        ৳
+                      </span>
+                    </td>
+                  </tr>
+                  {index !== mealBillData.length - 1 && (
+                    <tr className="border-b">
+                      <td colSpan="5"></td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+              {mealBillData.length > 0 && (
+                <tr className="border-t">
+                  <td className="font-bold text-xl">Grand Total</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td>
+                    <span className="font-bold text-xl">
+                      {mealBillData
+                        .reduce(
+                          (total, item) =>
+                            total +
+                            item.mealBill.breakfast.perHeadCost +
+                            item.mealBill.lunch.perHeadCost +
+                            item.mealBill.dinner.perHeadCost,
+                          0
+                        )
+                        .toFixed(2)}{" "}
+                      ৳
+                    </span>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
