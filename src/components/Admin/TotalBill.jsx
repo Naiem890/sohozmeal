@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import formatDate from "../../Utils/formatDateString";
 import { Axios } from "../../api/api";
 
-export default function BillCount() {
+export default function TotalBill() {
   const [student, setStudent] = useState(null);
   const [name, setName] = useState("");
   const [distinctMonths, setDistinctMonths] = useState([]);
