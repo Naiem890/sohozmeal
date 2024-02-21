@@ -7,7 +7,7 @@ const sendSMS = async (message, phones) => {
   const senderId = process.env.SENDER_ID;
   if (!apiKey || !senderId) {
     throw new Error("API_KEY or SENDER_ID is missing");
-  } else if (!phone || !message) {
+  } else if (!phones || !message) {
     throw new Error("Phone number or message is missing");
   }
 

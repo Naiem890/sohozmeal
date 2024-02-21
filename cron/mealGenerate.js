@@ -2,12 +2,13 @@ const schedule = require("node-schedule");
 const Meal = require("../src/models/meal");
 const { sendSMS } = require("../src/utils/sendSMS");
 const Student = require("../src/models/student");
-import contactPersonData from "../src/config/contactPerson.json";
-
+const contacts = require("../src/config/contactPerson");
+const phones = contacts.developer.map((dev) => dev.phone);
 // Schedule the cron job to run daily at 09:55 PM
-// const generateMealsForStudents = async () => { //for Testing
+// const generateMealsForStudents = async () => {
+//for Testing
 schedule.scheduleJob({ hour: 21, minute: 55, tz: "Asia/Dhaka" }, async () => {
-  //comment for testing
+  //comment previous line testing
   console.log("Cron job executed: Generating meals for students.");
 
   try {
@@ -64,7 +65,7 @@ schedule.scheduleJob({ hour: 21, minute: 55, tz: "Asia/Dhaka" }, async () => {
       const dinnerMeals = newMeals.filter((meal) => meal.meal.dinner === true);
       const result = await sendSMS(
         `Meals generated for ${nextDay}! \nTotal meals generated: ${newMeals.length} meals. \nBreakfast: ${breakfastMeals.length} \nLunch: ${lunchMeals.length} \nDinner: ${dinnerMeals.length} \n\n- Sohoz Meal App (Osmany Hall)`,
-        [...contactPersonData.developer]
+        phones
       );
       console.log("SMS sent successfully!", result.data);
     } else {
