@@ -1,6 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import AdminDashboard from "./components/Admin/AdminDashboard";
-import { Expenses } from "./components/Admin/Expenses";
+import  Expenses  from "./components/Admin/Expenses";
 import { Stock } from "./components/Admin/Stock/Stock";
 import { StudentList } from "./components/Admin/StudentList";
 import AdminLogin from "./components/Auth/AdminLogin";
