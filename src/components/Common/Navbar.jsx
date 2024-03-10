@@ -17,11 +17,8 @@ export default function Navbar() {
     // { link: "Home", path: "/" },
     // { link: "Home", path: "/" },
   ];
-  console.log("location", location);
 
   const showNavBar = location.pathname.includes("dashboard");
-
-  console.log("showNavBar", showNavBar);
 
   return (
     <div
