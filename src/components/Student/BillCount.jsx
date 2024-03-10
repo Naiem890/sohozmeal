@@ -55,17 +55,19 @@ export default function BillCount() {
   );
 
   return (
-    <div className="lg:py-10 pb-10 px-5 lg:mr-12 max-h-screen flex flex-col">
+    <div className="lg:py-10 xs:text-base pb-10 px-5 text-xs lg:mr-12 max-h-screen flex flex-col">
       <div className="flex justify-between h-auto">
-        <h2 className="text-3xl font-semibold">Mess Bill:</h2>
-        <div className="md:mx-0 w-44">
+        <h2 className="text-lg self-center sm:text-2xl md:text-3xl font-semibold">
+          Mess bill:
+        </h2>
+        <div className="">
           <select
             value={selectedMonth}
             onChange={(e) => handleMonthChange(e.target.value)}
-            className="rounded-lg p-2 outline-none pr-4 w-full"
+            className="rounded-md border-2 border-gray-300 p-1 sm:p-2 md:p-2 focus:outline-none focus:border-blue-500 transition-all duration-300 ease-in-out w-40 sm:w-60 md:w-60"
           >
             {distinctMonths.map((month) => (
-              <option key={month} value={month}>
+              <option key={month} value={month} className="">
                 {formatDate(month)}
               </option>
             ))}
@@ -73,19 +75,19 @@ export default function BillCount() {
         </div>
       </div>
       <div className="divider"></div>
-      <div className="md:mt-4 overflow-y-scroll">
-        <div className="overflow-x-hidden px-1">
-          <table className="table-auto min-w-full divide-y divide-gray-200 shadow-md">
+      <div className="md:mt-4 overflow-y-scroll min-w-full">
+        <div className="overflow-x-hidden w-full">
+          <table className=" divide-gray-200 shadow-md w-full">
             <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
-              <tr className="text-sm text-left font-thin text-gray-500">
-                <th className="pl-2">Date</th>
+              <tr className="text-xs text-center font-thin text-gray-500">
+                <th className="text-left">Date</th>
                 <th>Breakfast</th>
                 <th>Lunch</th>
                 <th>Dinner</th>
-                <th>Total Cost</th>
+                <th>Total</th>
               </tr>
             </thead>
-            <tbody className="max-h-2">
+            <tbody className="text-center">
               {daysOfMonth.map((day) => {
                 const billData = mealBillData.find((item) => item.date === day);
                 if (billData) {
@@ -101,7 +103,7 @@ export default function BillCount() {
                 }
                 return (
                   <tr key={day} className="hover:bg-gray-100">
-                    <td className="pl-2 py-1">
+                    <td className="py-1 whitespace-nowrap text-left">
                       {new Date(day).toLocaleDateString("en-UK")}
                     </td>
                     {billData ? (
@@ -109,8 +111,8 @@ export default function BillCount() {
                         <td
                           className={`${
                             billData.mealBill.breakfast.status
-                              ? "text-green-600 font-bold"
-                              : "text-red-600 font-bold"
+                              ? "text-green-600 font-bold whitespace-nowrap"
+                              : "text-red-600 font-bold whitespace-nowrap"
                           }`}
                         >
                           {billData.mealBill.breakfast.perHeadCost.toFixed(2)} ৳
@@ -118,8 +120,8 @@ export default function BillCount() {
                         <td
                           className={`${
                             billData.mealBill.lunch.status
-                              ? "text-green-600 font-bold"
-                              : "text-red-600 font-bold"
+                              ? "text-green-600 font-bold whitespace-nowrap"
+                              : "text-red-600 font-bold whitespace-nowrap"
                           }`}
                         >
                           {billData.mealBill.lunch.perHeadCost.toFixed(2)} ৳
@@ -127,13 +129,13 @@ export default function BillCount() {
                         <td
                           className={`${
                             billData.mealBill.dinner.status
-                              ? "text-green-600 font-bold"
-                              : "text-red-600 font-bold"
+                              ? "text-green-600 font-bold whitespace-nowrap"
+                              : "text-red-600 font-bold whitespace-nowrap"
                           }`}
                         >
                           {billData.mealBill.dinner.perHeadCost.toFixed(2)} ৳
                         </td>
-                        <td>
+                        <td className="whitespace-nowrap">
                           {(billData.mealBill.breakfast.status
                             ? billData.mealBill.breakfast.perHeadCost
                             : 0 + billData.mealBill.lunch.status
@@ -147,10 +149,10 @@ export default function BillCount() {
                       </>
                     ) : (
                       <>
-                        <td>0.00 ৳</td>
-                        <td>0.00 ৳</td>
-                        <td>0.00 ৳</td>
-                        <td>0.00 ৳</td>
+                        <td className="whitespace-nowrap">0.00 ৳</td>
+                        <td className="whitespace-nowrap">0.00 ৳</td>
+                        <td className="whitespace-nowrap">0.00 ৳</td>
+                        <td className="whitespace-nowrap">0.00 ৳</td>
                       </>
                     )}
                   </tr>
@@ -158,14 +160,12 @@ export default function BillCount() {
               })}
               {/* Grand Total Row */}
               <tr className="">
-                <td className="font-bold text-xl pl-2 pt-2">Grand Total</td>
+                <td className="font-bold pt-2 text-left">Grand Total</td>
                 <td></td>
                 <td></td>
                 <td></td>
                 <td>
-                  <span className="font-bold text-xl">
-                    {totalBill.toFixed(2)} ৳
-                  </span>
+                  <span className="font-bold">{totalBill.toFixed(2)} ৳</span>
                 </td>
               </tr>
             </tbody>
