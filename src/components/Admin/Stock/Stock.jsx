@@ -157,22 +157,21 @@ export const Stock = () => {
           {renderModeComponent()}
         </div>
       </div>
-      <div className="mb-36">
+      <div className="mt-20">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">Stock Transaction</h2>
         </div>
         <div className="overflow-x-auto max-h-72 mt-4">
           <table className="table-fixed w-full">
-            <thead className="bg-white shadow-sm sticky top-0 border-b border-gray-200 h-9">
+            <thead className="bg-white shadow-sm sticky top-0 border-b border-gray-200 h-12">
               <tr className="">
-                <th className="uppercase text-left pl-3">Name</th>
-                <th className="uppercase text-left pl-3">Quantity Change</th>
-                <th className="uppercase text-left pl-3">Type</th>
-                <th className="uppercase text-left pl-3">Meal</th>
-                <th className="uppercase text-left pl-3">Date</th>
+                <th className="uppercase px-4 py-2">Name</th>
+                <th className="uppercase px-4 py-2">Quantity Change</th>
+                <th className="uppercase px-4 py-2">Type</th>
+                <th className="uppercase px-4 py-2">Meal</th>
+                <th className="uppercase px-4 py-2">Date</th>
               </tr>
             </thead>
-
             <tbody className="max-h-full overflow-y-auto">
               {stockTransaction &&
                 stockTransaction.map((stock) => (
