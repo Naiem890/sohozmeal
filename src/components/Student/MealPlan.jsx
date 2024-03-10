@@ -16,7 +16,6 @@ export default function MealPlan() {
     const fetchDistinctMonths = async () => {
       const res = await Axios.get("/meal/months");
       const months = res.data;
-      console.log("months", months);
       setDistinctMonths(months);
       setSelectedMonth(months.slice(-1)[0]);
     };
@@ -188,7 +187,9 @@ export default function MealPlan() {
                         }
                         type="checkbox"
                         id={`_checkbox-${meal._id}-${mealType}`}
-                        className={`${meal.permission[i] ? "locked" : ""}`}
+                        className={`${
+                          meal.permission && meal?.permission[i] ? "locked" : ""
+                        }`}
                       />
                       <label htmlFor={`_checkbox-${meal._id}-${mealType}`}>
                         <div className="tick_mark"></div>
