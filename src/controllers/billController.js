@@ -6,11 +6,11 @@ const { validateToken } = require("../utils/validateToken");
 
 // Fetch all bills for a specific date
 router.post("/", validateToken, async (req, res) => {
-  const { date } = req.query;
+  const queryDate = req.query.date;
   try {
     // Convert the query strings into Date objects
-    const dateObj = new Date(date);
-
+    const dateObj = new Date(queryDate);
+    const date = dateObj.toISOString().split("T")[0];
     // Check if the dates are valid
     if (isNaN(dateObj.getTime())) {
       return res.status(400).json({ error: "Invalid date format" });
@@ -67,6 +67,7 @@ router.post("/", validateToken, async (req, res) => {
         },
       },
     ]);
+    console.log(mealCosts, mealCounts, date, dateObj, "shohan");
     // Fetch or create a bill
     let bill = await Bill.findOne({ date: dateObj });
 
