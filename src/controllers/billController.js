@@ -205,7 +205,7 @@ router.get("/student", validateToken, async (req, res) => {
       },
     ];
 
-    console.log("billsPipeline", billsPipeline);
+    console.log("billsPipeline", JSON.stringify(billsPipeline, null, 2));
 
     // Fetch bills
     const bills = await Bill.aggregate(billsPipeline).exec();
