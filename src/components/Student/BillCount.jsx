@@ -79,7 +79,7 @@ export default function BillCount() {
         <div className="overflow-x-hidden w-full">
           <table className=" divide-gray-200 shadow-md w-full">
             <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
-              <tr className="text-xs text-center font-thin text-gray-500">
+              <tr className="text-xs font-thin text-gray-500">
                 <th className="text-left">Date</th>
                 <th>Breakfast</th>
                 <th>Lunch</th>
@@ -90,6 +90,7 @@ export default function BillCount() {
             <tbody className="text-center">
               {daysOfMonth.map((day) => {
                 const billData = mealBillData.find((item) => item.date === day);
+                console.log(billData, "shohans");
                 if (billData) {
                   billData.mealBill.breakfast.status
                     ? (totalBill += billData.mealBill.breakfast.perHeadCost)
@@ -136,13 +137,16 @@ export default function BillCount() {
                           {billData.mealBill.dinner.perHeadCost.toFixed(2)} ৳
                         </td>
                         <td className="whitespace-nowrap">
-                          {(billData.mealBill.breakfast.status
-                            ? billData.mealBill.breakfast.perHeadCost
-                            : 0 + billData.mealBill.lunch.status
-                            ? billData.mealBill.lunch.perHeadCost
-                            : 0 + billData.mealBill.dinner.status
-                            ? billData.mealBill.dinner.perHeadCost
-                            : 0
+                          {(
+                            (billData.mealBill.breakfast.status
+                              ? billData.mealBill.breakfast.perHeadCost
+                              : 0) +
+                            (billData.mealBill.lunch.status
+                              ? billData.mealBill.lunch.perHeadCost
+                              : 0) +
+                            (billData.mealBill.dinner.status
+                              ? billData.mealBill.dinner.perHeadCost
+                              : 0)
                           ).toFixed(2)}{" "}
                           ৳
                         </td>
