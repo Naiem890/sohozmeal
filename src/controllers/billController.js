@@ -127,11 +127,9 @@ router.post("/", validateToken, async (req, res) => {
 router.get("/student", validateToken, async (req, res) => {
   let studentId = req.user.studentId; // Default to the logged-in user's studentId
   const { month, year, studentId: queryStudentId } = req.query; // Destructure query parameters
-  console.log("studentId", studentId);
   // If the user is an admin and a studentId is provided in the query, use it
   if (req.user.role === "admin" && queryStudentId) {
     studentId = queryStudentId;
-    console.log("running as admin", studentId);
   }
 
   try {
@@ -141,16 +139,15 @@ router.get("/student", validateToken, async (req, res) => {
     }
 
     // Calculate start and end dates of the month
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0); // Last day of the month
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month)); // Last day of the month
     const start = startDate.toISOString().split("T")[0];
     const end = endDate.toISOString().split("T")[0];
-    console.log(start, end, startDate, endDate, studentId, "ss");
     // Aggregate pipeline to fetch bills
     const billsPipeline = [
       {
         $match: {
-          date: { $gt: startDate, $lte: endDate },
+          date: { $gte: startDate, $lt: endDate },
         },
       },
       {
@@ -206,18 +203,15 @@ router.get("/student", validateToken, async (req, res) => {
       },
     ];
 
-    console.log("billsPipeline", JSON.stringify(billsPipeline, null, 2));
-
     // Fetch bills
     const bills = await Bill.aggregate(billsPipeline).exec();
-    console.log("bills", bills);
     // Fetch meals
     let combinedMealBill = [];
     if (studentId) {
       const mealsPipeline = [
         {
           $match: {
-            date: { $gt: start, $lte: end },
+            date: { $gte: start, $lt: end },
             studentId: studentId,
           },
         },
@@ -269,7 +263,6 @@ router.get("/student", validateToken, async (req, res) => {
       // If no studentId is provided, simply return bills without combining with meals
       combinedMealBill = bills;
     }
-    console.log("combinedMealBill", combinedMealBill)
     res.status(200).json({
       message: `Bills and meals fetched successfully`,
       mealBillData: combinedMealBill,
