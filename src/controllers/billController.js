@@ -206,8 +206,11 @@ router.get("/student", validateToken, async (req, res) => {
       },
     ];
 
+    console.log("billsPipeline", JSON.stringify(billsPipeline, null, 2));
+
     // Fetch bills
     const bills = await Bill.aggregate(billsPipeline).exec();
+    console.log("bills", bills);
     // Fetch meals
     let combinedMealBill = [];
     if (studentId) {
@@ -266,7 +269,7 @@ router.get("/student", validateToken, async (req, res) => {
       // If no studentId is provided, simply return bills without combining with meals
       combinedMealBill = bills;
     }
-
+    console.log("combinedMealBill", combinedMealBill)
     res.status(200).json({
       message: `Bills and meals fetched successfully`,
       mealBillData: combinedMealBill,
