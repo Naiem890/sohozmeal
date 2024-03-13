@@ -234,31 +234,33 @@ router.get("/student", validateToken, async (req, res) => {
       }
 
       // Combine bills and meals data
-      combinedMealBill = bills.map((bill) => {
-        const meal = mealMap[bill.date];
-        if (meal) {
+      combinedMealBill = bills
+        .filter((bill) => {
+          const meal = mealMap[bill.date];
+          return meal;
+        })
+        .map((bill) => {
           return {
             date: bill.date,
             mealBill: {
               breakfast: {
                 ...bill.mealBill.breakfast,
                 perHeadCost: bill.mealBill.breakfast.perHeadCost,
-                status: meal.meal.breakfast,
+                status: mealMap[bill.date].meal.breakfast,
               },
               lunch: {
                 ...bill.mealBill.lunch,
                 perHeadCost: bill.mealBill.lunch.perHeadCost,
-                status: meal.meal.lunch,
+                status: mealMap[bill.date].meal.lunch,
               },
               dinner: {
                 ...bill.mealBill.dinner,
                 perHeadCost: bill.mealBill.dinner.perHeadCost,
-                status: meal.meal.dinner,
+                status: mealMap[bill.date].meal.dinner,
               },
             },
           };
-        }
-      });
+        });
     } else {
       // If no studentId is provided, simply return bills without combining with meals
       combinedMealBill = bills;
