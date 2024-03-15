@@ -61,7 +61,7 @@ export default function BillCount() {
 
   return (
     <div className="lg:py-10 xs:text-base pb-10 px-5 text-xs lg:mr-12 max-h-screen flex flex-col">
-      <div className="flex justify-between h-auto">
+      <div className="flex justify-between gap-2 h-auto">
         <h2 className="text-lg self-center xs:text-3xl font-semibold">
           Mess Bill:
         </h2>
