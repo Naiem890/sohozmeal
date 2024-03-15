@@ -1,77 +1,80 @@
-import React, { useCallback, useEffect, useState } from "react";
-import formatDate from "../../Utils/formatDateString";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Axios } from "../../api/api";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 export default function BillCount() {
-  const [distinctMonths, setDistinctMonths] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [mealBillData, setMealBillData] = useState([]);
   let totalBill = 0;
 
   useEffect(() => {
-    const fetchDistinctMonths = async () => {
-      const res = await Axios.get("/meal/months");
-      setDistinctMonths(res.data);
-      setSelectedMonth(res.data.slice(-1)[0]);
-    };
-
-    fetchDistinctMonths();
-  }, []);
-
-  useEffect(() => {
     const fetchBill = async () => {
-      if (selectedMonth) {
-        const [year, month] = selectedMonth.split("-");
-        try {
-          const res = await Axios.get(
-            `/bill/student?year=${year}&month=${month}`
-          );
-          setMealBillData(res.data.mealBillData);
-        } catch (err) {
-          console.log("Error fetching bill data:", err);
-        }
+      try {
+        const year = selectedDate.getFullYear();
+        const month = selectedDate.getMonth() + 1;
+        const res = await Axios.get(
+          `/bill/student?year=${year}&month=${month}`
+        );
+        setMealBillData(res.data.mealBillData);
+      } catch (err) {
+        console.log("Error fetching bill data:", err);
       }
     };
     fetchBill();
-  }, [selectedMonth]);
+  }, [selectedDate]);
 
-  const handleMonthChange = useCallback((newMonth) => {
-    setSelectedMonth(newMonth);
+  const handleDateChange = useCallback((date) => {
+    setSelectedDate(date);
   }, []);
 
-  // Generate an array of dates for the selected month
-  const getDaysArray = (year, month) => {
-    const numDays = new Date(year, month, 0).getDate();
-    return Array.from(
-      { length: numDays },
-      (_, i) => new Date(year, month - 1, i + 2).toISOString().split("T")[0]
-    );
-  };
+  const getDaysArray = useMemo(
+    () => (year, month) => {
+      const numDays = new Date(year, month, 0).getDate();
+      return Array.from(
+        { length: numDays },
+        (_, i) => new Date(year, month - 1, i + 2).toISOString().split("T")[0]
+      );
+    },
+    []
+  );
 
-  // Get the array of days for the selected month
   const daysOfMonth = getDaysArray(
-    parseInt(selectedMonth.split("-")[0]),
-    parseInt(selectedMonth.split("-")[1])
+    selectedDate.getFullYear(),
+    selectedDate.getMonth() + 1
   );
 
   return (
     <div className="lg:py-10 xs:text-base pb-10 px-5 text-xs lg:mr-12 max-h-screen flex flex-col">
       <div className="flex justify-between h-auto">
-        <h2 className="text-lg self-center sm:text-2xl md:text-3xl font-semibold">
-          Mess bill:
+        <h2 className="text-lg self-center xs:text-3xl font-semibold">
+          Mess Bill:
         </h2>
         <div className="">
-          <select
-            value={selectedMonth}
-            onChange={(e) => handleMonthChange(e.target.value)}
-            className="rounded-md border-2 border-gray-300 p-1 sm:p-2 md:p-2 focus:outline-none focus:border-blue-500 transition-all duration-300 ease-in-out w-40 sm:w-60 md:w-60"
-          >
-            {distinctMonths.map((month) => (
-              <option key={month} value={month} className="">
-                {formatDate(month)}
-              </option>
-            ))}
-          </select>
+          <DatePicker
+            selected={selectedDate}
+            onChange={handleDateChange}
+            dateFormat="MM/yyyy"
+            showMonthYearPicker
+            className="rounded-md border-2 border-gray-300 focus:outline-none focus:border-blue-500 transition-all duration-300 ease-in-out text-xs p-2 md:p-3 w-20 xs:text-base xs:w-44"
+            wrapperClassName="w-full"
+            calendarClassName="mt-2 rounded-md border-2 border-gray-300 shadow-lg bg-white text-gray-800"
+          />
         </div>
       </div>
       <div className="divider"></div>
@@ -90,23 +93,21 @@ export default function BillCount() {
             <tbody className="text-center">
               {daysOfMonth.map((day) => {
                 const billData = mealBillData.find((item) => item.date === day);
-                console.log(billData, "shohans");
                 if (billData) {
-                  billData.mealBill.breakfast.status
-                    ? (totalBill += billData.mealBill.breakfast.perHeadCost)
-                    : 0;
-                  billData.mealBill.lunch.status
-                    ? (totalBill += billData.mealBill.lunch.perHeadCost)
-                    : 0;
-                  billData.mealBill.dinner.status
-                    ? (totalBill += billData.mealBill.dinner.perHeadCost)
-                    : 0;
+                  totalBill +=
+                    (billData.mealBill.breakfast.status
+                      ? billData.mealBill.breakfast.perHeadCost
+                      : 0) +
+                    (billData.mealBill.lunch.status
+                      ? billData.mealBill.lunch.perHeadCost
+                      : 0) +
+                    (billData.mealBill.dinner.status
+                      ? billData.mealBill.dinner.perHeadCost
+                      : 0);
                 }
                 return (
                   <tr key={day} className="hover:bg-gray-100">
-                    <td className="py-1 whitespace-nowrap text-left">
-                      {new Date(day).toLocaleDateString("en-UK")}
-                    </td>
+                    <td className="py-1 whitespace-nowrap text-left">{day}</td>
                     {billData ? (
                       <>
                         <td
