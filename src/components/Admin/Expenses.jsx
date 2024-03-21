@@ -53,10 +53,7 @@ export default function Expenses() {
 
   return (
     <div className="lg:my-10 mb-10 px-5 lg:mr-12">
-      <h2 className="text-3xl font-semibold">
-        Hello, <span className="font-green">{name.split(" ")[0]}</span>, Your
-        Meal Bill Count:
-      </h2>
+      <h2 className="text-3xl font-semibold">Mess Bill:</h2>
       <div className="divider"></div>
       <div className="flex justify-between items-center mb-6 gap-10 flex-wrap">
         <div className="flex justify-center items-center gap-10 md:mx-0 mx-auto">
@@ -89,134 +86,163 @@ export default function Expenses() {
       </div>
       <div className="md:mt-16">
         <div className="overflow-x-auto max-h-screen overflow-y-scroll px-1">
-          <table className="table table-sm table-hover w-full">
-            <thead className="bg-gray-200 shadow-sm sticky top-0 border-b-2">
+          <table className="table table-sm border-collapse border border-slate-500 table-hover w-full text-center">
+            <thead className="bg-gray-200 shadow-sm sticky top-0 border-b-[1px] border-slate-500">
               <tr className="">
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Breakfast</th>
-                <th className="px-4 py-2">Lunch</th>
-                <th className="px-4 py-2">Dinner</th>
-                <th className="px-4 py-2">Total Cost</th>
+                <th className="p-0 border border-slate-500">Date</th>
+                <th className="p-0 border border-slate-500">Breakfast</th>
+                <th className="p-0 border border-slate-500">Lunch</th>
+                <th className="p-0 border border-slate-500">Dinner</th>
+                <th className="p-0 border border-slate-500">Total Cost</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="">
+              <tr className=" text-center">
+                <td className="p-0 m-0 border border-slate-500">Date</td>
+                <td className=" p-0 m-0 border border-slate-500">
+                  <div className="border-b-[1px] border-slate-500 text-center">
+                    Total Cost
+                  </div>
+                  <div className="flex">
+                    <div className="flex-1 border-r-[1px] border-slate-500">
+                      Total Student
+                    </div>
+                    <div className="flex-1">Per Head</div>
+                  </div>
+                </td>
+                <td className="p-0 m-0 border border-slate-500">
+                  <div className="border-b-[1px] border-slate-500 text-center">
+                    Total Cost
+                  </div>
+                  <div className="flex">
+                    <div className="flex-1 border-r-[1px] border-slate-500">
+                      Total Student
+                    </div>
+                    <div className="flex-1">Per Head</div>
+                  </div>
+                </td>
+                <td className="p-0 m-0 border border-slate-500">
+                  <div className="border-b-[1px] border-slate-500 text-center">
+                    Total Cost
+                  </div>
+                  <div className="flex">
+                    <div className="flex-1 border-r-[1px] border-slate-500">
+                      Total Student
+                    </div>
+                    <div className="flex-1">Per Head</div>
+                  </div>
+                </td>
+                <td className="p-0 m-0 border border-slate-500">
+                  <div className="border-b-[1px] border-slate-500">
+                    Total Cost
+                  </div>
+                  <div>Per Head</div>
+                </td>
+              </tr>
               {mealBillData.map((item, index) => (
                 <React.Fragment key={item.date}>
-                  <tr className="hover:bg-gray-100 border-b">
-                    <td className="px-4 py-2 font-bold text-lg">
+                  <tr className="hover:bg-gray-100 border border-slate-500 text-center">
+                    <td className="p-0 font-bold text-lg border border-slate-500">
                       {new Date(item.date).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                       })}
                     </td>
-                    <td className="px-4 py-2">
-                      <div className="font-semibold">
-                        Total Cost:{" "}
-                        <span className="font-bold text-red-500">
-                          {item.mealBill.breakfast.totalcost}
+                    <td className="p-0 border border-slate-500">
+                      <div className="font-semibold border-b-[1px] border-slate-500 text-center">
+                        <span className="font-bold ">
+                          {item?.mealBill?.breakfast?.totalcost
+                            ? item.mealBill.breakfast.totalcost("৳")
+                            : "Unavailable"}
                         </span>{" "}
-                        ৳
                       </div>
-                      <div className="font-semibold">
-                        Student Count:{" "}
-                        <span className="font-bold text-red-500">
-                          {item.mealBill.breakfast.totalStudent}
-                        </span>
-                      </div>
-                      <div className="font-semibold">
-                        Per Head Cost:{" "}
-                        <span className="font-bold text-red-500">
-                          {item.mealBill.breakfast.perHeadCost}
-                        </span>{" "}
-                        ৳
+                      <div className="flex">
+                        <div className="font-semibold flex-1 border-r-[1px] border-slate-500">
+                          <span className="font-bold ">
+                            {item.mealBill.breakfast.totalStudent}
+                          </span>
+                        </div>
+                        <div className="font-semibold flex-1">
+                          <span className="font-bold ">
+                            {item.mealBill.breakfast.perHeadCost.toFixed(2)}
+                          </span>{" "}
+                          ৳
+                        </div>
                       </div>
                     </td>
-                    <td className="px-4 py-2">
-                      <div className="font-semibold">
-                        Total Cost:{" "}
-                        <span className="font-bold text-red-500">
+                    <td className="p-0 border border-slate-500">
+                      <div className="font-semibold border-b-[1px] border-slate-500 text-center">
+                        <span className="font-bold ">
                           {item.mealBill.lunch.totalCost}
                         </span>{" "}
                         ৳
                       </div>
-                      <div className="font-semibold">
-                        Student Count:{" "}
-                        <span className="font-bold text-red-500">
-                          {item.mealBill.lunch.totalStudent}
-                        </span>
-                      </div>
-                      <div className="font-semibold">
-                        Per Head Cost:{" "}
-                        <span className="font-bold text-red-500">
-                          {item.mealBill.lunch.perHeadCost}
-                        </span>{" "}
-                        ৳
+                      <div className="flex">
+                        <div className="font-semibold flex-1 border-r-[1px] border-slate-500">
+                          <span className="font-bold ">
+                            {item.mealBill.lunch.totalStudent}
+                          </span>
+                        </div>
+                        <div className="font-semibold flex-1">
+                          <span className="font-bold ">
+                            {item.mealBill.lunch.perHeadCost.toFixed(2)}
+                          </span>{" "}
+                          ৳
+                        </div>
                       </div>
                     </td>
-                    <td className="px-4 py-2">
-                      <div className="font-semibold">
-                        Total Cost:{" "}
-                        <span className="font-bold text-red-500">
+                    <td className="p-0 m-0 border border-slate-500">
+                      <div className="font-semibold border-b-[1px] border-slate-500 text-center">
+                        <span className="font-bold ">
                           {item.mealBill.dinner.totalCost}
                         </span>{" "}
                         ৳
                       </div>
-                      <div className="font-semibold">
-                        Student Count:{" "}
-                        <span className="font-bold text-red-500">
-                          {item.mealBill.dinner.totalStudent}
-                        </span>
-                      </div>
-                      <div className="font-semibold">
-                        Per Head Cost:{" "}
-                        <span className="font-bold text-red-500">
-                          {item.mealBill.dinner.perHeadCost}
-                        </span>{" "}
-                        ৳
+                      <div className="flex">
+                        <div className="font-semibold flex-1 border-r-[1px] border-slate-500">
+                          <span className="font-bold ">
+                            {item.mealBill.dinner.totalStudent}
+                          </span>
+                        </div>
+                        <div className="font-semibold flex-1">
+                          <span className="font-bold ">
+                            {item.mealBill.dinner.perHeadCost.toFixed(2)}
+                          </span>{" "}
+                          ৳
+                        </div>
                       </div>
                     </td>
-                    <td className="px-4 py-2">
-                      <div className="font-semibold text-xl">
-                        Total Cost: {" "}
-                        <span className="font-bold text-red-500 text-xl" >
-                        {(
-                        item.mealBill.breakfast.totalCost +
-                        item.mealBill.lunch.totalCost +
-                        item.mealBill.dinner.totalCost
-                      ).toFixed(2)}{" "}
-                      ৳
+                    <td className="p-0 m-0 border border-slate-500">
+                      <div className="font-semibold border-b-[1px] border-slate-500">
+                        <span className="font-bold ">
+                          {(
+                            item.mealBill.breakfast.totalCost +
+                            item.mealBill.lunch.totalCost +
+                            item.mealBill.dinner.totalCost
+                          ).toFixed(2)}{" "}
+                          ৳
                         </span>
                       </div>
-                      <div className="font-semibold text-xl">
-                        Per Head Cost: {" "}
-                        <span className="font-bold text-red-500 text-xl">
-                        {(
-                        item.mealBill.breakfast.perHeadCost +
-                        item.mealBill.lunch.perHeadCost +
-                        item.mealBill.dinner.perHeadCost
-                      ).toFixed(2)}{" "}
-                      ৳
+                      <div className="font-semibold">
+                        <span className="font-bold ">
+                          {(
+                            item.mealBill.breakfast.perHeadCost +
+                            item.mealBill.lunch.perHeadCost +
+                            item.mealBill.dinner.perHeadCost
+                          ).toFixed(2)}{" "}
+                          ৳
                         </span>
                       </div>
-                    
                     </td>
                   </tr>
-                  {index !== mealBillData.length - 1 && (
-                    <tr className="border-b">
-                      <td colSpan="5"></td>
-                    </tr>
-                  )}
                 </React.Fragment>
               ))}
               {mealBillData.length > 0 && (
                 <tr className="border-t">
-                  <td
-                    colSpan="4"
-                    className="text-right font-bold text-xl px-4 py-2"
-                  >
+                  <td colSpan="4" className="text-right font-bold text-xl p-0">
                     Grand Total
                   </td>
-                  <td className="px-4 py-2 font-bold text-xl">
+                  <td className="p-0 font-bold text-xl">
                     {mealBillData
                       .reduce(
                         (total, item) =>
