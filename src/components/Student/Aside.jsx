@@ -57,11 +57,11 @@ export default function Aside({ toggleDrawer }) {
       path: "/dashboard/meal-routine",
       icon: <TableCellsIcon className="w-6 h-6" />,
     },
-    {
-      link: "Bill Payment",
-      path: "/dashboard/bill-payment",
-      icon: <CreditCardIcon className="h-6 w-6" />,
-    },
+    // {
+    //   link: "Bill Payment",
+    //   path: "/dashboard/bill-payment",
+    //   icon: <CreditCardIcon className="h-6 w-6" />,
+    // },
     {
       link: "Bill Count",
       path: "/dashboard/bill-count",

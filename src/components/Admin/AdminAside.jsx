@@ -61,11 +61,11 @@ export default function Aside({ toggleDrawer }) {
       path: "/admin/dashboard/stock",
       icon: <ShoppingBagIcon className="h-6 w-6" />,
     },
-    {
-      link: "Total Bill",
-      path: "/admin/dashboard/totalBill",
-      icon: <CurrencyDollarIcon className="h-6 w-6" />,
-    },
+    // {
+    //   link: "Total Bill",
+    //   path: "/admin/dashboard/totalBill",
+    //   icon: <CurrencyDollarIcon className="h-6 w-6" />,
+    // },
     {
       link: "Expenses",
       path: "/admin/dashboard/expenses",
