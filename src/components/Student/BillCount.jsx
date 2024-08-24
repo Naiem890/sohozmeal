@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Axios } from "../../api/api";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import formatDate from "../../Utils/formatDateString";
+import convertToDDMMYYYY from "../../Utils/YYYYMMDDtoDDMMYYYY";
 
 const monthNames = [
   "January",
@@ -63,7 +65,7 @@ export default function BillCount() {
     <div className="lg:py-10 xs:text-base pb-10 px-5 text-xs lg:mr-12 max-h-screen flex flex-col">
       <div className="flex justify-between gap-2 h-auto">
         <h2 className="text-lg self-center xs:text-3xl font-semibold">
-          Mess Bill:
+          Mess Bill
         </h2>
         <div className="">
           <DatePicker
@@ -71,6 +73,7 @@ export default function BillCount() {
             onChange={handleDateChange}
             dateFormat="MM/yyyy"
             showMonthYearPicker
+            maxDate={new Date()}
             className="rounded-md border-2 border-gray-300 focus:outline-none focus:border-blue-500 transition-all duration-300 ease-in-out text-xs p-2 md:p-3 max-w-full"
             wrapperClassName="w-full"
             calendarClassName="mt-2 rounded-md border-2 border-gray-300 shadow-lg bg-white text-gray-800"
@@ -107,7 +110,7 @@ export default function BillCount() {
                 }
                 return (
                   <tr key={day} className="hover:bg-gray-100">
-                    <td className="py-1 whitespace-nowrap text-left">{day}</td>
+                    <td className="py-1 whitespace-nowrap text-left">{convertToDDMMYYYY(day)}</td>
                     {billData ? (
                       <>
                         <td
