@@ -1,11 +1,9 @@
-import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 import React, { useCallback, useEffect, useState } from "react";
 import formatDate from "../../Utils/formatDateString";
 import { Axios } from "../../api/api";
+import DatePickerComponent from "../Common/DatePickerComponent";
 
 export default function Expenses() {
-  const [student, setStudent] = useState(null);
-  const [name, setName] = useState("");
   const [distinctMonths, setDistinctMonths] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [mealBillData, setMealBillData] = useState([]);
@@ -28,7 +26,6 @@ export default function Expenses() {
           const res = await Axios.get(
             `/bill/student?year=${year}&month=${month}`
           );
-          console.log("Response data:", res.data);
           setMealBillData(res.data.mealBillData);
         } catch (err) {
           console.log("Error fetching bill data:", err);
@@ -38,206 +35,137 @@ export default function Expenses() {
     fetchBill();
   }, [selectedMonth]);
 
-  const handleMonthChange = useCallback(
-    (increment) => {
-      setSelectedMonth((prevMonth) => {
-        const index = distinctMonths.indexOf(prevMonth);
-        const newIndex = index + increment;
-        return distinctMonths[
-          newIndex >= 0 && newIndex < distinctMonths.length ? newIndex : index
-        ];
-      });
-    },
-    [distinctMonths]
-  );
+  const handleDateChange = useCallback((date) => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    setSelectedMonth(`${year}-${month}`);
+  }, []);
+
+  const getDaysInMonth = useCallback((year, month) => {
+    const date = new Date(year, month, 0);
+    const days = [];
+    for (let i = 1; i <= date.getDate(); i++) {
+      days.push(`${year}-${month.toString().padStart(2, "0")}-${i.toString().padStart(2, "0")}`);
+    }
+    return days;
+  }, []);
+
+  const [year, month] = selectedMonth.split("-");
+  const daysOfMonth = getDaysInMonth(year, month);
 
   return (
     <div className="lg:my-10 mb-10 px-5 lg:mr-12">
-      <h2 className="text-3xl font-semibold">Mess Bill:</h2>
-      <div className="divider"></div>
-      <div className="flex justify-between items-center mb-6 gap-10 flex-wrap">
-        <div className="flex justify-center items-center gap-10 md:mx-0 mx-auto">
-          <button
-            className={`${
-              selectedMonth === distinctMonths[0]
-                ? "opacity-25 pointer-events-none cursor-not-allowed disabled"
-                : ""
-            }`}
-            onClick={() => handleMonthChange(-1)}
-          >
-            <ArrowLeftIcon className="h-6 w-6" />
-          </button>
-          <div>
-            <h2 className="text-xl font-semibold">
-              {formatDate(selectedMonth)}
-            </h2>
-          </div>
-          <button
-            className={`${
-              selectedMonth === distinctMonths.slice(-1)[0]
-                ? "opacity-25 pointer-events-none cursor-not-allowed disabled"
-                : ""
-            }`}
-            onClick={() => handleMonthChange(1)}
-          >
-            <ArrowRightIcon className="h-6 w-6" />
-          </button>
+      <div className="flex justify-between gap-2 h-auto">
+        <h2 className="text-lg self-center xs:text-3xl font-semibold">
+          Mess Bill
+        </h2>
+        <div className="">
+          <DatePickerComponent
+            selectedDate={new Date(selectedMonth + "-01")}
+            onDateChange={handleDateChange}
+          />
         </div>
       </div>
-      <div className="md:mt-16">
-        <div className="overflow-x-auto max-h-screen overflow-y-scroll px-1">
+      <div className="divider"></div>
+      <div className="md:mt-7">
+        <div className="overflow-x-auto max-h-full overflow-y-scroll px-1">
           <table className="table table-sm border-collapse border border-slate-500 table-hover w-full text-center">
             <thead className="bg-gray-200 shadow-sm sticky top-0 border-b-[1px] border-slate-500">
-              <tr className="">
+              <tr>
                 <th className="p-0 border border-slate-500">Date</th>
                 <th className="p-0 border border-slate-500">Breakfast</th>
                 <th className="p-0 border border-slate-500">Lunch</th>
                 <th className="p-0 border border-slate-500">Dinner</th>
-                <th className="p-0 border border-slate-500">Total Cost</th>
+                <th className="p-0 border border-slate-500">Total</th>
               </tr>
             </thead>
-            <tbody className="">
-              <tr className=" text-center">
-                <td className="p-0 m-0 border border-slate-500">Date</td>
-                <td className=" p-0 m-0 border border-slate-500">
-                  <div className="border-b-[1px] border-slate-500 text-center">
-                    Total Cost
-                  </div>
-                  <div className="flex">
-                    <div className="flex-1 border-r-[1px] border-slate-500">
-                      Total Student
-                    </div>
-                    <div className="flex-1">Per Head</div>
-                  </div>
-                </td>
-                <td className="p-0 m-0 border border-slate-500">
-                  <div className="border-b-[1px] border-slate-500 text-center">
-                    Total Cost
-                  </div>
-                  <div className="flex">
-                    <div className="flex-1 border-r-[1px] border-slate-500">
-                      Total Student
-                    </div>
-                    <div className="flex-1">Per Head</div>
-                  </div>
-                </td>
-                <td className="p-0 m-0 border border-slate-500">
-                  <div className="border-b-[1px] border-slate-500 text-center">
-                    Total Cost
-                  </div>
-                  <div className="flex">
-                    <div className="flex-1 border-r-[1px] border-slate-500">
-                      Total Student
-                    </div>
-                    <div className="flex-1">Per Head</div>
-                  </div>
-                </td>
-                <td className="p-0 m-0 border border-slate-500">
-                  <div className="border-b-[1px] border-slate-500">
-                    Total Cost
-                  </div>
-                  <div>Per Head</div>
-                </td>
-              </tr>
-              {mealBillData.map((item, index) => (
-                <React.Fragment key={item.date}>
-                  <tr className="hover:bg-gray-100 border border-slate-500 text-center">
-                    <td className="p-0 font-bold text-lg border border-slate-500">
-                      {new Date(item.date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </td>
-                    <td className="p-0 border border-slate-500">
-                      <div className="font-semibold border-b-[1px] border-slate-500 text-center">
-                        <span className="font-bold ">
-                          {item?.mealBill?.breakfast?.totalcost
-                            ? item.mealBill.breakfast.totalcost("৳")
-                            : "Unavailable"}
-                        </span>{" "}
-                      </div>
-                      <div className="flex">
-                        <div className="font-semibold flex-1 border-r-[1px] border-slate-500">
-                          <span className="font-bold ">
-                            {item.mealBill.breakfast.totalStudent}
+            <tbody>
+              {daysOfMonth.map((day) => {
+                const item = mealBillData.find((data) => data.date === day);
+                return (
+                  <React.Fragment key={day}>
+                    <tr className="hover:bg-gray-100 border border-slate-500 text-center">
+                      <td className="p-0 font-bold text-lg border border-slate-500">
+                        {new Date(day).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </td>
+                      <td className="p-0 border border-slate-500">
+                        <div className="flex flex-col">
+                          <span>
+                            Total Cost:{" "}
+                            {item?.mealBill?.breakfast?.totalCost?.toFixed(2) || "0"}{" "}
+                            ৳
+                          </span>
+                          <span>
+                            Total Students: {item?.mealBill?.breakfast?.totalStudent || "0"}
+                          </span>
+                          <span>
+                            Per Head: {item?.mealBill?.breakfast?.perHeadCost?.toFixed(2) || "0"}{" "}
+                            ৳
                           </span>
                         </div>
-                        <div className="font-semibold flex-1">
-                          <span className="font-bold ">
-                            {item.mealBill.breakfast.perHeadCost.toFixed(2)}
-                          </span>{" "}
-                          ৳
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-0 border border-slate-500">
-                      <div className="font-semibold border-b-[1px] border-slate-500 text-center">
-                        <span className="font-bold ">
-                          {item.mealBill.lunch.totalCost}
-                        </span>{" "}
-                        ৳
-                      </div>
-                      <div className="flex">
-                        <div className="font-semibold flex-1 border-r-[1px] border-slate-500">
-                          <span className="font-bold ">
-                            {item.mealBill.lunch.totalStudent}
+                      </td>
+                      <td className="p-0 border border-slate-500">
+                        <div className="flex flex-col">
+                          <span>
+                            Total Cost:{" "}
+                            {item?.mealBill?.lunch?.totalCost?.toFixed(2) || "0"}{" "}
+                            ৳
+                          </span>
+                          <span>
+                            Total Students: {item?.mealBill?.lunch?.totalStudent || "0"}
+                          </span>
+                          <span>
+                            Per Head: {item?.mealBill?.lunch?.perHeadCost?.toFixed(2) || "0"}{" "}
+                            ৳
                           </span>
                         </div>
-                        <div className="font-semibold flex-1">
-                          <span className="font-bold ">
-                            {item.mealBill.lunch.perHeadCost.toFixed(2)}
-                          </span>{" "}
-                          ৳
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-0 m-0 border border-slate-500">
-                      <div className="font-semibold border-b-[1px] border-slate-500 text-center">
-                        <span className="font-bold ">
-                          {item.mealBill.dinner.totalCost}
-                        </span>{" "}
-                        ৳
-                      </div>
-                      <div className="flex">
-                        <div className="font-semibold flex-1 border-r-[1px] border-slate-500">
-                          <span className="font-bold ">
-                            {item.mealBill.dinner.totalStudent}
+                      </td>
+                      <td className="p-0 border border-slate-500">
+                        <div className="flex flex-col">
+                          <span>
+                            Total Cost:{" "}
+                            {item?.mealBill?.dinner?.totalCost?.toFixed(2) || "0"}{" "}
+                            ৳
+                          </span>
+                          <span>
+                            Total Students: {item?.mealBill?.dinner?.totalStudent || "0"}
+                          </span>
+                          <span>
+                            Per Head: {item?.mealBill?.dinner?.perHeadCost?.toFixed(2) || "0"}{" "}
+                            ৳
                           </span>
                         </div>
-                        <div className="font-semibold flex-1">
-                          <span className="font-bold ">
-                            {item.mealBill.dinner.perHeadCost.toFixed(2)}
-                          </span>{" "}
-                          ৳
+                      </td>
+                      <td className="p-0 border border-slate-500">
+                        <div className="flex flex-col">
+                          <div>
+                            Total Cost:{" "}
+                            {(
+                              (item?.mealBill?.breakfast?.totalCost || 0) +
+                              (item?.mealBill?.lunch?.totalCost || 0) +
+                              (item?.mealBill?.dinner?.totalCost || 0)
+                            ).toFixed(2)}{" "}
+                            ৳
+                          </div>
+                          <div>
+                            Per Head:{" "}
+                            {(
+                              (item?.mealBill?.breakfast?.perHeadCost || 0) +
+                              (item?.mealBill?.lunch?.perHeadCost || 0) +
+                              (item?.mealBill?.dinner?.perHeadCost || 0)
+                            ).toFixed(2)}{" "}
+                            ৳
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="p-0 m-0 border border-slate-500">
-                      <div className="font-semibold border-b-[1px] border-slate-500">
-                        <span className="font-bold ">
-                          {(
-                            item.mealBill.breakfast.totalCost +
-                            item.mealBill.lunch.totalCost +
-                            item.mealBill.dinner.totalCost
-                          ).toFixed(2)}{" "}
-                          ৳
-                        </span>
-                      </div>
-                      <div className="font-semibold">
-                        <span className="font-bold ">
-                          {(
-                            item.mealBill.breakfast.perHeadCost +
-                            item.mealBill.lunch.perHeadCost +
-                            item.mealBill.dinner.perHeadCost
-                          ).toFixed(2)}{" "}
-                          ৳
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                </React.Fragment>
-              ))}
-              {mealBillData.length > 0 && (
+                      </td>
+                    </tr>
+                  </React.Fragment>
+                );
+              })}
+              { (
                 <tr className="border-t">
                   <td colSpan="4" className="text-right font-bold text-xl p-0">
                     Grand Total
@@ -247,9 +175,21 @@ export default function Expenses() {
                       .reduce(
                         (total, item) =>
                           total +
-                          item.mealBill.breakfast.perHeadCost +
-                          item.mealBill.lunch.perHeadCost +
-                          item.mealBill.dinner.perHeadCost,
+                          (item.mealBill.breakfast.totalCost || 0) +
+                          (item.mealBill.lunch.totalCost || 0) +
+                          (item.mealBill.dinner.totalCost || 0),
+                        0
+                      )
+                      .toFixed(2)}{" "}
+                    ৳
+                    <br />
+                    {mealBillData
+                      .reduce(
+                        (total, item) =>
+                          total +
+                          (item.mealBill.breakfast.perHeadCost || 0) +
+                          (item.mealBill.lunch.perHeadCost || 0) +
+                          (item.mealBill.dinner.perHeadCost || 0),
                         0
                       )
                       .toFixed(2)}{" "}
