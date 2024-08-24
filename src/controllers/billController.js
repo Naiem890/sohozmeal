@@ -1,125 +1,36 @@
 const router = require("express").Router();
 const Bill = require("../models/bill");
 const Meal = require("../models/meal");
-const { StockTransaction } = require("../models/stock");
+const { createOrUpdateBill } = require("../utils/billService");
 const { validateToken } = require("../utils/validateToken");
 
-// Fetch all bills for a specific date
+// create all bills for a specific date
 router.post("/", validateToken, async (req, res) => {
   const queryDate = req.query.date;
+
   try {
     // Convert the query strings into Date objects
     const dateObj = new Date(queryDate);
-    const date = dateObj.toISOString().split("T")[0];
-    // Check if the dates are valid
+
+    // Check if the date is valid
     if (isNaN(dateObj.getTime())) {
       return res.status(400).json({ error: "Invalid date format" });
     }
 
-    // Aggregate meal counts for the specified date
-    const mealCounts = await Meal.aggregate([
-      {
-        $match: {
-          date: date,
-        },
-      },
-      {
-        $group: {
-          _id: "$date",
-          breakfastCount: {
-            $sum: { $cond: [{ $eq: ["$meal.breakfast", true] }, 1, 0] },
-          },
-          lunchCount: {
-            $sum: { $cond: [{ $eq: ["$meal.lunch", true] }, 1, 0] },
-          },
-          dinnerCount: {
-            $sum: { $cond: [{ $eq: ["$meal.dinner", true] }, 1, 0] },
-          },
-        },
-      },
-    ]);
+    // Call the service function to create or update the bill
+    const bill = await createOrUpdateBill(queryDate);
 
-    // Aggregate meal costs for the specified date
-    const mealCosts = await StockTransaction.aggregate([
-      {
-        $match: {
-          date: dateObj,
-        },
-      },
-      {
-        $group: {
-          _id: "$date",
-          breakfastCost: {
-            $sum: {
-              $cond: [{ $eq: ["$meal", "BREAKFAST"] }, "$transactionAmount", 0],
-            },
-          },
-          lunchCost: {
-            $sum: {
-              $cond: [{ $eq: ["$meal", "LUNCH"] }, "$transactionAmount", 0],
-            },
-          },
-          dinnerCost: {
-            $sum: {
-              $cond: [{ $eq: ["$meal", "DINNER"] }, "$transactionAmount", 0],
-            },
-          },
-        },
-      },
-    ]);
-    // Fetch or create a bill
-    let bill = await Bill.findOne({ date: dateObj });
-
-    // If no bill exists for the given date, create a new one
-    if (!bill) {
-      bill = new Bill({
-        date: dateObj,
-        mealBill: {
-          breakfast: {
-            totalCost: mealCosts[0]?.breakfastCost || 0,
-            totalStudent: mealCounts[0]?.breakfastCount || 0,
-          },
-          lunch: {
-            totalCost: mealCosts[0]?.lunchCost || 0,
-            totalStudent: mealCounts[0]?.lunchCount || 0,
-          },
-          dinner: {
-            totalCost: mealCosts[0]?.dinnerCost || 0,
-            totalStudent: mealCounts[0]?.dinnerCount || 0,
-          },
-        },
-      });
-    } else {
-      // Update the existing bill
-      bill.mealBill = {
-        breakfast: {
-          totalCost: mealCosts[0]?.breakfastCost || 0,
-          totalStudent: mealCounts[0]?.breakfastCount || 0,
-        },
-        lunch: {
-          totalCost: mealCosts[0]?.lunchCost || 0,
-          totalStudent: mealCounts[0]?.lunchCount || 0,
-        },
-        dinner: {
-          totalCost: mealCosts[0]?.dinnerCost || 0,
-          totalStudent: mealCounts[0]?.dinnerCount || 0,
-        },
-      };
-    }
-
-    // Save the bill to the database
-    await bill.save();
-
+    // Send the response with the generated or updated bill
     res.status(200).json({
-      message: `Bill generated successfully`,
+      message: "Bill generated successfully",
       date: dateObj,
       mealBill: bill.mealBill,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error during bill generation:", error);
     res
       .status(500)
-      .json({ message: "An error occurred while retrieving meal rates" });
+      .json({ message: "An error occurred while generating the bill" });
   }
 });
 
