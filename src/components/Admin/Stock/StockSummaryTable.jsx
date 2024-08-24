@@ -22,10 +22,10 @@ export const StockSummaryTable = ({ stocks }) => {
                 className=" hover:shadow-sm rounded-lg hover:bg-emerald-50 transition-all border-b-0"
                 key={stock._id}
               >
-                <td>{stock.item.name}</td>
-                <td>{stock.quantity}</td>
-                <td>{stock.item.unit}</td>
-                <td>{stock.price}</td>
+                <td>{stock?.item?.name}</td>
+                <td>{stock?.quantity}</td>
+                <td>{stock?.item?.unit}</td>
+                <td>{stock?.price}</td>
                 {/* TODO: need to change the property name */}
               </tr>
             ))}
