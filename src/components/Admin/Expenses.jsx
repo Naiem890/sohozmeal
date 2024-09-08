@@ -67,9 +67,205 @@ export default function Expenses() {
         </div>
       </div>
       <div className="divider"></div>
-      <div className="md:mt-7">
-        <div className="overflow-x-auto max-h-full overflow-y-scroll px-1">
-          <table className="table table-sm border-collapse border border-slate-500 table-hover w-full text-center">
+      <div className="md:mt-7 w-full">
+
+      <div>
+        <div>
+          <h1 className=" font-bold text-xl">Grand Total: 
+            <span className=" font-normal">
+            {mealBillData
+                    .reduce(
+                      (total, item) =>
+                        total +
+                        (item.mealBill.breakfast.totalCost || 0) +
+                        (item.mealBill.lunch.totalCost || 0) +
+                        (item.mealBill.dinner.totalCost || 0),
+                      0
+                    )
+                    .toFixed(2)}{" "}
+                  ৳
+            </span>
+          </h1>
+        </div>
+        <div>
+          <h1 className=" font-bold text-xl">Per head Total: 
+            <span className="font-normal">
+            {mealBillData
+              .reduce(
+                (total, item) =>
+                  total +
+                  (item.mealBill.breakfast.perHeadCost || 0) +
+                  (item.mealBill.lunch.perHeadCost || 0) +
+                  (item.mealBill.dinner.perHeadCost || 0),
+                0
+              )
+              .toFixed(2)}{" "}
+            ৳
+            </span>
+          </h1>
+        </div>
+      </div>
+      <div className="divider my-7"></div>
+
+      {/* new table */}
+      <div className=" max-h-screen px-1 overflow-x-auto w-full">
+        <table className="table table-sm border-collapse border border-slate-500 table-hover h-full text-center">
+          <thead className="bg-gray-200 shadow-sm border-b-[1px] border-slate-500 sticky top-0">
+              <tr className=" sticky top-0">
+                <th rowSpan={2} className="p-0 border border-slate-500">Date</th>
+                <th className="p-0 border border-slate-500" colSpan={3}>Breakfast</th>
+                <th className="p-0 border border-slate-500" colSpan={3}>Lunch</th>
+                <th className="p-0 border border-slate-500" colSpan={3}>Dinner</th>
+                <th className="p-0 border border-slate-500" colSpan={2}>Total</th>
+              </tr>
+              <tr>
+                <th className="border border-slate-500">Total Cost</th>
+                <th className="border border-slate-500">Total Students</th>
+                <th className="border border-slate-500">Per Head</th>
+                <th className="border border-slate-500">Total Cost</th>
+                <th className="border border-slate-500">Total Students</th>
+                <th className="border border-slate-500">Per Head</th>
+                <th className="border border-slate-500">Total Cost</th>
+                <th className="border border-slate-500">Total Students</th>
+                <th className="border border-slate-500">Per Head</th>
+                <th className="border border-slate-500">Total Cost</th>
+                <th className="border border-slate-500">Per Head</th>
+              </tr>
+          </thead>
+          <tbody>
+            {daysOfMonth.map((day) => {
+              const item = mealBillData.find((data) => data.date === day);
+              return (
+                <React.Fragment key={day}>
+                  <tr className="hover:bg-gray-100 border border-slate-500 text-center">
+                    <th className="p-0 font-bold text-lg border border-slate-500">
+                      {new Date(day).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </th>
+                    {/* for breakfast */}
+                    <td className="p-0 border border-slate-500">
+                      <span>
+                        {" "}
+                        {item?.mealBill?.breakfast?.totalCost?.toFixed(2) || "0"}{" "}
+                        ৳
+                      </span>
+                    </td>
+                    <td className="p-0 border border-slate-500">
+                      <span>
+                        {item?.mealBill?.breakfast?.totalStudent || "0"}
+                      </span>
+                    </td>
+                    <td className="p-0 border border-slate-500">
+                      <span>
+                        {item?.mealBill?.breakfast?.perHeadCost?.toFixed(2) || "0"}{" "}
+                        ৳
+                      </span>
+                    </td>
+                    {/* for lunch */}
+                    <td className="p-0 border border-slate-500">
+                      <span>
+                        {" "}
+                        {item?.mealBill?.lunch?.totalCost?.toFixed(2) || "0"}{" "}
+                        ৳
+                      </span>
+                    </td>
+                    <td className="p-0 border border-slate-500">
+                      <span>
+                        {item?.mealBill?.lunch?.totalStudent || "0"}
+                      </span>
+                    </td>
+                    <td className="p-0 border border-slate-500">
+                      <span>
+                        {item?.mealBill?.lunch?.perHeadCost?.toFixed(2) || "0"}{" "}
+                        ৳
+                      </span>
+                    </td>
+                    {/* for dinner */}
+                    <td className="p-0 border border-slate-500">
+                      <span>
+                        {" "}
+                        {item?.mealBill?.dinner?.totalCost?.toFixed(2) || "0"}{" "}
+                        ৳
+                      </span>
+                    </td>
+                    <td className="p-0 border border-slate-500">
+                      <span>
+                        {item?.mealBill?.dinner?.totalStudent || "0"}
+                      </span>
+                    </td>
+                    <td className="p-0 border border-slate-500">
+                      <span>
+                      {item?.mealBill?.dinner?.perHeadCost?.toFixed(2) || "0"}{" "}
+                        ৳
+                      </span>
+                    </td>
+                    {/* Total */}
+                    <td className="p-0 border border-slate-500">
+                      <span>
+                        {(
+                            (item?.mealBill?.breakfast?.totalCost || 0) +
+                            (item?.mealBill?.lunch?.totalCost || 0) +
+                            (item?.mealBill?.dinner?.totalCost || 0)
+                          ).toFixed(2)}{" "}
+                          ৳
+                      </span>
+                    </td>
+                    <td className="p-0 border border-slate-500">
+                      <span>
+                        {(
+                            (item?.mealBill?.breakfast?.perHeadCost || 0) +
+                            (item?.mealBill?.lunch?.perHeadCost || 0) +
+                            (item?.mealBill?.dinner?.perHeadCost || 0)
+                          ).toFixed(2)}{" "}
+                          ৳
+                      </span>
+                    </td>
+                    
+                  </tr>
+                </React.Fragment>
+              );
+            })}
+            { (
+              <tr className="border-t">
+                <td colSpan="11" className="text-right font-bold text-xl p-0">
+                  Grand Total
+                </td>
+                <td className="p-0 font-bold text-xl">
+                  {mealBillData
+                    .reduce(
+                      (total, item) =>
+                        total +
+                        (item.mealBill.breakfast.totalCost || 0) +
+                        (item.mealBill.lunch.totalCost || 0) +
+                        (item.mealBill.dinner.totalCost || 0),
+                      0
+                    )
+                    .toFixed(2)}{" "}
+                  ৳
+                  <br />
+                  {mealBillData
+                    .reduce(
+                      (total, item) =>
+                        total +
+                        (item.mealBill.breakfast.perHeadCost || 0) +
+                        (item.mealBill.lunch.perHeadCost || 0) +
+                        (item.mealBill.dinner.perHeadCost || 0),
+                      0
+                    )
+                    .toFixed(2)}{" "}
+                  ৳
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+        {/* old table */}
+        {/* <div className=" overflow-x-auto max-h-full px-1">
+          <table className="table table-sm border-collapse border border-slate-500 table-hover w-full text-center table-pin-rows table-pin-cols overflow-x-auto">
             <thead className="bg-gray-200 shadow-sm sticky top-0 border-b-[1px] border-slate-500">
               <tr>
                 <th className="p-0 border border-slate-500">Date</th>
@@ -199,7 +395,7 @@ export default function Expenses() {
               )}
             </tbody>
           </table>
-        </div>
+        </div> */}
       </div>
     </div>
   );
