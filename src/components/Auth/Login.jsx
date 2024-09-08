@@ -2,9 +2,9 @@ import { useSignIn } from "react-auth-kit";
 import { toast } from "react-hot-toast";
 import MISTImage from "../../assets/MIST.png";
 import { useNavigate } from "react-router-dom";
-import { Axios } from "../../api/api";
 import Logo from "../Common/Logo";
 import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
+import { Axios } from "../../api/api";
 
 export default function Login() {
   const signIn = useSignIn();
@@ -15,14 +15,11 @@ export default function Login() {
 
     const studentId = e.target.studentId.value;
     const password = e.target.password.value;
-
     try {
       const result = await Axios.post("/auth/login", {
         studentId,
         password,
       }).then((res) => res.data);
-
-      console.log(result);
       signIn({
         token: result.token,
         expiresIn: 3600,
@@ -35,6 +32,7 @@ export default function Login() {
           isAuthenticated: true,
         },
       });
+      console.log(result, "xyz");
       toast.success("Login successful");
       if (result?.student?.firstTimeLogin) {
         navigate("/change-password", {
