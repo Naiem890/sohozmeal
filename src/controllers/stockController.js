@@ -49,7 +49,6 @@ router.put("/item/:id", validateToken, async (req, res) => {
   try {
     const itemId = req.params.id;
     const { item: itemData } = req.body;
-    console.log(itemData);
     const updatedItem = await StockItem.findByIdAndUpdate(itemId, itemData, {
       new: true,
     });
@@ -270,7 +269,6 @@ router.post("/out/:stockId", validateToken, async (req, res) => {
     await newStockTransaction.save();
 
     let bill = await Bill.findOne({ date: new Date(date) });
-    console.log(bill, "shovo");
     if (bill) {
       switch (meal) {
         case "BREAKFAST":
@@ -364,6 +362,7 @@ router.put("/transaction/:transactionId", validateToken, async (req, res) => {
   try {
     const transactionId = req.params.transactionId;
     const { quantityChange: newQuantityChange, date, pricePerUnit, meal, type } = req.body;
+    console.log(transactionId, newQuantityChange, date, pricePerUnit, meal, type, "shovo");
 
     // Validate quantityChange
     if (isNaN(newQuantityChange) || newQuantityChange <= 0) {
@@ -420,11 +419,9 @@ router.put("/transaction/:transactionId", validateToken, async (req, res) => {
       // Adjust stock quantity and value based on the new stock-in quantity
       const prevTotalQuantity = stock.quantity - prevQuantityChange; // Stock before this transaction
       const prevTotalValue = stock.quantity * stock.price - stockTransaction.transactionAmount; // Total value before this transaction
-      console.log(prevTotalQuantity, prevTotalValue, "shovo");
       // Calculate new total value after updating stock-in quantity
       const newTotalQuantity = prevTotalQuantity + newQuantityChange;
       const newTotalValue = prevTotalValue + (newQuantityChange * pricePerUnit);
-      console.log(newTotalQuantity, newTotalValue, "shovo");
       // Calculate new average price
       const newAvgPrice = (newTotalValue / newTotalQuantity).toFixed(2);
 
@@ -504,29 +501,55 @@ router.delete("/transaction/:id", validateToken, async (req, res) => {
     const transactionId = req.params.id;
 
     // Find the stock transaction by ID
-    const stockTransaction = await StockTransaction.findById(transactionId);
+    const stockTransaction = await StockTransaction.findById(transactionId).populate("item");
     if (!stockTransaction) {
       return res.status(404).json({ error: "Stock transaction not found" });
     }
 
-    // Find the associated stock item and update its quantity
+    // Check if this is the last transaction for the stock item
+    const lastTransaction = await StockTransaction.findOne({
+      item: stockTransaction.item._id,
+    }).sort({ date: -1, createdAt: -1 }); // Sort by latest transaction
+
+    if (lastTransaction._id.toString() !== transactionId) {
+      return res.status(400).json({
+        error: "Only the most recent transaction can be deleted. Please delete subsequent transactions first.",
+      });
+    }
+
+    // Find the associated stock item and adjust its quantity and price
     const stockItem = await Stock.findOne({ item: stockTransaction.item });
+    if (!stockItem) {
+      return res.status(404).json({ error: "Associated stock item not found" });
+    }
+
     if (stockTransaction.type === "IN") {
-      stockItem.quantity -= stockTransaction.quantityChange;
-    } else {
+      // If it's a stock-in transaction, reduce the stock quantity and recalculate the price
+      const totalValue = stockItem.quantity * stockItem.price;
+      const newTotalValue = totalValue - stockTransaction.transactionAmount;
+      const newQuantity = stockItem.quantity - stockTransaction.quantityChange;
+
+      if (newQuantity <= 0) {
+        stockItem.price = 0;
+        stockItem.quantity = 0;
+      } else {
+        stockItem.price = (newTotalValue / newQuantity).toFixed(2);
+        stockItem.quantity = newQuantity;
+      }
+    } else if (stockTransaction.type === "OUT") {
+      // If it's a stock-out transaction, increase the stock quantity
       stockItem.quantity += stockTransaction.quantityChange;
     }
 
     // Save the updated stock item
     await stockItem.save();
 
-    // Update the associated bill
+    // Update the associated bill (for OUT transactions)
     const bill = await Bill.findOne({ date: stockTransaction.date });
     if (bill) {
       switch (stockTransaction.meal) {
         case "BREAKFAST":
-          bill.mealBill.breakfast.totalCost -=
-            stockTransaction.transactionAmount;
+          bill.mealBill.breakfast.totalCost -= stockTransaction.transactionAmount;
           break;
         case "LUNCH":
           bill.mealBill.lunch.totalCost -= stockTransaction.transactionAmount;
@@ -543,7 +566,7 @@ router.delete("/transaction/:id", validateToken, async (req, res) => {
 
     res.json({ message: "Stock transaction deleted successfully" });
   } catch (error) {
-    console.log(error);
+    console.log("Error deleting stock transaction:", error);
     res.status(500).json({ error: "Error deleting stock transaction" });
   }
 });
