@@ -1,10 +1,10 @@
 import {
   ArrowRightOnRectangleIcon,
-  CurrencyDollarIcon,
   ShoppingBagIcon,
   ShoppingCartIcon,
   TableCellsIcon,
   UserGroupIcon,
+  CurrencyBangladeshiIcon,
 } from "@heroicons/react/24/outline";
 import { useSignOut } from "react-auth-kit";
 import { toast } from "react-hot-toast";
@@ -61,15 +61,15 @@ export default function Aside({ toggleDrawer }) {
       path: "/admin/dashboard/stock",
       icon: <ShoppingBagIcon className="h-6 w-6" />,
     },
-    // {
-    //   link: "Total Bill",
-    //   path: "/admin/dashboard/totalBill",
-    //   icon: <CurrencyDollarIcon className="h-6 w-6" />,
-    // },
     {
       link: "Expenses",
       path: "/admin/dashboard/expenses",
       icon: <ShoppingCartIcon className="h-6 w-6" />,
+    },
+    {
+      link: "Transaction History",
+      path: "/admin/dashboard/transaction-history",
+      icon: <CurrencyBangladeshiIcon className="h-6 w-6" />,
     },
   ];
 

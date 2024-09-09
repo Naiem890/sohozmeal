@@ -52,7 +52,7 @@ export const Stock = () => {
 
     const fetchStockTransaction = async () => {
       try {
-        const res = await Axios("/stock/transaction");
+        const res = await Axios("/stock/transactions/all");
         setStockTransaction(res.data);
       } catch (error) {
         console.error("Error while fetching stock items:", error);
@@ -110,7 +110,7 @@ export const Stock = () => {
       <div className="grid grid-cols-2 gap-16">
         <StockSummaryTable stocks={stocks} />
         <div>
-          <div className="pb-3"> 
+          <div className="pb-3">
             <div className="join join-vertical lg:join-horizontal">
               <button
                 onClick={() => setMode(MODE.STOCK_IN)}
@@ -159,7 +159,7 @@ export const Stock = () => {
       </div>
       <div className="mb-36">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Stock Transaction</h2>
+          <h2 className="text-xl font-semibold">Transaction Summary</h2>
         </div>
         <div className="overflow-x-auto max-h-72 mt-4">
           <table className="table-fixed w-full">

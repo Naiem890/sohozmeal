@@ -72,50 +72,9 @@ export default function Expenses() {
       </div>
       <div className="divider"></div>
       <div className="md:mt-7 w-full">
-        <div>
-          <div>
-            <h1 className=" font-bold text-xl">
-              Grand Total:
-              <span className=" font-normal">
-                {mealBillData
-                  .reduce(
-                    (total, item) =>
-                      total +
-                      (item.mealBill.breakfast.totalCost || 0) +
-                      (item.mealBill.lunch.totalCost || 0) +
-                      (item.mealBill.dinner.totalCost || 0),
-                    0
-                  )
-                  .toFixed(2)}{" "}
-                ৳
-              </span>
-            </h1>
-          </div>
-          <div>
-            <h1 className=" font-bold text-xl">
-              Per head Total:
-              <span className="font-normal">
-                {mealBillData
-                  .reduce(
-                    (total, item) =>
-                      total +
-                      (item.mealBill.breakfast.perHeadCost || 0) +
-                      (item.mealBill.lunch.perHeadCost || 0) +
-                      (item.mealBill.dinner.perHeadCost || 0),
-                    0
-                  )
-                  .toFixed(2)}{" "}
-                ৳
-              </span>
-            </h1>
-          </div>
-        </div>
-        <div className="divider my-7"></div>
-
-        {/* new table */}
-        <div className=" max-h-screen px-1 overflow-x-auto w-full">
+        <div className=" px-1 w-full">
           <table className="table table-xs border-collapse border border-slate-500 table-hover h-full text-center">
-            <thead className="bg-gray-200 border sticky top-0 border-slate-500 z-10">
+            <thead className="bg-gray-200 border border-slate-500 z-10">
               <tr className="border">
                 <th rowSpan={2} className="p-0 border border-slate-500">
                   Date

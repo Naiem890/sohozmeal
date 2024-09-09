@@ -1,6 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import AdminDashboard from "./components/Admin/AdminDashboard";
-import  Expenses  from "./components/Admin/Expenses";
+import Expenses from "./components/Admin/Expenses";
 import { Stock } from "./components/Admin/Stock/Stock";
 import { StudentList } from "./components/Admin/StudentList";
 import AdminLogin from "./components/Auth/AdminLogin";
@@ -15,8 +15,9 @@ import MealPlan from "./components/Student/MealPlan";
 import MealRoutine from "./components/Student/MealRoutine";
 import Profile from "./components/Student/Profile";
 import MealRoutineAdmin from "./components/Student/MealRoutineAdmin";
-import BillCount from './components/Student/BillCount';
-import TotalBill from './components/Admin/TotalBill';
+import BillCount from "./components/Student/BillCount";
+import TotalBill from "./components/Admin/TotalBill";
+import TransactionHistory from "./components/Admin/Transaction History/TransactionHistory";
 
 function App() {
   return (
@@ -48,7 +49,7 @@ function App() {
           <Route path="expenses" element={<Expenses />} />
           <Route path="totalBill" element={<TotalBill />} />
           <Route path="meal-routine" element={<MealRoutineAdmin />} />
-       
+          <Route path="transaction-history" element={<TransactionHistory />} />
         </Route>
         <Route
           path="/dashboard/"
