@@ -30,28 +30,24 @@ export const EditStudentModal = ({
     });
   };
 
-  const createObjectURL = (buffer) => {
-    const bufferArray = new Uint8Array(buffer);
-    const blob = new Blob([bufferArray], { type: "image/jpeg" });
-    const url = URL.createObjectURL(blob);
-    return url;
-  };
   const clearFileInput = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''; // This resets the input value, clearing the selected file
+      fileInputRef.current.value = ""; // Resets the file input
     }
   };
 
   useEffect(() => {
     if (student?.profileImage) {
       const imageUrl = student.profileImage
-        ? createObjectURL(student.profileImage.data)
+        ? URL.createObjectURL(
+            new Blob([new Uint8Array(student.profileImage.data)], {
+              type: "image/jpeg",
+            })
+          )
         : null;
       setImage(imageUrl);
       setPrevImage(imageUrl);
-    }
-    else
-    {
+    } else {
       setImage(null);
       setPrevImage(null);
     }
@@ -72,18 +68,18 @@ export const EditStudentModal = ({
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     const formData = new FormData();
-    formData.append("name", student.name ? student.name : "");
-    formData.append(
-      "phoneNumber",
-      student.phoneNumber ? student.phoneNumber : ""
-    );
+    formData.append("name", student.name || "");
+    formData.append("phoneNumber", student.phoneNumber || "");
     formData.append("studentId", student.newStudentId || student.studentId);
-    formData.append("hallId", student.hallId ? student.hallId : "");
-    formData.append("department", student.department ? student.department : "");
-    formData.append("batch", student.batch ? student.batch : "");
+    formData.append("hallId", student.hallId || "");
+    formData.append("department", student.department || "");
+    formData.append("batch", student.batch || "");
     formData.append("gender", student.gender);
+    formData.append("roomNo", student.roomNo || ""); // Add roomNo
+    formData.append("residence", student.residence || ""); // Add residence
+
     if (imageFile) {
-      formData.append("profileImage", imageFile); // Append the updated image file
+      formData.append("profileImage", imageFile);
     }
 
     try {
@@ -102,6 +98,7 @@ export const EditStudentModal = ({
       toast.error(err.response.data.message);
     }
   };
+
   const handleModalClose = () => {
     setImage(prevImage);
     setImageFile(null);
@@ -129,9 +126,10 @@ export const EditStudentModal = ({
         onSubmit={handleUpdateProfile}
         className="grid lg:grid-cols-2 gap-4 lg:gap-x-8 mt-4"
       >
+        {/* Profile image */}
         <div>
           <div className="w-32 h-32 bg-slate-600 mb-4 rounded-md">
-            <img src={image} className="w-full h-full object-contain"></img>
+            <img src={image} className="w-full h-full object-contain" alt="" />
           </div>
           <input
             type="file"
@@ -141,6 +139,8 @@ export const EditStudentModal = ({
             onChange={handleImageChange}
           />
         </div>
+
+        {/* Full Name */}
         <div>
           <div className="mb-4">
             <label className="block text-sm font-medium leading-6 text-gray-600">
@@ -154,13 +154,15 @@ export const EditStudentModal = ({
               className={`${fixedInputClass} mt-2`}
             />
           </div>
+
+          {/* Phone Number */}
           <div className="">
             <label className="block text-sm font-medium leading-6 text-gray-600">
               Phone Number
             </label>
             <input
               type="text"
-              value={student?.phoneNumber == null ? "" : student?.phoneNumber}
+              value={student?.phoneNumber || ""}
               onChange={(e) =>
                 setStudent({ ...student, phoneNumber: e.target.value })
               }
@@ -169,6 +171,8 @@ export const EditStudentModal = ({
             />
           </div>
         </div>
+
+        {/* Student ID */}
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Student Id
@@ -186,25 +190,29 @@ export const EditStudentModal = ({
             className={`${fixedInputClass} mt-2`}
           />
         </div>
+
+        {/* Hall ID */}
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Hall Id
           </label>
           <input
             type="text"
-            name="studentId"
-            value={student?.hallId}
+            name="hallId"
+            value={student?.hallId || ""}
             onChange={(e) => setStudent({ ...student, hallId: e.target.value })}
             placeholder="Type here"
             className={`${fixedInputClass} mt-2`}
           />
         </div>
+
+        {/* Department */}
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Department
           </label>
           <select
-            value={student?.department}
+            value={student?.department || ""}
             onChange={(e) =>
               setStudent({ ...student, department: e.target.value })
             }
@@ -220,24 +228,63 @@ export const EditStudentModal = ({
             ))}
           </select>
         </div>
+
+        {/* Batch */}
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Batch
           </label>
           <input
             type="number"
-            value={student?.batch}
+            value={student?.batch || ""}
             onChange={(e) => setStudent({ ...student, batch: +e.target.value })}
             placeholder="Type here"
             className={`${fixedInputClass} mt-2`}
           />
         </div>
+
+        {/* Room No */}
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Room No
+          </label>
+          <input
+            type="text"
+            value={student?.roomNo || ""}
+            onChange={(e) => setStudent({ ...student, roomNo: e.target.value })}
+            placeholder="Enter Room Number"
+            className={`${fixedInputClass} mt-2`}
+          />
+        </div>
+
+        {/* Residence */}
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Residence
+          </label>
+          <select
+            value={student?.residence || "NOT_SELECTED"}
+            onChange={(e) =>
+              setStudent({ ...student, residence: e.target.value })
+            }
+            className={`${fixedInputClass} mt-2`}
+          >
+            <option disabled selected>
+              Select Residence
+            </option>
+            <option value="OSMANY_HALL">OSMANY HALL</option>
+            <option value="EXT_D">EXT D</option>
+            <option value="NOT_SELECTED">NOT SELECTED</option>
+          </select>
+        </div>
+
+        {/* Gender */}
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Gender
           </label>
           <select
-            value={student?.gender}
+            value={student?.gender || ""}
             onChange={(e) => {
               setStudent({ ...student, gender: e.target.value });
             }}
@@ -250,6 +297,8 @@ export const EditStudentModal = ({
             <option value="FEMALE">FEMALE</option>
           </select>
         </div>
+
+        {/* Buttons */}
         <div className="mt-4 col-span-full flex justify-end gap-6">
           <div
             onClick={() => setShowModal((prev) => !prev)}

@@ -18,6 +18,7 @@ export default function Profile() {
       reader.onerror = (error) => reject(error);
     });
   };
+
   const createObjectURL = (buffer) => {
     const bufferArray = new Uint8Array(buffer);
     const blob = new Blob([bufferArray], { type: "image/jpeg" });
@@ -33,6 +34,7 @@ export default function Profile() {
       setImage(base64Image);
     }
   };
+
   const fetchStudentProfile = async () => {
     try {
       const res = await Axios.get("/student");
@@ -42,6 +44,7 @@ export default function Profile() {
       console.log(err);
     }
   };
+
   useEffect(() => {
     fetchStudentProfile();
   }, []);
@@ -70,96 +73,48 @@ export default function Profile() {
     "ARCH",
   ];
 
-  // const handleUpdateProfile = async (e) => {
-  //   e.preventDefault();
-  //   console.log("student", student);
-  //   try {
-  //     const res = await Axios.put("/student", student);
-  //     console.log(res.data);
-  //     // fetchStudentProfile();
-  //     setStudent(res?.data?.student);
-  //     toast.success(res.data.message);
-  //   } catch (err) {
-  //     console.log(err);
-  //     toast.error(err.response.data.message);
-  //   }
-  // };
-
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-  
-    const formData = new FormData();
-    formData.append("name", student.name || "");
-    formData.append("phoneNumber", student.phoneNumber || "");
-    formData.append("studentId", student.newStudentId || student.studentId || "");
-    formData.append("hallId", student.hallId || "");
-    formData.append("department", student.department || "");
-    formData.append("batch", student.batch || "");
-    formData.append("gender", student.gender || "");
-    if (imageFile) {
-      formData.append("profileImage", imageFile);
-    }
-
-    try {
-      const res = await Axios.put("/student", formData);
-      const response = res.data;
-      const updatedStudent = response.student;
-      setStudent(updatedStudent); // Update the single student data
-      toast.success(response.message);
-    } catch (err) {
-      console.log(err);
-      toast.error(err.response.data.message);
-    }
-  };
-  
-
   return (
     <div className="mb-10 lg:my-10 px-5 lg:mr-12">
       <h2 className="text-3xl font-semibold">Update Profile Info</h2>
       <div className="divider"></div>
-      <form
-        onSubmit={handleUpdateProfile}
-        className="grid lg:grid-cols-2 lg:w-2/3 gap-3 lg:gap-6"
-      >
-        <div>
-          {/* {console.log("student", student)} */}
-          <div className="w-32 h-32 bg-slate-600 mb-4 rounded-md">
+      <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="">
+          <div className="w-32 h-32 bg-slate-600 rounded-md justify-center">
             <img src={image} className="w-full h-full object-contain"></img>
           </div>
-          <input
+          {/* <input
             type="file"
             name="profileImage"
             accept="image/*"
             onChange={handleImageChange}
+          /> */}
+        </div>
+        <div className="self-center">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Full Name
+          </label>
+          <input
+            type="text"
+            value={student?.name}
+            disabled
+            placeholder="Type here"
+            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
         </div>
-        <div>
-          <div>
-            <label className="block text-sm font-medium leading-6 text-gray-600">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={student?.name}
-              disabled
-              placeholder="Type here"
-              className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium leading-6 text-gray-600">
-              Phone Number
-            </label>
-            <input
-              type="text"
-              value={student?.phoneNumber}
-              onChange={(e) =>
-                setStudent({ ...student, phoneNumber: e.target.value })
-              }
-              placeholder="eg: 01712345678"
-              className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
-            />
-          </div>
+        <div className="self-center">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Phone Number
+          </label>
+          <input
+            type="text"
+            value={student?.phoneNumber}
+            onChange={(e) =>
+              setStudent({ ...student, phoneNumber: e.target.value })
+            }
+            disabled
+            placeholder="eg: 01712345678"
+            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
+          />
         </div>
         <div>
           <label className="block text-sm font-medium leading-6 text-gray-600">
@@ -180,13 +135,14 @@ export default function Profile() {
           </label>
           <input
             type="text"
-            name="studentId"
+            name="hallId"
             value={student?.hallId}
             disabled
             placeholder="Type here"
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
         </div>
+
         <div>
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Department
@@ -197,6 +153,7 @@ export default function Profile() {
               setStudent({ ...student, department: e.target.value })
             }
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
+            disabled
           >
             <option disabled selected>
               Select Department
@@ -208,6 +165,7 @@ export default function Profile() {
             ))}
           </select>
         </div>
+
         <div>
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Batch
@@ -218,14 +176,54 @@ export default function Profile() {
             onChange={(e) => setStudent({ ...student, batch: +e.target.value })}
             placeholder="Type here"
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
+            disabled
           />
         </div>
-        <div className="mt-4 col-span-full flex justify-end">
-          <button type="submit" className={`${fixedButtonClass} sm:w-44`}>
-            Update Changes
-          </button>
+
+        <div>
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Room No
+          </label>
+          <input
+            type="text"
+            value={student?.roomNo || null}
+            disabled
+            placeholder="Room Number"
+            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Residence
+          </label>
+          <input
+            type="text"
+            value={student?.residence || "NOT_SELECTED"}
+            disabled
+            placeholder="Residence"
+            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Gender
+          </label>
+          <input
+            type="text"
+            value={student?.gender}
+            disabled
+            placeholder="Gender"
+            className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
+          />
         </div>
       </form>
+      <div className="w-full flex items-center justify-center">
+        <div className="mt-8 bg-emerald-600 inline-block text-center text-white rounded-lg px-4 py-2">
+          Contact Office if you want to update
+        </div>
+      </div>
     </div>
   );
 }

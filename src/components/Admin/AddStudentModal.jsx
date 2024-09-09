@@ -19,6 +19,10 @@ export const AddStudentModal = ({
   const [profileImage, setProfileImage] = useState(null);
   const [image, setImage] = useState("");
   const [hallId, setHallId] = useState("");
+  const [roomNo, setRoomNo] = useState(null); // Add roomNo state
+  const [residence, setResidence] = useState("NOT_SELECTED"); // Add residence state
+  const [gender, setGender] = useState("MALE"); // Add gender state
+
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -27,6 +31,7 @@ export const AddStudentModal = ({
       reader.onerror = (error) => reject(error);
     });
   };
+
   useEffect(() => {
     const getHallId = async () => {
       const response = await Axios.get("/student/hallId");
@@ -45,9 +50,10 @@ export const AddStudentModal = ({
       formData.append("studentId", e.target.studentId.value);
       formData.append("department", e.target.department.value);
       formData.append("batch", e.target.batch.value);
-      formData.append("gender", e.target.gender.value);
-      formData.append("hallId", e.target.hallId.value);
-
+      formData.append("gender", gender); // Add gender to formData
+      formData.append("hallId", hallId); // Use hallId from state
+      formData.append("roomNo", roomNo); // Add roomNo to formData
+      formData.append("residence", residence || "NOT_SELECTED"); // Add residence to formData
       const response = await Axios.post("/student/add", formData);
 
       setShowAddStudentModal(false);
@@ -84,7 +90,7 @@ export const AddStudentModal = ({
       >
         <div>
           <div className="w-32 h-32 bg-slate-600 mb-4 rounded-md">
-            <img src={image} className="w-full h-full object-contain"></img>
+            <img src={image} className="w-full h-full object-contain" alt="" />
           </div>
           <input
             type="file"
@@ -173,11 +179,53 @@ export const AddStudentModal = ({
             className={`${fixedInputClass} mt-2`}
           />
         </div>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="label-text uppercase text-gray-600">Gender</span>
+
+        {/* Room No */}
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Room No
           </label>
-          <select name="gender" className={`${fixedInputClass} mt-2`}>
+          <input
+            type="text"
+            name="roomNo"
+            value={roomNo}
+            onChange={(e) => setRoomNo(e.target.value)} // Update roomNo state
+            placeholder="Enter Room Number"
+            className={`${fixedInputClass} mt-2`}
+          />
+        </div>
+
+        {/* Residence */}
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Residence
+          </label>
+          <select
+            name="residence"
+            value={residence}
+            onChange={(e) => setResidence(e.target.value)} // Update residence state
+            className={`${fixedInputClass} mt-2`}
+          >
+            <option disabled selected>
+              Select Residence
+            </option>
+            <option value="OSMANY_HALL">OSMANY HALL</option>
+            <option value="EXT_D">EXT D</option>
+            <option value="NOT_SELECTED">NOT SELECTED</option>
+          </select>
+        </div>
+
+        {/* Gender */}
+        <div className="">
+          <label className="block text-sm font-medium leading-6 text-gray-600">
+            Gender
+          </label>
+          <select
+            name="gender"
+            value={gender}
+            onChange={(e) => setGender(e.target.value)} // Update gender state
+            className={`${fixedInputClass} mt-2`}
+          >
             <option disabled selected>
               Select Gender
             </option>
@@ -185,6 +233,7 @@ export const AddStudentModal = ({
             <option value="FEMALE">FEMALE</option>
           </select>
         </div>
+
         <div className="mt-4 col-span-full flex justify-end gap-6">
           <div
             onClick={() => setShowAddStudentModal((prev) => !prev)}
