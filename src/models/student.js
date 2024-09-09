@@ -40,6 +40,8 @@ const studentSchema = new mongoose.Schema({
   status: { default: "active", type: String, enum: ["active", "inactive"] },
   firstTimeLogin: { type: Boolean, required: true, default: true },
   profileImage: { type: Buffer },
+  roomNo: { type: String, default: null },
+  residence: { type: String, default: null, enum: ["OSMANY_HALL", "EXT_D", "NOT_SELECTED", null] },
 });
 
 const Student = mongoose.model("Student", studentSchema);

@@ -82,11 +82,10 @@ router.get("/all", validateToken, checkAdminRole, async (req, res) => {
 });
 
 // router to update student profile
-
 router.put(
   "/",
   validateToken,
-  upload.single("profileImage"), // Upload a new profile image
+  upload.single("profileImage"), 
   async (req, res) => {
     const { role } = req.user;
     const {
@@ -99,6 +98,8 @@ router.put(
       department,
       batch,
       status,
+      roomNo,
+      residence,  // Added residence field
     } = req.body;
 
     try {
@@ -110,14 +111,15 @@ router.put(
       student.phoneNumber = phoneNumber;
       student.department = department;
       student.batch = batch;
+      student.roomNo = roomNo;
+      student.residence = residence;  // Update residence field
 
       if (req.file) {
         const compressedImage = await sharp(req.file.path)
-          .resize({ width: 300 }) // Resize the image
-          .jpeg({ quality: 30 }) // Set the JPEG quality to 30 (adjust as needed)
+          .resize({ width: 300 }) 
+          .jpeg({ quality: 30 })
           .toBuffer();
-        student.profileImage = compressedImage; // Update image in the student data
-        // Clean up: Delete the temporarily uploaded file
+        student.profileImage = compressedImage;
         fs.unlink(req.file.path, (err) => {
           if (err) {
             console.error("Error deleting file:", err);
@@ -145,6 +147,8 @@ router.put(
   }
 );
 
+
+
 //get the last hall id and increment by 1
 router.get("/hallId", validateToken, checkAdminRole, async (req, res) => {
   try {
@@ -162,7 +166,7 @@ router.get("/hallId", validateToken, checkAdminRole, async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-//add student
+// Add student
 router.post(
   "/add",
   validateToken,
@@ -178,6 +182,8 @@ router.post(
         department,
         gender,
         batch,
+        roomNo,
+        residence, 
       } = req.body;
       const profileImage = req.file;
       const studentData = {
@@ -188,18 +194,20 @@ router.post(
         department: department.toUpperCase(),
         gender: gender.toUpperCase(),
         batch,
+        roomNo,
+        residence,
       };
       if (profileImage) {
         const compressedImage = await sharp(profileImage.path)
-          .resize({ width: 300 }) // Resize the image
-          .jpeg({ quality: 30 }) // Set the JPEG quality to 30 (adjust as needed)
+          .resize({ width: 300 }) 
+          .jpeg({ quality: 30 })
           .toBuffer();
-        studentData.profileImage = compressedImage; // Add image to the student data
+        studentData.profileImage = compressedImage;
       }
       const newStudent = new Student(studentData);
       await newStudent.save();
       await createMealForNextDay(req, res, next);
-      //Clean up: Delete the temporarily uploaded file
+
       if (profileImage) {
         fs.unlink(req.file.path, (err) => {
           if (err) {
@@ -208,6 +216,7 @@ router.post(
           }
         });
       }
+
       res
         .status(201)
         .json({ message: "Student added successfully", student: newStudent });
@@ -230,5 +239,6 @@ router.post(
     }
   }
 );
+
 
 module.exports = router;
