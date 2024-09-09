@@ -298,13 +298,63 @@ router.post("/out/:stockId", validateToken, async (req, res) => {
 });
 
 // Get all Stock Transactions
-router.get("/transaction", validateToken, async (req, res) => {
+router.get("/transactions/all", validateToken, async (req, res) => {
   try {
     const stockTransactions = await StockTransaction.find()
       .sort({ date: -1 })
       .populate("item");
     res.json(stockTransactions);
   } catch (error) {
+    res.status(500).json({ error: "Error retrieving stock transactions" });
+  }
+});
+
+// Get stock transactions between two dates
+router.get("/transactions", validateToken, async (req, res) => {
+  try {
+    // Get fromDate and toDate from the query parameters
+    const { fromDate, toDate } = req.query;
+
+    // Validate that both dates are provided
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ error: "fromDate and toDate are required" });
+    }
+
+    // Convert fromDate and toDate to JavaScript Date objects
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+
+    // Query the StockTransaction model for transactions within the date range
+    const stockTransactions = await StockTransaction.find({
+      date: {
+        $gte: from, // Greater than or equal to fromDate
+        $lte: to,   // Less than or equal to toDate
+      },
+    })
+      .populate("item") // Populate the item details
+      .sort({ date: 1 }); // Sort by date in ascending order
+
+    // Format the response to match the required structure
+    const formattedTransactions = stockTransactions.map((transaction) => ({
+      _id: transaction._id,
+      item: {
+        _id: transaction.item._id,
+        name: transaction.item.name,
+        unit: transaction.item.unit,
+      },
+      quantityChange: transaction.quantityChange,
+      date: transaction.date.toISOString(),
+      type: transaction.type,
+      category: transaction.category,
+      meal: transaction.meal,
+      price: transaction.type === "IN" ? transaction.item.price : transaction.price, // Price based on type
+      transactionAmount: transaction.transactionAmount,
+    }));
+
+    // Send the formatted transactions as the response
+    res.json(formattedTransactions);
+  } catch (error) {
+    console.error("Error retrieving stock transactions:", error);
     res.status(500).json({ error: "Error retrieving stock transactions" });
   }
 });
