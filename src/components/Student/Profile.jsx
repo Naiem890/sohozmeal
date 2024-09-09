@@ -220,7 +220,7 @@ export default function Profile() {
         </div>
       </form>
       <div className="w-full flex items-center justify-center">
-        <div className="mt-8 bg-emerald-600 inline-block text-center text-white rounded-lg px-4 py-2">
+        <div className="mt-8 bg-emerald-600 inline-block text-center text-white rounded-lg px-4 py-2 font-extralight text-sm">
           Contact Office if you want to update
         </div>
       </div>

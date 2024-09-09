@@ -8,10 +8,14 @@ const EditTransactionModal = ({
 }) => {
   const [formData, setFormData] = useState(record);
   const [errors, setErrors] = useState({});
+  const [hasEditedpricePerUnit, setHasEditedpricePerUnit] = useState(false); // Track user edits
 
   // Update formData whenever a new record is passed
   useEffect(() => {
-    setFormData(record);
+    if (record) {
+      setFormData(record);
+      setHasEditedpricePerUnit(false); // Reset the flag when a new record is loaded
+    }
   }, [record]);
 
   // Validation function for quantity and transaction amount
@@ -20,9 +24,8 @@ const EditTransactionModal = ({
     if (formData.quantityChange <= 0) {
       newErrors.quantityChange = "Quantity must be greater than zero";
     }
-    if (formData.type === "IN" && formData.transactionAmount <= 0) {
-      newErrors.transactionAmount =
-        "Transaction amount must be greater than zero";
+    if (formData.type === "IN" && formData.pricePerUnit <= 0) {
+      newErrors.pricePerUnit = "Transaction amount must be greater than zero";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -30,14 +33,18 @@ const EditTransactionModal = ({
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-
     let convertedValue = value;
 
     // Prevent NaN by handling empty values
-    if (type === "number" || name === "transactionAmount") {
+    if (type === "number" || name === "pricePerUnit") {
       convertedValue = value === "" ? "" : parseFloat(value); // Ensure float parsing
     } else {
       convertedValue = value;
+    }
+
+    // If the user edits the pricePerUnit, set the flag to true
+    if (name === "pricePerUnit") {
+      setHasEditedpricePerUnit(true);
     }
 
     setFormData({ ...formData, [name]: convertedValue });
@@ -104,25 +111,32 @@ const EditTransactionModal = ({
                 <option value="BREAKFAST">BREAKFAST</option>
                 <option value="LUNCH">LUNCH</option>
                 <option value="DINNER">DINNER</option>
+                <option value="-">-</option>
               </select>
             </div>
             {formData.type === "IN" && (
               <div className="form-control">
-                <label className="label">Transaction Amount</label>
+                <label className="label">Unit Price</label>
                 <input
                   type="number"
                   step="0.01" // Allow decimals with step
-                  name="transactionAmount"
-                  value={formData.transactionAmount || ""} // Handle empty value
+                  name="pricePerUnit"
+                  value={
+                    // Use calculated value only if the user hasn't edited the field
+                    !hasEditedpricePerUnit
+                      ? (
+                          formData.transactionAmount /
+                            formData.quantityChange || ""
+                        ).toFixed(2)
+                      : formData.pricePerUnit || "" // Use user input if they have edited
+                  }
                   onChange={handleChange}
                   className="input input-bordered"
                   min="1"
                   required
                 />
-                {errors.transactionAmount && (
-                  <span className="text-red-500">
-                    {errors.transactionAmount}
-                  </span>
+                {errors.pricePerUnit && (
+                  <span className="text-red-500">{errors.pricePerUnit}</span>
                 )}
               </div>
             )}

@@ -27,8 +27,7 @@ const TransactionHistory = () => {
   // Filter options
   const [transactionType, setTransactionType] = useState("BOTH");
   const [mealType, setMealType] = useState("ALL");
-  const [sortOrder, setSortOrder] = useState("ASC");
-  
+  const [sortOrder, setSortOrder] = useState("DESC");
 
   // Format the date to YYYY-MM-DD for API usage
   const formatDate = (date) => {
@@ -145,12 +144,23 @@ const TransactionHistory = () => {
   };
 
   // Confirm delete handler
-  const confirmDelete = (recordId) => {
-    const updatedData = transactions.filter((item) => item._id !== recordId);
-    setTransactions(updatedData);
+  const confirmDelete = async (recordId) => {
+    try {
+      console.log(recordId, "hhh");
+      // Call the API to delete the transaction
+      await Axios.delete(`/stock/transaction/${recordId}`);
+
+      // Remove the deleted record from the transactions array
+      const updatedData = transactions.filter((item) => item._id !== recordId);
+      setTransactions(updatedData);
+
+      toast.success("Transaction deleted successfully");
+    } catch (error) {
+      console.error("Error deleting transaction:", error.response.data.error);
+      toast.error(error.response.data.error);
+    }
   };
 
-  // Flatten data to exclude _id and include item fields
   // Flatten data to exclude _id and include item fields, adding Unit Price column
   const flattenData = (data) => {
     return data.map((transaction) => ({
@@ -193,6 +203,32 @@ const TransactionHistory = () => {
 
     // Write the Excel file
     XLSX.writeFile(wb, fileName);
+  };
+
+  const handleUpdateSave = async (updatedRecord) => {
+    try {
+      // Call the API to update the transaction
+      const res = await Axios.put(
+        `/stock/transaction/${updatedRecord._id}`,
+        updatedRecord
+      );
+      const updatedTransaction = res.data.updatedTransaction;
+
+      // Update the transactions in the state with the new updated transaction
+      const updatedTransactions = transactions.map((transaction) =>
+        transaction._id === updatedTransaction._id
+          ? updatedTransaction
+          : transaction
+      );
+      setTransactions(updatedTransactions);
+
+      // Close the modal and show success message
+      setIsModalVisible(false);
+      toast.success("Transaction updated successfully");
+    } catch (error) {
+      console.error("Error updating transaction:", error);
+      toast.error("Failed to update transaction.");
+    }
   };
 
   return (
@@ -238,16 +274,7 @@ const TransactionHistory = () => {
         <EditTransactionModal
           visible={isModalVisible}
           record={editingRecord}
-          handleSave={(values) => {
-            const updatedTransactions = transactions.map((transaction) =>
-              transaction._id === editingRecord._id
-                ? { ...transaction, ...values }
-                : transaction
-            );
-            setTransactions(updatedTransactions);
-            setIsModalVisible(false);
-            message.success("Transaction updated successfully");
-          }}
+          handleSave={handleUpdateSave}
           handleCancel={() => setIsModalVisible(false)}
         />
       )}
