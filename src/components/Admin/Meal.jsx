@@ -26,6 +26,10 @@ export const Meal = () => {
   const [lunchLock, setLunchLock] = useState(false);
   const [dinnerLock, setDinnerLock] = useState(false);
 
+  const [breakfastFeast, setBreakfastFeast] = useState(false);
+  const [lunchFeast, setLunchFeast] = useState(false);
+  const [dinnerFeast, setDinnerFeast] = useState(false);
+
   const [fromDate, setFromDate] = useState(() => {
     const today = new Date();
     const nextDay = new Date(today);
@@ -48,30 +52,32 @@ export const Meal = () => {
   useEffect(() => {
     const fetchMealLockStatus = async () => {
       const formattedDate = formatDate(fromDate);
-      console.log(formattedDate, "lll");
       try {
-        // Check for breakfast
+        // Check for breakfast feast
         const breakfastStatus = await Axios.post("/feast/check", {
           date: formattedDate,
           meal: "breakfast",
           wing: gender,
         });
+        setBreakfastFeast(breakfastStatus.data.status === "on");
         setBreakfastLock(breakfastStatus.data.status === "on");
 
-        // Check for lunch
+        // Check for lunch feast
         const lunchStatus = await Axios.post("/feast/check", {
           date: formattedDate,
           meal: "lunch",
           wing: gender,
         });
+        setLunchFeast(lunchStatus.data.status === "on");
         setLunchLock(lunchStatus.data.status === "on");
 
-        // Check for dinner
+        // Check for dinner feast
         const dinnerStatus = await Axios.post("/feast/check", {
           date: formattedDate,
           meal: "dinner",
           wing: gender,
         });
+        setDinnerFeast(dinnerStatus.data.status === "on");
         setDinnerLock(dinnerStatus.data.status === "on");
       } catch (error) {
         toast.error("Failed to fetch meal lock status");
@@ -89,7 +95,6 @@ export const Meal = () => {
       const result = await Axios.get("/meal/students", {
         params: { date: formattedDate, gender: gender },
       });
-      console.log("students", result.data);
       setStudents(result.data);
     }
   }, [refetch, fromDate, gender]);
@@ -101,15 +106,15 @@ export const Meal = () => {
     let dinner = 0;
 
     students.forEach((student) => {
-      if (student?.meal?.breakfast) breakfast++;
-      if (student?.meal?.lunch) lunch++;
-      if (student?.meal?.dinner) dinner++;
+      if (student?.meal?.breakfast || breakfastFeast) breakfast++;
+      if (student?.meal?.lunch || lunchFeast) lunch++;
+      if (student?.meal?.dinner || dinnerFeast) dinner++;
     });
 
     setBreakfastCount(breakfast);
     setLunchCount(lunch);
     setDinnerCount(dinner);
-  }, [students]);
+  }, [students, breakfastFeast, lunchFeast, dinnerFeast]);
 
   const toggleSort = (column) => {
     if (sortBy === column) {
@@ -193,7 +198,7 @@ export const Meal = () => {
         meal: mealType,
       });
       const isFeastOn = checkResult.data.status === "on";
-      console.log(isFeastOn, "sss");
+
       // Step 2: If the feast is on, turn it off by deleting it
       if (isFeastOn) {
         await Axios.delete(`/feast/date/${formattedDate}/meal/${mealType}`);
@@ -201,13 +206,16 @@ export const Meal = () => {
           `Hall feast for ${mealType} on ${formattedDate} turned off!`
         );
 
-        // Update the lock state
+        // Update the lock state and feast status
         if (mealType === "breakfast") {
           setBreakfastLock(false);
+          setBreakfastFeast(false);
         } else if (mealType === "lunch") {
           setLunchLock(false);
+          setLunchFeast(false);
         } else if (mealType === "dinner") {
           setDinnerLock(false);
+          setDinnerFeast(false);
         }
       }
       // Step 3: If the feast is off, turn it on by creating it
@@ -221,13 +229,16 @@ export const Meal = () => {
           `Hall feast for ${mealType} on ${formattedDate} turned on!`
         );
 
-        // Update the lock state
+        // Update the lock state and feast status
         if (mealType === "breakfast") {
           setBreakfastLock(true);
+          setBreakfastFeast(true);
         } else if (mealType === "lunch") {
           setLunchLock(true);
+          setLunchFeast(true);
         } else if (mealType === "dinner") {
           setDinnerLock(true);
+          setDinnerFeast(true);
         }
       }
     } catch (error) {
@@ -243,9 +254,9 @@ export const Meal = () => {
       Name: student.name,
       "Room No": student.roomNo,
       Residence: student.residence,
-      Breakfast: student?.meal?.breakfast ? "✓" : "",
-      Lunch: student?.meal?.lunch ? "✓" : "",
-      Dinner: student?.meal?.dinner ? "✓" : "",
+      Breakfast: breakfastFeast || student?.meal?.breakfast ? "✓" : "",
+      Lunch: lunchFeast || student?.meal?.lunch ? "✓" : "",
+      Dinner: dinnerFeast || student?.meal?.dinner ? "✓" : "",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -265,12 +276,11 @@ export const Meal = () => {
       const result = await Axios.post("/meal/generate-meal", {
         date: formatDate(fromDate),
       });
-      console.log(result);
       toast.success(result.data.message);
       setRefetch(!refetch);
     } catch (error) {
-      console.error("Error generating meal:", error);
       toast.error("An error occurred while generating meal");
+      console.error("Error generating meal:", error);
     }
   };
 
@@ -288,7 +298,6 @@ export const Meal = () => {
           <ReactDatePicker
             selected={fromDate}
             onChange={(date) => {
-              console.log(date, "date");
               setFromDate(date);
             }}
             className="rounded-lg inline-block ml-2"
@@ -370,7 +379,11 @@ export const Meal = () => {
                 <div className="flex flex-row w-full justify-evenly">
                   <h3
                     className={`text-sm font-bold ${
-                      breakfastLock ? "bg-red-500 text-white" : "bg-gray-100"
+                      breakfastFeast
+                        ? "bg-green-400 text-white"
+                        : breakfastLock
+                        ? "bg-red-500 text-white"
+                        : "bg-gray-100"
                     }  px-2 py-1 text-gray-400 rounded-lg cursor-pointer transition-all duration-300 ml-2`}
                     onClick={() => handleMealLock("breakfast")}
                   >
@@ -378,7 +391,11 @@ export const Meal = () => {
                   </h3>
                   <h3
                     className={`text-sm font-bold ${
-                      lunchLock ? "bg-red-500 text-white" : "bg-gray-100"
+                      lunchFeast
+                        ? "bg-green-400 text-white"
+                        : lunchLock
+                        ? "bg-red-500 text-white"
+                        : "bg-gray-100"
                     }  px-2 py-1 text-gray-400 rounded-lg cursor-pointer transition-all duration-300`}
                     onClick={() => handleMealLock("lunch")}
                   >
@@ -386,7 +403,11 @@ export const Meal = () => {
                   </h3>
                   <h3
                     className={`text-sm font-bold ${
-                      dinnerLock ? "bg-red-500 text-white" : "bg-gray-100"
+                      dinnerFeast
+                        ? "bg-green-400 text-white"
+                        : dinnerLock
+                        ? "bg-red-500 text-white"
+                        : "bg-gray-100"
                     }  px-2 py-1 text-gray-400 rounded-lg cursor-pointer transition-all duration-300 mr-2`}
                     onClick={() => handleMealLock("dinner")}
                   >
@@ -411,7 +432,7 @@ export const Meal = () => {
                   <button
                     onClick={() => handleMealToggle(student._id, "breakfast")}
                     className={`rounded-full w-10 h-10 transition-all ${
-                      student?.meal?.breakfast
+                      breakfastFeast || student?.meal?.breakfast
                         ? "bg-green-400 text-white"
                         : "bg-transparent border-2 border-green-300"
                     }`}
@@ -421,7 +442,7 @@ export const Meal = () => {
                   <button
                     onClick={() => handleMealToggle(student._id, "lunch")}
                     className={`rounded-full w-10 h-10 transition-all ${
-                      student?.meal?.lunch
+                      lunchFeast || student?.meal?.lunch
                         ? "bg-green-400 text-white"
                         : "bg-transparent border-2 border-green-300"
                     }`}
@@ -431,7 +452,7 @@ export const Meal = () => {
                   <button
                     onClick={() => handleMealToggle(student._id, "dinner")}
                     className={`rounded-full w-10 h-10 transition-all ${
-                      student?.meal?.dinner
+                      dinnerFeast || student?.meal?.dinner
                         ? "bg-green-400 text-white"
                         : "bg-transparent border-2 border-green-300"
                     }`}
