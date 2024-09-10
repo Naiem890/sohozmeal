@@ -160,15 +160,35 @@ export const Meal = () => {
     XLSX.writeFile(workbook, fileName);
   };
 
+  const generateMeal = async () => {
+    try {
+      const result = await Axios.post("/meal/generate-meal", {
+        date: formatDate(fromDate),
+      });
+      console.log(result);
+      toast.success(result.data.message);
+      setRefetch(!refetch);
+    } catch (error) {
+      console.error("Error generating meal:", error);
+      toast.error("An error occurred while generating meal");
+    }
+  };
+
   return (
     <div className="px-5 lg:mr-12 max-h-screen overflow-hidden">
       <div className="flex justify-between items-center mt-2">
         <h2 className="mt-2 text-2xl font-semibold">Meal Sheet</h2>
         <div className="flex">
+          <h3
+            className="text-md font-bold bg-emerald-500 px-4 py-2 text-white rounded-lg hover:bg-emerald-600 cursor-pointer transition-all duration-300 hover:ring-1 ring-offset-2 ring-emerald-500"
+            onClick={generateMeal}
+          >
+            Generate Meal
+          </h3>
           <ReactDatePicker
             selected={fromDate}
             onChange={(date) => setFromDate(date)}
-            className="rounded-lg inline-block"
+            className="rounded-lg inline-block ml-2"
           />
           <button
             className="bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 px-2 py-2 font-thin hover:ring-1 ring-offset-2 ring-emerald-500 transition-all duration-300 ml-2"
