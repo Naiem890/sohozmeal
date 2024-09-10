@@ -230,7 +230,7 @@ export const StudentList = () => {
           </button>
         </div>
       </div>
-      <div className="overflow-x-auto max-h-screen overflow-y-scroll px-1">
+      <div className="overflow-x-auto max-h-screen overflow-y-scroll px-1 pb-64">
         <table className="table table-sm table-hover w-full">
           <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
             <tr className="">

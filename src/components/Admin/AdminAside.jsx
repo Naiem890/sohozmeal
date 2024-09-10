@@ -5,6 +5,7 @@ import {
   TableCellsIcon,
   UserGroupIcon,
   CurrencyBangladeshiIcon,
+  PencilIcon,
 } from "@heroicons/react/24/outline";
 import { useSignOut } from "react-auth-kit";
 import { toast } from "react-hot-toast";
@@ -50,6 +51,11 @@ export default function Aside({ toggleDrawer }) {
       link: "All Students",
       path: "/admin/dashboard/",
       icon: <UserGroupIcon className="h-6 w-6" />,
+    },
+    {
+      link: "Meal Sheet",
+      path: "/admin/dashboard/meal",
+      icon: <PencilIcon className="h-6 w-6" />,
     },
     {
       link: "Meal Routine",
