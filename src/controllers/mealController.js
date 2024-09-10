@@ -291,4 +291,54 @@ router.delete("/plan", async (req, res) => {
   }
 });
 
+router.get("/students", async (req, res) => {
+  const { date, gender } = req.query;
+  console.log("sss:", date, gender);
+  if (!date) {
+    return res.status(400).json({ error: "Date parameter is required" });
+  }
+
+  if (!gender) {
+    return res.status(400).json({ error: "Gender parameter is required" });
+  }
+
+  try {
+    // Find students filtered by gender
+    const students = await Student.find({ gender }, { studentId: 1, hallId: 1, name: 1, gender: 1, residence: 1, roomNo: 1 });
+
+    if (students.length === 0) {
+      return res.status(404).json({ error: "No students found" });
+    }
+
+    // Find the meals for the provided date
+    const meals = await Meal.find({ date });
+
+    // Create a map of meal status by studentId
+    const mealMap = meals.reduce((acc, meal) => {
+      acc[meal.studentId] = meal.meal;
+      return acc;
+    }, {});
+
+    // Map through students and include their meal status
+    const studentMealData = students.map(student => {
+      return {
+        studentId: student.studentId,
+        batch: student.batch,
+        hallId: student.hallId,
+        name: student.name,
+        gender: student.gender,
+        residence: student.residence,
+        roomNo: student.roomNo,
+        meal: mealMap[student.studentId] || { breakfast: false, lunch: false, dinner: false }, // Default to false if no meal found
+      };
+    });
+
+    res.status(200).json(studentMealData);
+  } catch (error) {
+    console.error("Error retrieving students and meals: ", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
 module.exports = router;
