@@ -315,7 +315,9 @@ router.get("/transactions", validateToken, async (req, res) => {
 
     // Validate that both dates are provided
     if (!fromDate || !toDate) {
-      return res.status(400).json({ error: "fromDate and toDate are required" });
+      return res
+        .status(400)
+        .json({ error: "fromDate and toDate are required" });
     }
 
     // Convert fromDate and toDate to JavaScript Date objects
@@ -326,7 +328,7 @@ router.get("/transactions", validateToken, async (req, res) => {
     const stockTransactions = await StockTransaction.find({
       date: {
         $gte: from, // Greater than or equal to fromDate
-        $lte: to,   // Less than or equal to toDate
+        $lte: to, // Less than or equal to toDate
       },
     })
       .populate("item") // Populate the item details
@@ -345,7 +347,8 @@ router.get("/transactions", validateToken, async (req, res) => {
       type: transaction.type,
       category: transaction.category,
       meal: transaction.meal,
-      price: transaction.type === "IN" ? transaction.item.price : transaction.price, // Price based on type
+      price:
+        transaction.type === "IN" ? transaction.item.price : transaction.price, // Price based on type
       transactionAmount: transaction.transactionAmount,
     }));
 
@@ -358,12 +361,183 @@ router.get("/transactions", validateToken, async (req, res) => {
 });
 
 // Update a stock transaction
+// router.put("/transaction/:transactionId", validateToken, async (req, res) => {
+//   try {
+//     const transactionId = req.params.transactionId;
+//     const {
+//       quantityChange: newQuantityChange,
+//       date,
+//       pricePerUnit,
+//       meal,
+//       type,
+//     } = req.body;
+//     console.log(
+//       transactionId,
+//       newQuantityChange,
+//       date,
+//       pricePerUnit,
+//       meal,
+//       type,
+//       "shovo"
+//     );
+
+//     // Validate quantityChange
+//     if (isNaN(newQuantityChange) || newQuantityChange <= 0) {
+//       return res.status(400).json({ error: "Invalid quantity change" });
+//     }
+
+//     // Validate transaction type (IN or OUT)
+//     const validTypes = ["IN", "OUT"];
+//     if (!validTypes.includes(type)) {
+//       return res
+//         .status(400)
+//         .json({ error: "Invalid transaction type. Must be 'IN' or 'OUT'." });
+//     }
+
+//     // Validate meal type for stock-out (optional, as "-" is allowed for stock-in)
+//     const validMeals = ["BREAKFAST", "LUNCH", "DINNER", "-"];
+//     if (!validMeals.includes(meal)) {
+//       return res.status(400).json({ error: "Invalid meal type." });
+//     }
+
+//     // Find the stock transaction by its ID
+//     const stockTransaction = await StockTransaction.findById(
+//       transactionId
+//     ).populate("item");
+//     if (!stockTransaction) {
+//       return res.status(404).json({ error: "Stock transaction not found." });
+//     }
+
+//     if (stockTransaction.type !== type) {
+//       return res.status(400).json({ error: "Cannot change transaction type." });
+//     }
+
+//     const prevQuantityChange = stockTransaction.quantityChange;
+
+//     // Find the associated stock item
+//     const stock = await Stock.findOne({ item: stockTransaction.item._id });
+//     if (!stock) {
+//       return res
+//         .status(404)
+//         .json({ error: "Stock not found for this transaction." });
+//     }
+
+//     // Check if there are any subsequent transactions that were created or modified after this one
+//     const subsequentTransactions = await StockTransaction.find({
+//       item: stockTransaction.item._id,
+//       $or: [
+//         { createdAt: { $gt: stockTransaction.createdAt } },
+//         { updatedAt: { $gt: stockTransaction.updatedAt } },
+//       ],
+//     });
+
+//     if (subsequentTransactions.length > 0) {
+//       return res.status(400).json({
+//         error:
+//           "Cannot modify this transaction. There are subsequent transactions. Please delete those first.",
+//       });
+//     }
+
+//     // Handle Stock-In Transaction (IN)
+//     if (type === "IN") {
+//       // Adjust stock quantity and value based on the new stock-in quantity
+//       const prevTotalQuantity = stock.quantity - prevQuantityChange; // Stock before this transaction
+//       const prevTotalValue =
+//         stock.quantity * stock.price - stockTransaction.transactionAmount; // Total value before this transaction
+//       // Calculate new total value after updating stock-in quantity
+//       const newTotalQuantity = prevTotalQuantity + newQuantityChange;
+//       const newTotalValue = prevTotalValue + newQuantityChange * pricePerUnit;
+//       // Calculate new average price
+//       const newAvgPrice = (newTotalValue / newTotalQuantity).toFixed(2);
+
+//       // Update the stock with new quantity and price
+//       stock.quantity = newTotalQuantity;
+//       stock.price = newAvgPrice;
+
+//       // Save the updated stock
+//       await stock.save();
+
+//       // Update the stock transaction
+//       stockTransaction.quantityChange = newQuantityChange;
+//       stockTransaction.transactionAmount = newQuantityChange * pricePerUnit;
+//       stockTransaction.date = new Date(date);
+//       await stockTransaction.save();
+//     } else if (type === "OUT") {
+//       // Handle Stock-Out Transaction (OUT)
+//       // Adjust stock quantity based on the difference
+//       let newStockQuantity =
+//         stock.quantity + prevQuantityChange - newQuantityChange;
+
+//       if (newStockQuantity < 0) {
+//         return res
+//           .status(400)
+//           .json({
+//             error:
+//               "Stock limit exceeded. Cannot stock out more than available.",
+//           });
+//       }
+
+//       // Stock price remains the same; adjust only the quantity
+//       stock.quantity = newStockQuantity;
+
+//       // Save the updated stock
+//       await stock.save();
+
+//       // Update the stock transaction
+//       stockTransaction.quantityChange = newQuantityChange;
+//       stockTransaction.transactionAmount = newQuantityChange * stock.price; // Transaction amount is based on the current price
+//       stockTransaction.meal = meal; // Update the meal if needed
+//       stockTransaction.date = new Date(date); // Update the date if necessary
+//       await stockTransaction.save();
+
+//       // Optionally, adjust the associated bill if needed for OUT transactions
+//       const bill = await Bill.findOne({ date: stockTransaction.date });
+//       if (bill) {
+//         const prevTransactionAmount = prevQuantityChange * stock.price;
+//         const newTransactionAmount = newQuantityChange * stock.price;
+//         const costDifference = newTransactionAmount - prevTransactionAmount;
+
+//         // Adjust the bill based on the meal type
+//         switch (meal) {
+//           case "BREAKFAST":
+//             bill.mealBill.breakfast.totalCost += costDifference;
+//             break;
+//           case "LUNCH":
+//             bill.mealBill.lunch.totalCost += costDifference;
+//             break;
+//           case "DINNER":
+//             bill.mealBill.dinner.totalCost += costDifference;
+//             break;
+//         }
+
+//         await bill.save();
+//       }
+//     }
+
+//     res.json({
+//       message: `Stock ${type.toLowerCase()} transaction updated successfully`,
+//       updatedStock: stock,
+//       updatedTransaction: stockTransaction,
+//     });
+//   } catch (error) {
+//     console.error("Error updating stock transaction:", error);
+//     res.status(500).json({ error: "Error updating stock transaction" });
+//   }
+// });
+
 router.put("/transaction/:transactionId", validateToken, async (req, res) => {
   try {
     const transactionId = req.params.transactionId;
-    const { quantityChange: newQuantityChange, date, pricePerUnit, meal, type } = req.body;
-    console.log(transactionId, newQuantityChange, date, pricePerUnit, meal, type, "shovo");
+    const {
+      quantityChange: newQuantityChange,
+      date,
+      pricePerUnit,
+      meal,
+      type,
+      category,
+    } = req.body;
 
+    console.log(newQuantityChange, date, pricePerUnit, meal, type, category, "shovo");
     // Validate quantityChange
     if (isNaN(newQuantityChange) || newQuantityChange <= 0) {
       return res.status(400).json({ error: "Invalid quantity change" });
@@ -372,7 +546,9 @@ router.put("/transaction/:transactionId", validateToken, async (req, res) => {
     // Validate transaction type (IN or OUT)
     const validTypes = ["IN", "OUT"];
     if (!validTypes.includes(type)) {
-      return res.status(400).json({ error: "Invalid transaction type. Must be 'IN' or 'OUT'." });
+      return res
+        .status(400)
+        .json({ error: "Invalid transaction type. Must be 'IN' or 'OUT'." });
     }
 
     // Validate meal type for stock-out (optional, as "-" is allowed for stock-in)
@@ -393,78 +569,95 @@ router.put("/transaction/:transactionId", validateToken, async (req, res) => {
 
     const prevQuantityChange = stockTransaction.quantityChange;
 
-    // Find the associated stock item
-    const stock = await Stock.findOne({ item: stockTransaction.item._id });
-    if (!stock) {
-      return res.status(404).json({ error: "Stock not found for this transaction." });
-    }
+    // Handle Stored Items
+    if (category === "STORED") {
+      // Find the associated stock item
+      const stock = await Stock.findOne({ item: stockTransaction.item._id });
+      if (!stock) {
+        return res.status(404).json({ error: "Stock not found for this transaction." });
+      }
 
-    // Check if there are any subsequent transactions that were created or modified after this one
-    const subsequentTransactions = await StockTransaction.find({
-      item: stockTransaction.item._id,
-      $or: [
-        { createdAt: { $gt: stockTransaction.createdAt } },
-        { updatedAt: { $gt: stockTransaction.updatedAt } },
-      ],
-    });
-
-    if (subsequentTransactions.length > 0) {
-      return res.status(400).json({
-        error: "Cannot modify this transaction. There are subsequent transactions. Please delete those first."
+      // Check if there are any subsequent transactions that were created or modified after this one
+      const subsequentTransactions = await StockTransaction.find({
+        item: stockTransaction.item._id,
+        $or: [
+          { createdAt: { $gt: stockTransaction.createdAt } },
+          { updatedAt: { $gt: stockTransaction.updatedAt } },
+        ],
       });
-    }
 
-    // Handle Stock-In Transaction (IN)
-    if (type === "IN") {
-      // Adjust stock quantity and value based on the new stock-in quantity
-      const prevTotalQuantity = stock.quantity - prevQuantityChange; // Stock before this transaction
-      const prevTotalValue = stock.quantity * stock.price - stockTransaction.transactionAmount; // Total value before this transaction
-      // Calculate new total value after updating stock-in quantity
-      const newTotalQuantity = prevTotalQuantity + newQuantityChange;
-      const newTotalValue = prevTotalValue + (newQuantityChange * pricePerUnit);
-      // Calculate new average price
-      const newAvgPrice = (newTotalValue / newTotalQuantity).toFixed(2);
+      if (subsequentTransactions.length > 0) {
+        return res.status(400).json({
+          error:
+            "Cannot modify this transaction. There are subsequent transactions. Please delete those first.",
+        });
+      }
 
-      // Update the stock with new quantity and price
-      stock.quantity = newTotalQuantity;
-      stock.price = newAvgPrice;
+      // Handle Stock-In Transaction (IN)
+      if (type === "IN") {
+        // Adjust stock quantity and value based on the new stock-in quantity
+        const prevTotalQuantity = stock.quantity - prevQuantityChange; // Stock before this transaction
+        const prevTotalValue =
+          stock.quantity * stock.price - stockTransaction.transactionAmount; // Total value before this transaction
+        // Calculate new total value after updating stock-in quantity
+        const newTotalQuantity = prevTotalQuantity + newQuantityChange;
+        const newTotalValue = prevTotalValue + newQuantityChange * pricePerUnit;
+        // Calculate new average price
+        const newAvgPrice = (newTotalValue / newTotalQuantity).toFixed(2);
 
-      // Save the updated stock
-      await stock.save();
+        // Update the stock with new quantity and price
+        stock.quantity = newTotalQuantity;
+        stock.price = newAvgPrice;
 
-      // Update the stock transaction
+        // Save the updated stock
+        await stock.save();
+
+        // Update the stock transaction
+        stockTransaction.quantityChange = newQuantityChange;
+        stockTransaction.transactionAmount = newQuantityChange * pricePerUnit;
+        stockTransaction.date = new Date(date);
+        await stockTransaction.save();
+      } else if (type === "OUT") {
+        // Handle Stock-Out Transaction (OUT)
+        // Adjust stock quantity based on the difference
+        let newStockQuantity =
+          stock.quantity + prevQuantityChange - newQuantityChange;
+
+        if (newStockQuantity < 0) {
+          return res.status(400).json({
+            error: "Stock limit exceeded. Cannot stock out more than available.",
+          });
+        }
+
+        // Stock price remains the same; adjust only the quantity
+        stock.quantity = newStockQuantity;
+
+        // Save the updated stock
+        await stock.save();
+
+        // Update the stock transaction
+        stockTransaction.quantityChange = newQuantityChange;
+        stockTransaction.transactionAmount = newQuantityChange * stock.price; // Transaction amount is based on the current price
+        stockTransaction.meal = meal; // Update the meal if needed
+        stockTransaction.date = new Date(date); // Update the date if necessary
+        await stockTransaction.save();
+      }
+
+    } else if (category === "NON_STORED") {
+      // Handle Non-Stored Items
+      // Just update the quantityChange and pricePerUnit for non-stored items
       stockTransaction.quantityChange = newQuantityChange;
       stockTransaction.transactionAmount = newQuantityChange * pricePerUnit;
       stockTransaction.date = new Date(date);
       await stockTransaction.save();
+    }
 
-    } else if (type === "OUT") {
-      // Handle Stock-Out Transaction (OUT)
-      // Adjust stock quantity based on the difference
-      let newStockQuantity = stock.quantity + prevQuantityChange - newQuantityChange;
-
-      if (newStockQuantity < 0) {
-        return res.status(400).json({ error: "Stock limit exceeded. Cannot stock out more than available." });
-      }
-
-      // Stock price remains the same; adjust only the quantity
-      stock.quantity = newStockQuantity;
-
-      // Save the updated stock
-      await stock.save();
-
-      // Update the stock transaction
-      stockTransaction.quantityChange = newQuantityChange;
-      stockTransaction.transactionAmount = newQuantityChange * stock.price; // Transaction amount is based on the current price
-      stockTransaction.meal = meal; // Update the meal if needed
-      stockTransaction.date = new Date(date); // Update the date if necessary
-      await stockTransaction.save();
-
-      // Optionally, adjust the associated bill if needed for OUT transactions
+    // Adjust the bill for OUT transactions
+    if (type === "OUT") {
       const bill = await Bill.findOne({ date: stockTransaction.date });
       if (bill) {
-        const prevTransactionAmount = prevQuantityChange * stock.price;
-        const newTransactionAmount = newQuantityChange * stock.price;
+        const prevTransactionAmount = prevQuantityChange * pricePerUnit;
+        const newTransactionAmount = newQuantityChange * pricePerUnit;
         const costDifference = newTransactionAmount - prevTransactionAmount;
 
         // Adjust the bill based on the meal type
@@ -486,7 +679,6 @@ router.put("/transaction/:transactionId", validateToken, async (req, res) => {
 
     res.json({
       message: `Stock ${type.toLowerCase()} transaction updated successfully`,
-      updatedStock: stock,
       updatedTransaction: stockTransaction,
     });
   } catch (error) {
@@ -495,61 +687,70 @@ router.put("/transaction/:transactionId", validateToken, async (req, res) => {
   }
 });
 
+
 // Delete a stock transaction
 router.delete("/transaction/:id", validateToken, async (req, res) => {
   try {
     const transactionId = req.params.id;
 
     // Find the stock transaction by ID
-    const stockTransaction = await StockTransaction.findById(transactionId).populate("item");
+    const stockTransaction = await StockTransaction.findById(
+      transactionId
+    ).populate("item");
     if (!stockTransaction) {
       return res.status(404).json({ error: "Stock transaction not found" });
     }
+    if (stockTransaction.category === "STORED") {
+      // Check if this is the last transaction for the stock item
+      const lastTransaction = await StockTransaction.findOne({
+        item: stockTransaction.item._id,
+      }).sort({ date: -1, createdAt: -1 }); // Sort by latest transaction
 
-    // Check if this is the last transaction for the stock item
-    const lastTransaction = await StockTransaction.findOne({
-      item: stockTransaction.item._id,
-    }).sort({ date: -1, createdAt: -1 }); // Sort by latest transaction
-
-    if (lastTransaction._id.toString() !== transactionId) {
-      return res.status(400).json({
-        error: "Only the most recent transaction can be deleted. Please delete subsequent transactions first.",
-      });
-    }
-
-    // Find the associated stock item and adjust its quantity and price
-    const stockItem = await Stock.findOne({ item: stockTransaction.item });
-    if (!stockItem) {
-      return res.status(404).json({ error: "Associated stock item not found" });
-    }
-
-    if (stockTransaction.type === "IN") {
-      // If it's a stock-in transaction, reduce the stock quantity and recalculate the price
-      const totalValue = stockItem.quantity * stockItem.price;
-      const newTotalValue = totalValue - stockTransaction.transactionAmount;
-      const newQuantity = stockItem.quantity - stockTransaction.quantityChange;
-
-      if (newQuantity <= 0) {
-        stockItem.price = 0;
-        stockItem.quantity = 0;
-      } else {
-        stockItem.price = (newTotalValue / newQuantity).toFixed(2);
-        stockItem.quantity = newQuantity;
+      if (lastTransaction._id.toString() !== transactionId) {
+        return res.status(400).json({
+          error:
+            "Only the most recent transaction can be deleted. Please delete subsequent transactions first.",
+        });
       }
-    } else if (stockTransaction.type === "OUT") {
-      // If it's a stock-out transaction, increase the stock quantity
-      stockItem.quantity += stockTransaction.quantityChange;
-    }
 
-    // Save the updated stock item
-    await stockItem.save();
+      // Find the associated stock item and adjust its quantity and price
+      const stockItem = await Stock.findOne({ item: stockTransaction.item });
+      if (!stockItem) {
+        return res
+          .status(404)
+          .json({ error: "Associated stock item not found" });
+      }
+
+      if (stockTransaction.type === "IN") {
+        // If it's a stock-in transaction, reduce the stock quantity and recalculate the price
+        const totalValue = stockItem.quantity * stockItem.price;
+        const newTotalValue = totalValue - stockTransaction.transactionAmount;
+        const newQuantity =
+          stockItem.quantity - stockTransaction.quantityChange;
+
+        if (newQuantity <= 0) {
+          stockItem.price = 0;
+          stockItem.quantity = 0;
+        } else {
+          stockItem.price = (newTotalValue / newQuantity).toFixed(2);
+          stockItem.quantity = newQuantity;
+        }
+      } else if (stockTransaction.type === "OUT") {
+        // If it's a stock-out transaction, increase the stock quantity
+        stockItem.quantity += stockTransaction.quantityChange;
+      }
+
+      // Save the updated stock item
+      await stockItem.save();
+    }
 
     // Update the associated bill (for OUT transactions)
     const bill = await Bill.findOne({ date: stockTransaction.date });
     if (bill) {
       switch (stockTransaction.meal) {
         case "BREAKFAST":
-          bill.mealBill.breakfast.totalCost -= stockTransaction.transactionAmount;
+          bill.mealBill.breakfast.totalCost -=
+            stockTransaction.transactionAmount;
           break;
         case "LUNCH":
           bill.mealBill.lunch.totalCost -= stockTransaction.transactionAmount;

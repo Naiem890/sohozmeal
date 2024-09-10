@@ -224,16 +224,38 @@ router.post("/generate-meal", async (req, res) => {
   const { studentId } = req.query;
 
   try {
+    // Get the previous date from the provided date
+    const currentDate = new Date(date);
+    const previousDate = new Date(currentDate);
+    previousDate.setDate(currentDate.getDate() - 1); // Subtract 1 day for the previous date
+    const previousDateString = previousDate.toISOString().split("T")[0]; // Format date as YYYY-MM-DD
+
+    // Helper function to copy meal status
+    const copyMealStatus = (previousMeal) => ({
+      breakfast: previousMeal?.breakfast || false,
+      lunch: previousMeal?.lunch || false,
+      dinner: previousMeal?.dinner || false,
+    });
+
     // If studentId is provided in the query, generate meal for that student only
     if (studentId) {
       const existingMeal = await Meal.findOne({ studentId, date });
       if (existingMeal) {
-        return res.status(400).json({ error: "Meal already generated for this student on the specified date" });
+        return res
+          .status(400)
+          .json({
+            error: "Meal already generated for this student on the specified date",
+          });
       }
+
+      // Get the meal for the previous date
+      const previousMeal = await Meal.findOne({ studentId, date: previousDateString });
+      const newMealStatus = copyMealStatus(previousMeal?.meal);
 
       const meal = new Meal({
         studentId,
         date,
+        meal: newMealStatus, // Set the new meal status based on previous day
       });
       const savedMeal = await meal.save();
       return res.status(201).json({ message: "Meal generated successfully", meal: savedMeal });
@@ -253,9 +275,14 @@ router.post("/generate-meal", async (req, res) => {
         return null; // Skip if meal already exists for this student on the specified date
       }
 
+      // Get the meal for the previous date
+      const previousMeal = await Meal.findOne({ studentId, date: previousDateString });
+      const newMealStatus = copyMealStatus(previousMeal?.meal);
+
       const meal = new Meal({
         studentId,
         date,
+        meal: newMealStatus, // Set the new meal status based on previous day
       });
       return await meal.save();
     });
