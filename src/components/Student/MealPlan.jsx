@@ -48,7 +48,7 @@ export default function MealPlan() {
           loading: "Meal Updating...",
           success: ({ data }) => data.message || "Meal updated successfully!",
           error: (error) =>
-            error.response.data.message || "Failed to update meal.",
+            error?.response?.data?.message || "Failed to update meal.",
         }
       );
 
@@ -60,8 +60,8 @@ export default function MealPlan() {
         );
       }
     } catch (error) {
-      toast.error(error.response.data.message);
-      console.error(error);
+      // Just log the error, no need for additional toast error here
+      console.error("Meal update error: ", error);
     }
   };
 

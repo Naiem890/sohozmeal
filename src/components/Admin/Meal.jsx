@@ -22,6 +22,10 @@ export const Meal = () => {
   const [lunchCount, setLunchCount] = useState(0);
   const [dinnerCount, setDinnerCount] = useState(0);
 
+  const [breakfastLock, setBreakfastLock] = useState(false);
+  const [lunchLock, setLunchLock] = useState(false);
+  const [dinnerLock, setDinnerLock] = useState(false);
+
   const [fromDate, setFromDate] = useState(() => {
     const today = new Date();
     const nextDay = new Date(today);
@@ -30,8 +34,53 @@ export const Meal = () => {
   });
 
   const formatDate = (date) => {
-    return date.toISOString().split("T")[0];
+    const adjustedDate = new Date(date);
+    adjustedDate.setHours(0, 0, 0, 0); // Set the time to midnight (local time)
+
+    const year = adjustedDate.getFullYear();
+    const month = String(adjustedDate.getMonth() + 1).padStart(2, "0");
+    const day = String(adjustedDate.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
   };
+
+  // Fetch the lock status for breakfast, lunch, and dinner on first load
+  useEffect(() => {
+    const fetchMealLockStatus = async () => {
+      const formattedDate = formatDate(fromDate);
+      console.log(formattedDate, "lll");
+      try {
+        // Check for breakfast
+        const breakfastStatus = await Axios.post("/feast/check", {
+          date: formattedDate,
+          meal: "breakfast",
+          wing: gender,
+        });
+        setBreakfastLock(breakfastStatus.data.status === "on");
+
+        // Check for lunch
+        const lunchStatus = await Axios.post("/feast/check", {
+          date: formattedDate,
+          meal: "lunch",
+          wing: gender,
+        });
+        setLunchLock(lunchStatus.data.status === "on");
+
+        // Check for dinner
+        const dinnerStatus = await Axios.post("/feast/check", {
+          date: formattedDate,
+          meal: "dinner",
+          wing: gender,
+        });
+        setDinnerLock(dinnerStatus.data.status === "on");
+      } catch (error) {
+        toast.error("Failed to fetch meal lock status");
+        console.error("Error fetching meal lock status:", error);
+      }
+    };
+
+    fetchMealLockStatus(); // Call the function to check lock status on load
+  }, [fromDate, gender]);
 
   useEffect(() => {
     fetchStudents();
@@ -134,6 +183,59 @@ export const Meal = () => {
     toast.success(`Meal ${mealType} toggled for student ${studentId}`);
   };
 
+  const handleMealLock = async (mealType) => {
+    const formattedDate = formatDate(fromDate); // Format the selected date
+
+    try {
+      // Step 1: Check if the hall feast is on or off
+      const checkResult = await Axios.post("/feast/check", {
+        date: formattedDate,
+        meal: mealType,
+      });
+      const isFeastOn = checkResult.data.status === "on";
+      console.log(isFeastOn, "sss");
+      // Step 2: If the feast is on, turn it off by deleting it
+      if (isFeastOn) {
+        await Axios.delete(`/feast/date/${formattedDate}/meal/${mealType}`);
+        toast.success(
+          `Hall feast for ${mealType} on ${formattedDate} turned off!`
+        );
+
+        // Update the lock state
+        if (mealType === "breakfast") {
+          setBreakfastLock(false);
+        } else if (mealType === "lunch") {
+          setLunchLock(false);
+        } else if (mealType === "dinner") {
+          setDinnerLock(false);
+        }
+      }
+      // Step 3: If the feast is off, turn it on by creating it
+      else {
+        await Axios.post("/feast", {
+          date: formattedDate,
+          meal: mealType,
+          wing: gender, // You can pass the relevant wing information here if needed
+        });
+        toast.success(
+          `Hall feast for ${mealType} on ${formattedDate} turned on!`
+        );
+
+        // Update the lock state
+        if (mealType === "breakfast") {
+          setBreakfastLock(true);
+        } else if (mealType === "lunch") {
+          setLunchLock(true);
+        } else if (mealType === "dinner") {
+          setDinnerLock(true);
+        }
+      }
+    } catch (error) {
+      toast.error(`Failed to update ${mealType} lock status`);
+      console.error(error);
+    }
+  };
+
   const exportToExcel = () => {
     const excelData = filteredStudents.map((student) => ({
       "Hall ID": student.hallId,
@@ -150,13 +252,11 @@ export const Meal = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Meal Data");
 
-    // Define the filename based on the selected date, gender, and residence
     const formattedDate = formatDate(fromDate);
     const fileName = `${formattedDate}_${gender}_wing_${
       residence || "all"
     }_meal_sheet.xlsx`;
 
-    // Generate and download the Excel file
     XLSX.writeFile(workbook, fileName);
   };
 
@@ -187,7 +287,10 @@ export const Meal = () => {
           </h3>
           <ReactDatePicker
             selected={fromDate}
-            onChange={(date) => setFromDate(date)}
+            onChange={(date) => {
+              console.log(date, "date");
+              setFromDate(date);
+            }}
             className="rounded-lg inline-block ml-2"
           />
           <button
@@ -262,7 +365,35 @@ export const Meal = () => {
               <th onClick={() => toggleSort("residence")} className="uppercase">
                 Residence {sortBy === "residence" && (sortAsc ? "↑" : "↓")}
               </th>
-              <th className="uppercase text-center">Meals</th>
+              <th className="flex flex-col gap-1 justify-center items-center uppercase text-center">
+                <h3>Meal</h3>
+                <div className="flex flex-row w-full justify-evenly">
+                  <h3
+                    className={`text-sm font-bold ${
+                      breakfastLock ? "bg-red-500 text-white" : "bg-gray-100"
+                    }  px-2 py-1 text-gray-400 rounded-lg cursor-pointer transition-all duration-300 ml-2`}
+                    onClick={() => handleMealLock("breakfast")}
+                  >
+                    B
+                  </h3>
+                  <h3
+                    className={`text-sm font-bold ${
+                      lunchLock ? "bg-red-500 text-white" : "bg-gray-100"
+                    }  px-2 py-1 text-gray-400 rounded-lg cursor-pointer transition-all duration-300`}
+                    onClick={() => handleMealLock("lunch")}
+                  >
+                    L
+                  </h3>
+                  <h3
+                    className={`text-sm font-bold ${
+                      dinnerLock ? "bg-red-500 text-white" : "bg-gray-100"
+                    }  px-2 py-1 text-gray-400 rounded-lg cursor-pointer transition-all duration-300 mr-2`}
+                    onClick={() => handleMealLock("dinner")}
+                  >
+                    D
+                  </h3>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody className="">
