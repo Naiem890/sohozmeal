@@ -3,6 +3,7 @@ const Meal = require("../models/meal");
 const Student = require("../models/student");
 const Routine = require("../models/routine");
 const { validateToken } = require("../utils/validateToken");
+const HallFeast = require("../models/hallFeast");
 
 const weekDays = [
   "SATURDAY",
@@ -183,18 +184,37 @@ router.get("/months", validateToken, async (req, res) => {
 
 router.put("/plan/:mealId", validateToken, async (req, res) => {
   const { studentId } = req.user;
-  const { meal: newMeal } = req.body;
+  const { meal: newMeal } = req.body; // e.g., { breakfast: true } or { lunch: false }
   const { mealId } = req.params;
-  console.log("mealId:", mealId);
-  console.log("studentId:", studentId);
-  console.log("meal:", newMeal);
 
   try {
+    // Retrieve the meal to get its date
+    const mealToUpdate = await Meal.findOne({ _id: mealId, studentId });
+    if (!mealToUpdate) {
+      return res.status(404).json({ message: "Meal not found" });
+    }
+
+    const mealDate = mealToUpdate.date;
+    const mealType = Object.keys(newMeal)[0]; // Extract meal type (e.g., "breakfast", "lunch", or "dinner")
+
+    // Check if a hall feast exists for the same date and meal type
+    const hallFeastExists = await HallFeast.findOne({
+      date: mealDate,
+      meal: mealType, // Check if the feast is for the same meal type
+    });
+
+    if (hallFeastExists) {
+      return res.status(403).json({
+        message: `You cannot change the ${mealType} status because a hall feast is scheduled for ${mealDate}`,
+      });
+    }
+
+    // If no hall feast exists for the specific meal type, proceed with updating the meal
     const updatedMeal = await Meal.findOneAndUpdate(
       { _id: mealId, studentId },
       {
         $set: {
-          [`meal.${Object.keys(newMeal)[0]}`]: newMeal[Object.keys(newMeal)[0]],
+          [`meal.${mealType}`]: newMeal[mealType], // Update the specific meal (breakfast/lunch/dinner)
         },
       },
       { new: true }
@@ -204,13 +224,11 @@ router.put("/plan/:mealId", validateToken, async (req, res) => {
       return res.status(404).json({ message: "Meal not found" });
     }
 
-    // send more infomation about which meal was updated
-
+    // Send more information about which meal was updated
     res.status(200).json({
-      message: `${Object.keys(newMeal)[0].toUpperCase()} is ${
-        newMeal[Object.keys(newMeal)[0]] ? "on" : "off"
-      } for ${updatedMeal.date}!
-        `,
+      message: `${mealType.toUpperCase()} is ${
+        newMeal[mealType] ? "on" : "off"
+      } for ${updatedMeal.date}!`,
       meal: updatedMeal,
     });
   } catch (error) {
