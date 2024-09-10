@@ -9,16 +9,16 @@ import {
 } from "@heroicons/react/24/outline";
 import { useSignOut } from "react-auth-kit";
 import { toast } from "react-hot-toast";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 import { Axios } from "../../api/api";
 import MISTImage from "../../assets/MIST.png";
 import Logo from "../Common/Logo";
 
 export default function Aside({ toggleDrawer }) {
-  // const auth = useAuthUser();
   const signOut = useSignOut();
   const navigate = useNavigate();
+  const location = useLocation(); // Get the current path
 
   const handleSignOut = async () => {
     const result = await Swal.fire({
@@ -91,13 +91,16 @@ export default function Aside({ toggleDrawer }) {
             subTitle="Admin Portal"
           />
         </div>
-        {/* <div className="divider"></div> */}
         {asideLinks.map((link, index) => (
           <li key={index} className="px-4 text-base">
             <Link
               to={link.path}
               onClick={toggleDrawer}
-              className="active:!bg-white drawer-overlay py-4 hover:bg-white rounded-lg  hover:shadow-md active:!text-black"
+              className={`py-4 rounded-lg hover:bg-white hover:shadow-md ${
+                location.pathname === link.path
+                  ? "bg-gray-300 shadow-md"
+                  : "text-gray-600"
+              }`}
             >
               {link.icon}
               <span className="ml-2">{link.link}</span>
@@ -108,7 +111,7 @@ export default function Aside({ toggleDrawer }) {
         <li className="px-4 text-base">
           <button
             onClick={handleSignOut}
-            className="active:!bg-red-600 py-4 active:text-white rounded-lg text-red-600 hover:text-white hover:bg-red-600"
+            className="py-4 rounded-lg text-red-600 hover:text-white hover:bg-red-600 active:bg-red-600"
           >
             <ArrowRightOnRectangleIcon className="h-6 w-6" />
             <span className="ml-2">Logout</span>
