@@ -1,5 +1,7 @@
 const router = require("express").Router();
 const { Stock, StockItem, StockTransaction } = require("../models/stock");
+const HallFeast = require("../models/hallFeast");
+const Student = require("../models/student");
 const Bill = require("../models/bill");
 const { validateToken } = require("../utils/validateToken");
 const { createOrUpdateBill } = require("../utils/billService");
@@ -204,6 +206,96 @@ router.delete("/:id", validateToken, async (req, res) => {
 });
 
 // Stock Out an item
+// router.post("/out/:stockId", validateToken, async (req, res) => {
+//   try {
+//     const stockId = req.params.stockId;
+//     const { quantityToReduce, date, meal, category } = req.body;
+
+//     // Validate quantityToReduce
+//     if (isNaN(quantityToReduce) || quantityToReduce <= 0) {
+//       return res.status(400).json({ error: "Invalid quantity to reduce" });
+//     }
+
+//     if (!["STORED", "NON_STORED"].includes(category)) {
+//       return res.status(400).json({ error: "Invalid category" });
+//     }
+
+//     let stockItem;
+//     let transactionAmount;
+//     let stockTransactionCategory;
+//     if (category === "STORED") {
+//       // Find the stock item by its reference in the Stock model
+//       const stock = await Stock.findById(stockId).populate("item");
+//       if (!stock) {
+//         return res.status(404).json({ error: "Stock not found" });
+//       }
+//       stockItem = stock.item;
+
+//       // Calculate new quantity
+//       const currentQuantity = stock.quantity;
+//       const newQuantity = currentQuantity - quantityToReduce;
+
+//       if (newQuantity < 0) {
+//         return res.status(400).json({ error: "Stock Limit exceeded." });
+//       }
+
+//       // Update the stock item's quantity
+//       stock.quantity = newQuantity;
+//       await stock.save();
+
+//       // Set transaction amount
+//       transactionAmount = quantityToReduce * stock.price;
+//       stockTransactionCategory = "STORED";
+//     } else if (category === "NON_STORED") {
+//       stockItem = await StockItem.findById(stockId);
+//       if (!stockItem) {
+//         return res.status(404).json({ error: "Stock item not found" });
+//       }
+
+//       // Set transaction amount
+//       transactionAmount = quantityToReduce * req.body.price;
+//       stockTransactionCategory = "NON_STORED";
+//     }
+
+//     // Create a new StockTransaction record for stock out
+//     const newStockTransaction = new StockTransaction({
+//       item: stockItem._id,
+//       quantityChange: quantityToReduce,
+//       type: "OUT",
+//       category: stockTransactionCategory,
+//       meal,
+//       date: new Date(date),
+//       transactionAmount,
+//     });
+//     // Save the stock transaction
+//     await newStockTransaction.save();
+
+//     let bill = await Bill.findOne({ date: new Date(date) });
+//     if (bill) {
+//       switch (meal) {
+//         case "BREAKFAST":
+//           bill.mealBill.breakfast.totalCost += transactionAmount;
+//           break;
+//         case "LUNCH":
+//           bill.mealBill.lunch.totalCost += transactionAmount;
+//           break;
+//         case "DINNER":
+//           bill.mealBill.dinner.totalCost += transactionAmount;
+//           break;
+//       }
+//     } else {
+//       bill = await createOrUpdateBill(date);
+//     }
+//     bill.save();
+//     res.json({
+//       message: "Stock out completed successfully",
+//       newStockTransaction,
+//     });
+//   } catch (error) {
+//     console.error("Error during stock out process:", error);
+//     res.status(500).json({ error: "Error during stock out process" });
+//   }
+// });
 router.post("/out/:stockId", validateToken, async (req, res) => {
   try {
     const stockId = req.params.stockId;
@@ -214,6 +306,7 @@ router.post("/out/:stockId", validateToken, async (req, res) => {
       return res.status(400).json({ error: "Invalid quantity to reduce" });
     }
 
+    // Validate category
     if (!["STORED", "NON_STORED"].includes(category)) {
       return res.status(400).json({ error: "Invalid category" });
     }
@@ -221,41 +314,61 @@ router.post("/out/:stockId", validateToken, async (req, res) => {
     let stockItem;
     let transactionAmount;
     let stockTransactionCategory;
+
+    // STORED category: Find stock item, calculate new quantity, and set transaction amount
     if (category === "STORED") {
-      // Find the stock item by its reference in the Stock model
       const stock = await Stock.findById(stockId).populate("item");
       if (!stock) {
         return res.status(404).json({ error: "Stock not found" });
       }
       stockItem = stock.item;
 
-      // Calculate new quantity
       const currentQuantity = stock.quantity;
       const newQuantity = currentQuantity - quantityToReduce;
 
       if (newQuantity < 0) {
-        return res.status(400).json({ error: "Stock Limit exceeded." });
+        return res.status(400).json({ error: "Stock limit exceeded" });
       }
 
-      // Update the stock item's quantity
       stock.quantity = newQuantity;
       await stock.save();
 
-      // Set transaction amount
       transactionAmount = quantityToReduce * stock.price;
       stockTransactionCategory = "STORED";
-    } else if (category === "NON_STORED") {
+    }
+
+    // NON_STORED category: Find stock item and calculate transaction amount based on price provided
+    else if (category === "NON_STORED") {
       stockItem = await StockItem.findById(stockId);
       if (!stockItem) {
         return res.status(404).json({ error: "Stock item not found" });
       }
 
-      // Set transaction amount
       transactionAmount = quantityToReduce * req.body.price;
       stockTransactionCategory = "NON_STORED";
     }
 
-    // Create a new StockTransaction record for stock out
+    // Step 1: Check if a hall feast exists for the given date and meal
+    const hallFeast = await HallFeast.findOne({ date: new Date(date), meal });
+
+    // Step 2: Calculate student count
+    let studentCount;
+    if (hallFeast) {
+      // If hall feast exists, count all students
+      studentCount = await Student.countDocuments();
+    } else {
+      // If no hall feast exists, count only students with their meal turned on for the specified meal
+      studentCount = await Student.countDocuments({ [`meal.${meal}`]: true });
+    }
+
+    if (studentCount === 0) {
+      return res.status(400).json({ error: "No students found for the meal." });
+    }
+
+    // Step 3: Calculate total transaction amount based on student count
+    const totalTransactionAmount = transactionAmount;
+
+    // Step 4: Create a new StockTransaction record for stock out
     const newStockTransaction = new StockTransaction({
       item: stockItem._id,
       quantityChange: quantityToReduce,
@@ -263,32 +376,26 @@ router.post("/out/:stockId", validateToken, async (req, res) => {
       category: stockTransactionCategory,
       meal,
       date: new Date(date),
-      transactionAmount,
+      transactionAmount: totalTransactionAmount, // Total cost for all students
     });
+
     // Save the stock transaction
     await newStockTransaction.save();
 
-    let bill = await Bill.findOne({ date: new Date(date) });
-    if (bill) {
-      switch (meal) {
-        case "BREAKFAST":
-          bill.mealBill.breakfast.totalCost += transactionAmount;
-          break;
-        case "LUNCH":
-          bill.mealBill.lunch.totalCost += transactionAmount;
-          break;
-        case "DINNER":
-          bill.mealBill.dinner.totalCost += transactionAmount;
-          break;
-      }
-    } else {
-      bill = await createOrUpdateBill(date);
+    // Step 5: Update or create a bill for the date and meal
+    try {
+      const updatedBill = await createOrUpdateBill(date);
+      res.json({
+        message: "Stock out completed successfully",
+        newStockTransaction,
+        studentCount,
+        totalTransactionAmount,
+        updatedBill,
+      });
+    } catch (error) {
+      console.error("Error updating the bill:", error);
+      return res.status(500).json({ error: "Failed to update bill." });
     }
-    bill.save();
-    res.json({
-      message: "Stock out completed successfully",
-      newStockTransaction,
-    });
   } catch (error) {
     console.error("Error during stock out process:", error);
     res.status(500).json({ error: "Error during stock out process" });
@@ -692,7 +799,6 @@ router.put("/transaction/:transactionId", validateToken, async (req, res) => {
 router.delete("/transaction/:id", validateToken, async (req, res) => {
   try {
     const transactionId = req.params.id;
-
     // Find the stock transaction by ID
     const stockTransaction = await StockTransaction.findById(
       transactionId
@@ -700,7 +806,7 @@ router.delete("/transaction/:id", validateToken, async (req, res) => {
     if (!stockTransaction) {
       return res.status(404).json({ error: "Stock transaction not found" });
     }
-    if (stockTransaction.category === "STORED") {
+    if (stockTransaction.item.category === "STORED") {
       // Check if this is the last transaction for the stock item
       const lastTransaction = await StockTransaction.findOne({
         item: stockTransaction.item._id,

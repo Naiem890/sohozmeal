@@ -1,8 +1,8 @@
-// services/billService.js
-
 const Bill = require("../models/bill");
-const Meal = require("../models/meal");
 const { StockTransaction } = require("../models/stock");
+const HallFeast = require("../models/hallFeast");
+const Student = require("../models/student");
+const Meal = require("../models/meal");
 
 // Creating or updating a bill for a specific date
 async function createOrUpdateBill(date) {
@@ -10,32 +10,41 @@ async function createOrUpdateBill(date) {
     const dateObj = new Date(date);
     const formattedDate = dateObj.toISOString().split("T")[0];
 
-    // Aggregate meal counts for the specified date
-    const mealCounts = await Meal.aggregate([
-      {
-        $match: {
-          date: formattedDate,
-        },
-      },
-      {
-        $group: {
-          _id: "$date",
-          breakfastCount: {
-            $sum: { $cond: [{ $eq: ["$meal.breakfast", true] }, 1, 0] },
-          },
-          lunchCount: {
-            $sum: { $cond: [{ $eq: ["$meal.lunch", true] }, 1, 0] },
-          },
-          dinnerCount: {
-            $sum: { $cond: [{ $eq: ["$meal.dinner", true] }, 1, 0] },
-          },
-        },
-      },
-    ]);
+    // Step 1: Check if a hall feast exists for each meal on the specified date
+    const hallFeasts = await HallFeast.find({ date: formattedDate });
 
-    console.log(mealCounts, "xx");
+    const breakfastFeastExists = hallFeasts.some(feast => feast.meal === "breakfast");
+    const lunchFeastExists = hallFeasts.some(feast => feast.meal === "lunch");
+    const dinnerFeastExists = hallFeasts.some(feast => feast.meal === "dinner");
 
-    // Aggregate meal costs for the specified date
+    // Step 2: Determine student counts based on hall feast or meal preference
+    let breakfastCount, lunchCount, dinnerCount;
+    let totalStudents = await Student.countDocuments();
+    // Breakfast Count
+    if (breakfastFeastExists) {
+      breakfastCount = totalStudents;
+    } else {
+      const breakfastMealCount = await Meal.countDocuments({ "meal.breakfast": true, date: formattedDate });
+      breakfastCount = breakfastMealCount; // Count students who turned breakfast on
+    }
+
+    // Lunch Count
+    if (lunchFeastExists) {
+      lunchCount = totalStudents
+    } else {
+      const lunchMealCount = await Meal.countDocuments({ "meal.lunch": true, date: formattedDate });
+      lunchCount = lunchMealCount; // Count students who turned lunch on
+    }
+
+    // Dinner Count
+    if (dinnerFeastExists) {
+      dinnerCount = totalStudents
+    } else {
+      const dinnerMealCount = await Meal.countDocuments({ "meal.dinner": true, date: formattedDate });
+      dinnerCount = dinnerMealCount; // Count students who turned dinner on
+    }
+
+    // Step 3: Aggregate meal costs for the specified date
     const mealCosts = await StockTransaction.aggregate([
       {
         $match: {
@@ -64,7 +73,7 @@ async function createOrUpdateBill(date) {
       },
     ]);
 
-    // Fetch or create a bill
+    // Step 4: Fetch or create a bill
     let bill = await Bill.findOne({ date: dateObj });
 
     // If no bill exists for the given date, create a new one
@@ -74,15 +83,15 @@ async function createOrUpdateBill(date) {
         mealBill: {
           breakfast: {
             totalCost: mealCosts[0]?.breakfastCost || 0,
-            totalStudent: mealCounts[0]?.breakfastCount || 0,
+            totalStudent: breakfastCount,
           },
           lunch: {
             totalCost: mealCosts[0]?.lunchCost || 0,
-            totalStudent: mealCounts[0]?.lunchCount || 0,
+            totalStudent: lunchCount,
           },
           dinner: {
             totalCost: mealCosts[0]?.dinnerCost || 0,
-            totalStudent: mealCounts[0]?.dinnerCount || 0,
+            totalStudent: dinnerCount,
           },
         },
       });
@@ -91,15 +100,15 @@ async function createOrUpdateBill(date) {
       bill.mealBill = {
         breakfast: {
           totalCost: mealCosts[0]?.breakfastCost || 0,
-          totalStudent: mealCounts[0]?.breakfastCount || 0,
+          totalStudent: breakfastCount,
         },
         lunch: {
           totalCost: mealCosts[0]?.lunchCost || 0,
-          totalStudent: mealCounts[0]?.lunchCount || 0,
+          totalStudent: lunchCount,
         },
         dinner: {
           totalCost: mealCosts[0]?.dinnerCost || 0,
-          totalStudent: mealCounts[0]?.dinnerCount || 0,
+          totalStudent: dinnerCount,
         },
       };
     }
