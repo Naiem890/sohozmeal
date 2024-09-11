@@ -18,7 +18,7 @@ import MealRoutineAdmin from "./components/Student/MealRoutineAdmin";
 import BillCount from "./components/Student/BillCount";
 import TotalBill from "./components/Admin/TotalBill";
 import TransactionHistory from "./components/Admin/Transaction History/TransactionHistory";
-import { Meal } from "./components/Admin/Meal";
+import { Meal } from "./components/Admin/MealSheet/Meal";
 
 function App() {
   return (

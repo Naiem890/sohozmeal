@@ -23,6 +23,8 @@ const monthNames = [
 export default function BillCount() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [mealBillData, setMealBillData] = useState([]);
+  const [hallFeasts, setHallFeasts] = useState([]);
+
   let totalBill = 0;
 
   useEffect(() => {
@@ -34,6 +36,12 @@ export default function BillCount() {
           `/bill/student?year=${year}&month=${month}`
         );
         setMealBillData(res.data.mealBillData);
+        console.log(res.data);
+        // Fetch the hall feast data for the selected month
+        const feastRes = await Axios.get(
+          `/feast/month/${year}/${month}/wing/MALE`
+        );
+        setHallFeasts(feastRes.data);
       } catch (err) {
         console.log("Error fetching bill data:", err);
       }
@@ -95,27 +103,51 @@ export default function BillCount() {
             </thead>
             <tbody className="text-center">
               {daysOfMonth.map((day) => {
+                // Find if there is any hall feast on this day
+                const onDay = hallFeasts.filter(
+                  (item) => item.date.split("T")[0] === day
+                );
+
+                // Get bill data for the current day
                 const billData = mealBillData.find((item) => item.date === day);
-                if (billData) {
-                  totalBill +=
-                    (billData.mealBill.breakfast.status
-                      ? billData.mealBill.breakfast.perHeadCost
-                      : 0) +
-                    (billData.mealBill.lunch.status
-                      ? billData.mealBill.lunch.perHeadCost
-                      : 0) +
-                    (billData.mealBill.dinner.status
-                      ? billData.mealBill.dinner.perHeadCost
-                      : 0);
-                }
+
+                // Check if there is a hall feast for breakfast, lunch, or dinner
+                const breakfastOn =
+                  billData?.mealBill.breakfast.status ||
+                  onDay.some((feast) => feast.meal === "breakfast");
+                const lunchOn =
+                  billData?.mealBill.lunch.status ||
+                  onDay.some((feast) => feast.meal === "lunch");
+                const dinnerOn =
+                  billData?.mealBill.dinner.status ||
+                  onDay.some((feast) => feast.meal === "dinner");
+
+                console.log(breakfastOn, lunchOn, dinnerOn, "sssh", day);
+
+                // Calculate the costs
+                const breakfastCost = breakfastOn
+                  ? billData?.mealBill.breakfast.perHeadCost || 0
+                  : 0;
+                const lunchCost = lunchOn
+                  ? billData?.mealBill.lunch.perHeadCost || 0
+                  : 0;
+                const dinnerCost = dinnerOn
+                  ? billData?.mealBill.dinner.perHeadCost || 0
+                  : 0;
+
+                // Total cost for the day
+                const dailyTotal = breakfastCost + lunchCost + dinnerCost;
+                totalBill += dailyTotal;
                 return (
                   <tr key={day} className="hover:bg-gray-100">
-                    <td className="py-1 whitespace-nowrap text-left">{convertToDDMMYYYY(day)}</td>
+                    <td className="py-1 whitespace-nowrap text-left">
+                      {convertToDDMMYYYY(day)}
+                    </td>
                     {billData ? (
                       <>
                         <td
                           className={`${
-                            billData.mealBill.breakfast.status
+                            breakfastOn
                               ? "text-green-600 font-bold whitespace-nowrap"
                               : "text-red-600 font-bold whitespace-nowrap"
                           }`}
@@ -124,7 +156,7 @@ export default function BillCount() {
                         </td>
                         <td
                           className={`${
-                            billData.mealBill.lunch.status
+                            lunchOn
                               ? "text-green-600 font-bold whitespace-nowrap"
                               : "text-red-600 font-bold whitespace-nowrap"
                           }`}
@@ -133,7 +165,7 @@ export default function BillCount() {
                         </td>
                         <td
                           className={`${
-                            billData.mealBill.dinner.status
+                            dinnerOn
                               ? "text-green-600 font-bold whitespace-nowrap"
                               : "text-red-600 font-bold whitespace-nowrap"
                           }`}
@@ -141,18 +173,7 @@ export default function BillCount() {
                           {billData.mealBill.dinner.perHeadCost.toFixed(2)} ৳
                         </td>
                         <td className="whitespace-nowrap">
-                          {(
-                            (billData.mealBill.breakfast.status
-                              ? billData.mealBill.breakfast.perHeadCost
-                              : 0) +
-                            (billData.mealBill.lunch.status
-                              ? billData.mealBill.lunch.perHeadCost
-                              : 0) +
-                            (billData.mealBill.dinner.status
-                              ? billData.mealBill.dinner.perHeadCost
-                              : 0)
-                          ).toFixed(2)}{" "}
-                          ৳
+                          {dailyTotal.toFixed(2)} ৳
                         </td>
                       </>
                     ) : (

@@ -18,3 +18,5 @@ export const fixedInputClass =
 
 export const fixedButtonClass =
   "btn bg-emerald-700 w-full rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 hover:bg-emerald-600";
+
+export const RESIDENCES = [ "OSMANY_HALL", "EXT_D" ];
