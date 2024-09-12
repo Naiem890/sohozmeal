@@ -17,22 +17,24 @@ const hallFeastSchema = new mongoose.Schema({
   },
 });
 
-// Custom validation for uniqueness based on wing
+// Custom validation to ensure only one feast per day per wing
 hallFeastSchema.pre("save", async function (next) {
   const feast = this;
+
   try {
+    // Check if there is any feast already on the same date and wing
     const existingFeast = await mongoose.model("HallFeast").findOne({
       date: feast.date,
       wing: feast.wing,
     });
-    console.log(existingFeast);
-    
+
     if (existingFeast) {
       const error = new Error(
-        `A feast already exists for ${feast.wing} on ${feast.date.toDateString()}`
+        `A feast already exists for the ${feast.wing} wing on ${feast.date.toDateString()}. Only one meal feast can happen per day.`
       );
       return next(error);
     }
+
     next();
   } catch (error) {
     next(error);

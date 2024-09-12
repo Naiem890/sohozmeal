@@ -24,6 +24,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 const sharp = require("sharp");
 const createMealForNextDay = require("../utils/mealInitializer");
+const Meal = require("../models/meal");
+const Alumni = require("../models/alumni");
 router.get("/", validateToken, async (req, res) => {
   const { studentId } = req.user;
   console.log("studentId:", studentId);
@@ -43,28 +45,57 @@ router.get("/", validateToken, async (req, res) => {
 });
 
 // DELETE Student by studentId
-router.delete(
-  "/:studentId",
-  validateToken,
-  checkAdminRole,
-  async (req, res) => {
-    try {
-      const { studentId } = req.params;
-      const student = await Student.findOneAndDelete({ studentId });
+router.delete("/:studentId", validateToken, checkAdminRole, async (req, res) => {
+  const session = await Student.startSession(); // Start a session for transactions
+  session.startTransaction();
 
-      if (!student) {
-        return res.status(404).json({ message: "Student not found" });
-      }
+  try {
+    const { studentId } = req.params;
 
-      res.status(200).json({ message: "Student deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting student:", error);
-      res
-        .status(500)
-        .json({ message: "An error occurred while deleting the student" });
+    // Find the student in the Student collection
+    const student = await Student.findOne({ studentId }).session(session);
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
     }
+
+    // Create a new entry in the Alumni collection
+    const alumniData = {
+      studentId: student.studentId,
+      phoneNumber: student.phoneNumber,
+      hallId: student.hallId,
+      name: student.name,
+      department: student.department,
+      gender: student.gender,
+      batch: student.batch,
+      graduationYear: new Date().getFullYear(),
+      profileImage: student.profileImage,
+      roomNo: student.roomNo,
+      residence: student.residence,
+    };
+
+    await Alumni.create([alumniData], { session });
+
+    // Delete the student from the Student collection
+    await Student.findOneAndDelete({ studentId }).session(session);
+
+    // Delete any associated meal data from the Meal collection
+    await Meal.deleteMany({ studentId }).session(session);
+
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json({ message: "Student moved to alumni and deleted successfully" });
+  } catch (error) {
+    // Rollback the transaction in case of an error
+    await session.abortTransaction();
+    session.endSession();
+
+    console.error("Error deleting student:", error);
+    res.status(500).json({ message: "An error occurred while deleting the student" });
   }
-);
+});
 
 router.get("/all", validateToken, checkAdminRole, async (req, res) => {
   try {
@@ -147,16 +178,59 @@ router.put(
   }
 );
 
+// Check if a specific hallId exists for a given wing
+router.get("/checkHallId", validateToken, checkAdminRole, async (req, res) => {
+  const { hallId, wing } = req.query;
 
+  // Validate the request parameters
+  if (!hallId || !wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+    return res
+      .status(400)
+      .json({ message: "Invalid hallId or wing. Wing must be MALE or FEMALE." });
+  }
+
+  try {
+    // Check if a student with the given hallId and wing exists
+    const studentExists = await Student.exists({
+      hallId: hallId,
+      gender: wing.toUpperCase(),
+    });
+
+    if (studentExists) {
+      return res
+        .status(200)
+        .json({ exists: true, message: `Hall ID ${hallId} already exists for ${wing} wing.` });
+    } else {
+      return res
+        .status(200)
+        .json({ exists: false, message: `Hall ID ${hallId} is available for ${wing} wing.` });
+    }
+  } catch (error) {
+    console.error("Error checking hall ID:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred while checking the hall ID." });
+  }
+});
 
 //get the last hall id and increment by 1
 router.get("/hallId", validateToken, checkAdminRole, async (req, res) => {
+  const { wing } = req.query; // Get the wing from query parameters (MALE/FEMALE)
+
+  // Validate the wing parameter
+  if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+    return res.status(400).json({ message: "Invalid wing. Must be MALE or FEMALE." });
+  }
+
   try {
+    // Find the highest hallId for the given wing
     const lastHallId = await Student.aggregate([
+      { $match: { gender: wing.toUpperCase() } }, // Filter by the wing
       { $group: { _id: null, maxHallId: { $max: "$hallId" } } },
       { $project: { _id: 0, maxHallId: 1 } },
     ]);
 
+    // Generate the next available hallId for the given wing
     let availableId =
       lastHallId.length > 0 ? parseInt(lastHallId[0].maxHallId) + 1 : 1000;
 
@@ -166,6 +240,7 @@ router.get("/hallId", validateToken, checkAdminRole, async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
 // Add student
 router.post(
   "/add",

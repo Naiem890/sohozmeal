@@ -15,9 +15,15 @@ const weekDays = [
   "FRIDAY",
 ];
 
+// Get routine by wing
 router.get("/routine", validateToken, async (req, res) => {
+  const { wing } = req.query;
+  if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+    return res.status(400).json({ error: "Invalid or missing wing parameter" });
+  }
+
   try {
-    const routines = await Routine.find();
+    const routines = await Routine.find({ wing: wing.toUpperCase() });
 
     // Sort the routines in the desired order
     const sortedRoutines = weekDays.map((day) =>
@@ -31,7 +37,13 @@ router.get("/routine", validateToken, async (req, res) => {
   }
 });
 
+// Initialize routine for a specific wing
 router.post("/routine/initialize", async (req, res) => {
+  const { wing } = req.body;
+  if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+    return res.status(400).json({ error: "Invalid or missing wing parameter" });
+  }
+
   try {
     for (const day of weekDays) {
       const routineData = {
@@ -39,43 +51,80 @@ router.post("/routine/initialize", async (req, res) => {
         breakfast: "-",
         lunch: "-",
         dinner: "-",
-        HallWing: "MALE",
+        wing: wing.toUpperCase(),
       };
 
       const routine = new Routine(routineData);
       await routine.save();
     }
 
-    res.status(200).json({ message: "Routine initialized successfully" });
+    res.status(200).json({ message: `Routine initialized for ${wing} wing successfully` });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
+// Update routine by wing
 router.put("/routine", async (req, res) => {
+  const { wing } = req.query;
+
+  // Validate the wing parameter
+  if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+    return res.status(400).json({ error: "Invalid or missing wing parameter" });
+  }
+
   try {
     const dataToUpdate = req.body;
-    const queries = dataToUpdate.map((routineData) => {
-      const { _id, breakfast, lunch, dinner } = routineData;
-      return Routine.findOneAndUpdate({ _id }, { breakfast, lunch, dinner });
+
+    // Map through each routine data and update or create it
+    const queries = dataToUpdate.map(async (routineData) => {
+      const { day, breakfast, lunch, dinner } = routineData;
+      console.log(routineData, "jjs");
+      // Find the existing routine by day and wing
+      let routine = await Routine.findOne({ day: day.toUpperCase(), wing: wing.toUpperCase() });
+
+      if (routine) {
+        // If the routine exists, update it
+        routine.breakfast = breakfast;
+        routine.lunch = lunch;
+        routine.dinner = dinner;
+      } else {
+        // If the routine doesn't exist, create a new one
+        // console.log(breakfast,lunch,dinner,day,wing, "jjs");
+        routine = new Routine({
+          day: day.toUpperCase(),
+          breakfast,
+          lunch,
+          dinner,
+          wing: wing.toUpperCase(),
+        });
+      }
+
+      // Save the updated or newly created routine
+      return routine.save();
     });
 
+    // Await all queries to finish
     const results = await Promise.all(queries);
 
-    console.log("results:", results);
-    res
-      .status(200)
-      .json({ message: "Routine updated successfully", routines: results });
+    res.status(200).json({ message: `Routine updated for ${wing} wing successfully`, routines: results });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
+
+// Plan meals for students based on wing
 router.get("/plan", validateToken, async (req, res) => {
   const { studentId } = req.user;
   const { year, month } = req.query;
+  console.log(studentId, year, month, "jjs");
+
+  // if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+  //   return res.status(400).json({ error: "Invalid or missing wing parameter" });
+  // }
 
   try {
     let filter = { studentId: studentId };
@@ -101,11 +150,11 @@ router.get("/plan", validateToken, async (req, res) => {
         },
       },
       {
-        $sort: { dateAsInt: 1 }, // Sort by date in ascending order
+        $sort: { dateAsInt: 1 },
       },
       {
         $project: {
-          dateAsInt: 0, // Exclude the temporary field from the result
+          dateAsInt: 0,
         },
       },
     ]);

@@ -19,13 +19,18 @@ const stockItemSchema = new mongoose.Schema({
     set: (value) => value.toUpperCase(),
     default: "STORED",
   },
+  wing: {
+    type: String,
+    enum: ["MALE", "FEMALE"],
+    required: true, // Add wing field for both male and female wings
+  },
 });
 
-// Define a unique index on the 'name' field
-stockItemSchema.index({ name: 1 }, { unique: true });
+// Create a compound index to enforce uniqueness of `name` within the same `wing`
+stockItemSchema.index({ name: 1, wing: 1 }, { unique: true });
 
 // Middleware to ensure no StockItem _id is present in Stock or StockTransaction models before deleting
-stockItemSchema.pre('remove', { document: true, query: false }, async function(next) {
+stockItemSchema.pre('remove', { document: true, query: false }, async function (next) {
   const itemId = this._id;
   const stockCount = await mongoose.model('Stock').countDocuments({ item: itemId });
   const transactionCount = await mongoose.model('StockTransaction').countDocuments({ item: itemId });
@@ -53,6 +58,11 @@ const stockSchema = new mongoose.Schema(
     item: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "StockItem", // Reference the StockItem model
+    },
+    wing: {
+      type: String,
+      enum: ["MALE", "FEMALE"],
+      required: true, // Add wing field for both male and female wings
     },
   },
   {
@@ -88,7 +98,6 @@ const stockTransactionSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      // required: true,
       enum: ["STORED", "NON_STORED"],
       set: (value) => value.toUpperCase(),
     },
@@ -96,6 +105,11 @@ const stockTransactionSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: ["BREAKFAST", "LUNCH", "DINNER", "-"], // "-" for stock in transactions
+    },
+    wing: {
+      type: String,
+      enum: ["MALE", "FEMALE"],
+      required: true, // Add wing field for both male and female wings
     },
     transactionAmount: {
       type: Number,
@@ -107,9 +121,6 @@ const stockTransactionSchema = new mongoose.Schema(
   }
 );
 
-const StockTransaction = mongoose.model(
-  "StockTransaction",
-  stockTransactionSchema
-);
+const StockTransaction = mongoose.model("StockTransaction", stockTransactionSchema);
 
 module.exports = { Stock, StockItem, StockTransaction };
