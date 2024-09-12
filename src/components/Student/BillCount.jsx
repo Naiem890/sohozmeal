@@ -2,28 +2,13 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Axios } from "../../api/api";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import formatDate from "../../Utils/formatDateString";
 import convertToDDMMYYYY from "../../Utils/YYYYMMDDtoDDMMYYYY";
-
-const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
 
 export default function BillCount() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [mealBillData, setMealBillData] = useState([]);
   const [hallFeasts, setHallFeasts] = useState([]);
+  const [wing] = useState("MALE"); // Hardcoded wing state
 
   let totalBill = 0;
 
@@ -32,14 +17,17 @@ export default function BillCount() {
       try {
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth() + 1;
+
+        // Fetch the meal bill data
         const res = await Axios.get(
-          `/bill/student?year=${year}&month=${month}`
+          `/bill/student?year=${year}&month=${month}&wing=${wing}`
         );
+        console.log(res.data, "hiihih");
         setMealBillData(res.data.mealBillData);
-        console.log(res.data);
-        // Fetch the hall feast data for the selected month
+
+        // Fetch the hall feast data for the selected month and wing
         const feastRes = await Axios.get(
-          `/feast/month/${year}/${month}/wing/MALE`
+          `/feast/month/${year}/${month}/wing/${wing}`
         );
         setHallFeasts(feastRes.data);
       } catch (err) {
@@ -47,7 +35,7 @@ export default function BillCount() {
       }
     };
     fetchBill();
-  }, [selectedDate]);
+  }, [selectedDate, wing]); // Use wing in the dependency array to refetch when wing changes
 
   const handleDateChange = useCallback((date) => {
     setSelectedDate(date);
@@ -58,7 +46,7 @@ export default function BillCount() {
       const numDays = new Date(year, month, 0).getDate();
       return Array.from(
         { length: numDays },
-        (_, i) => new Date(year, month - 1, i + 2).toISOString().split("T")[0]
+        (_, i) => new Date(year, month - 1, i + 1).toISOString().split("T")[0]
       );
     },
     []
@@ -122,8 +110,6 @@ export default function BillCount() {
                   billData?.mealBill.dinner.status ||
                   onDay.some((feast) => feast.meal === "dinner");
 
-                console.log(breakfastOn, lunchOn, dinnerOn, "sssh", day);
-
                 // Calculate the costs
                 const breakfastCost = breakfastOn
                   ? billData?.mealBill.breakfast.perHeadCost || 0
@@ -138,6 +124,7 @@ export default function BillCount() {
                 // Total cost for the day
                 const dailyTotal = breakfastCost + lunchCost + dinnerCost;
                 totalBill += dailyTotal;
+
                 return (
                   <tr key={day} className="hover:bg-gray-100">
                     <td className="py-1 whitespace-nowrap text-left">

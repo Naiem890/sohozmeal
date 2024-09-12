@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { fixedButtonClass } from "../../../Utils/constant";
+import Swal from "sweetalert2"; // Import SweetAlert2
+import { fixedButtonClass, fixedInputClass } from "../../../Utils/constant";
 import { Axios } from "../../../api/api";
 import { NonStock } from "./NonStock";
 import { StockIn } from "./StockIn";
@@ -23,47 +24,78 @@ export const Stock = () => {
   const [categories, setCategories] = useState([]);
   const [refetch, setRefetch] = useState(false);
   const [stockTransaction, setStockTransaction] = useState([]);
+  const [wing, setWing] = useState(""); // Initialize with an empty string for wing
+
+  // SweetAlert2 to prompt the user for MALE or FEMALE
+  const promptWingSelection = async () => {
+    const { value: wingInput } = await Swal.fire({
+      title: "Enter Wing",
+      input: "text",
+      inputLabel: "Please enter 'MALE' or 'FEMALE'",
+      inputPlaceholder: "MALE or FEMALE",
+      showCancelButton: false,
+      allowOutsideClick: false,
+      confirmButtonText: "Submit",
+      preConfirm: (input) => {
+        const validWing = ["MALE", "FEMALE"].includes(input.toUpperCase());
+        if (!validWing) {
+          Swal.showValidationMessage("You must enter 'MALE' or 'FEMALE'");
+        }
+        return input.toUpperCase();
+      },
+    });
+
+    if (wingInput) {
+      setWing(wingInput); // Set the wing state
+      toast.success(`Wing set to ${wingInput}`);
+    }
+  };
 
   useEffect(() => {
-    const fetchStocks = async () => {
-      try {
-        const res = await Axios("/stock");
-        console.log(res.data);
-        setStocks(res.data);
-      } catch (error) {
-        console.error("Error while fetching stocks:", error);
-        toast.error("Error retrieving stocks. Please try again.");
-      }
-    };
+    promptWingSelection(); // Prompt for wing selection on page load
+  }, []);
 
-    const fetchStockItems = async () => {
-      try {
-        const res = await Axios("/stock/item");
-        const { stockItems, units, categories } = res.data;
+  useEffect(() => {
+    if (wing) {
+      const fetchStocks = async () => {
+        try {
+          const res = await Axios(`/stock?wing=${wing}`); // Fetch stocks by wing
+          setStocks(res.data);
+        } catch (error) {
+          console.error("Error while fetching stocks:", error);
+          toast.error("Error retrieving stocks. Please try again.");
+        }
+      };
 
-        setStockItems(stockItems);
-        setUnits(units);
-        setCategories(categories);
-      } catch (error) {
-        console.error("Error while fetching stock items:", error);
-        toast.error("Error retrieving stock items. Please try again.");
-      }
-    };
+      const fetchStockItems = async () => {
+        try {
+          const res = await Axios(`/stock/item?wing=${wing}`); // Fetch stock items by wing
+          const { stockItems, units, categories } = res.data;
 
-    const fetchStockTransaction = async () => {
-      try {
-        const res = await Axios("/stock/transactions/all");
-        setStockTransaction(res.data);
-      } catch (error) {
-        console.error("Error while fetching stock items:", error);
-        toast.error(error.response.data.error);
-      }
-    };
+          setStockItems(stockItems);
+          setUnits(units);
+          setCategories(categories);
+        } catch (error) {
+          console.error("Error while fetching stock items:", error);
+          toast.error("Error retrieving stock items. Please try again.");
+        }
+      };
 
-    fetchStockItems();
-    fetchStocks();
-    fetchStockTransaction();
-  }, [refetch]);
+      const fetchStockTransaction = async () => {
+        try {
+          const res = await Axios(`/stock/transactions/all?wing=${wing}`); // Fetch transactions by wing
+          setStockTransaction(res.data);
+        } catch (error) {
+          console.error("Error while fetching stock items:", error);
+          toast.error(error.response.data.error);
+        }
+      };
+
+      fetchStockItems();
+      fetchStocks();
+      fetchStockTransaction();
+    }
+  }, [refetch, wing]); // Refetch when wing changes
 
   const refetchHandler = () => {
     setRefetch((prev) => !prev);
@@ -76,10 +108,17 @@ export const Stock = () => {
           <StockIn
             refetchHandler={refetchHandler}
             stockItems={stockItems.filter((item) => item.category === "STORED")}
+            wing={wing} // Pass wing to StockIn
           />
         );
       case MODE.STOCK_OUT:
-        return <StockOut refetchHandler={refetchHandler} stocks={stocks} />;
+        return (
+          <StockOut
+            refetchHandler={refetchHandler}
+            stocks={stocks}
+            wing={wing}
+          />
+        ); // Pass wing to StockOut
       case MODE.ITEMS_LIST:
         return (
           <StockItemsList
@@ -87,6 +126,7 @@ export const Stock = () => {
             units={units}
             stockItems={stockItems}
             refetchHandler={refetchHandler}
+            wing={wing} // Pass wing to StockItemsList if needed
           />
         );
       case MODE.NON_STOCK_ITEMS:
@@ -96,6 +136,7 @@ export const Stock = () => {
             stockItems={stockItems.filter((item) => {
               return item.category === "NON_STORED";
             })}
+            wing={wing} // Pass wing to NonStock if needed
           />
         );
       default:
@@ -105,7 +146,20 @@ export const Stock = () => {
 
   return (
     <div className="mb-10 lg:my-7 px-5 lg:mr-12">
-      <h2 className="text-3xl font-semibold">Stock</h2>
+      <div className="flex justify-between ">
+        <h2 className="text-3xl font-semibold">Stock</h2>
+        <div className="flex justify-end pb-4 text-sm font-extralight">
+          <select
+            value={wing}
+            onChange={(e) => setWing(e.target.value)} // Handle wing selection
+            className={`${fixedInputClass} h-auto cursor-pointer w-44`}
+          >
+            <option value="">Gender</option>
+            <option value="MALE">MALE</option>
+            <option value="FEMALE">FEMALE</option>
+          </select>
+        </div>
+      </div>
       <div className="divider"></div>
       <div className="grid grid-cols-2 gap-16">
         <StockSummaryTable stocks={stocks} />

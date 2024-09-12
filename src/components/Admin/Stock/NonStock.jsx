@@ -3,7 +3,7 @@ import { fixedButtonClass, fixedInputClass } from "../../../Utils/constant";
 import { Axios } from "../../../api/api";
 import toast from "react-hot-toast";
 
-export const NonStock = ({ stockItems, refetchHandler }) => {
+export const NonStock = ({ stockItems, refetchHandler, wing }) => {
   const [selectedItem, setSelectedItemId] = useState(stockItems[0]);
 
   const handleStockOut = async (e) => {
@@ -14,14 +14,15 @@ export const NonStock = ({ stockItems, refetchHandler }) => {
     const date = e.target.date.value;
     const price = e.target.price.value;
     const category = "NON_STORED";
-    console.log(quantity, item, meal, date);
+
     try {
       const response = await Axios.post(`/stock/out/${item}`, {
         quantityToReduce: quantity,
         category,
         meal,
         date,
-        price
+        price,
+        wing, // Include wing in the request
       });
       toast.success("Stock out completed successfully!");
       refetchHandler();
@@ -29,6 +30,7 @@ export const NonStock = ({ stockItems, refetchHandler }) => {
       toast.error(error.response.data.error);
     }
   };
+
   const handleItemSelect = (event) => {
     const selectedItem = event.target.value;
     const selectedItemObject = stockItems.find(

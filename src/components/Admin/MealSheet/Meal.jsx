@@ -8,7 +8,7 @@ import { MealControls } from "./MealControls";
 import Swal from "sweetalert2";
 
 export const Meal = () => {
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("roomNo");
   const [sortAsc, setSortAsc] = useState(true);
   const [students, setStudents] = useState([]);
@@ -49,7 +49,6 @@ export const Meal = () => {
   };
 
   useEffect(() => {
-    // Show loading spinner using SweetAlert when fetching data
     Swal.fire({
       title: "Loading...",
       text: "Please wait while we load the data.",
@@ -78,8 +77,10 @@ export const Meal = () => {
     async function fetchFeastLocks() {
       try {
         const formattedDate = formatDate(fromDate);
-        const result = await Axios.get(`/feast/date/${formattedDate}`);
-
+        const result = await Axios.get(
+          `/feast/date/${formattedDate}/wing/${gender}`
+        );
+        console.log(result.data, "kksk");
         if (result.data.length > 0) {
           setBreakfastLock(result.data[0].meal.includes("breakfast"));
           setLunchLock(result.data[0].meal.includes("lunch"));
@@ -110,7 +111,7 @@ export const Meal = () => {
     async function fetchStudents() {
       const formattedDate = formatDate(fromDate);
       const result = await Axios.get("/meal/students", {
-        params: { date: formattedDate, gender: gender },
+        params: { date: formattedDate, gender: gender }, // gender is used as wing
       });
       setStudents(result.data);
     }
@@ -186,11 +187,15 @@ export const Meal = () => {
       const checkResult = await Axios.post("/feast/check", {
         date: formattedDate,
         meal: mealType,
+        wing: gender, // Pass wing as gender
       });
+      console.log(checkResult.data, "kksk");
       const isFeastOn = checkResult.data.status === "on";
 
       if (isFeastOn) {
-        await Axios.delete(`/feast/date/${formattedDate}/meal/${mealType}`);
+        await Axios.delete(
+          `/feast/date/${formattedDate}/meal/${mealType}/wing/${gender}`
+        );
         toast.success(
           `Hall feast for ${mealType} on ${formattedDate} turned off!`
         );
@@ -209,7 +214,7 @@ export const Meal = () => {
         await Axios.post("/feast", {
           date: formattedDate,
           meal: mealType,
-          wing: gender,
+          wing: gender, // Pass wing as gender
         });
         toast.success(
           `Hall feast for ${mealType} on ${formattedDate} turned on!`
@@ -256,6 +261,7 @@ export const Meal = () => {
       try {
         const result = await Axios.post("/meal/generate-meal", {
           date: formatDate(fromDate),
+          wing: gender, // Pass wing as gender
         });
         Swal.fire({
           icon: "success",

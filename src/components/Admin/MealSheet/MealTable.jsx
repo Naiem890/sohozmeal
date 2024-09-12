@@ -45,8 +45,8 @@ export const MealTable = ({
             <th onClick={() => toggleSort("residence")} className="uppercase">
               Residence {sortBy === "residence" && (sortAsc ? "↑" : "↓")}
             </th>
-            <th className="flex flex-col gap-1 justify-center items-center uppercase text-center">
-              <h3>Meal</h3>
+            <th className="uppercase text-center">
+              Meal
               {/* MealLocks component for locking/unlocking feasts */}
               <MealLocks
                 breakfastLock={breakfastLock}
@@ -60,6 +60,7 @@ export const MealTable = ({
             </th>
           </tr>
         </thead>
+
         <tbody>
           {students.map((student) => (
             <MealRow

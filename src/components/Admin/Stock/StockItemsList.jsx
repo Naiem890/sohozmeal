@@ -17,8 +17,8 @@ export const StockItemsList = ({
   units,
   categories,
   refetchHandler,
+  wing, // Add wing as a prop
 }) => {
-  // const [editMode, setEditMode] = useState("");
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("");
   const [category, setCategory] = useState("");
@@ -33,6 +33,7 @@ export const StockItemsList = ({
           name,
           unit,
           category,
+          wing, // Include the wing in the request
         },
       });
       toast.success("Item added successfully!");
@@ -53,6 +54,7 @@ export const StockItemsList = ({
           name,
           unit,
           category,
+          wing, // Include the wing in the request
         },
       });
       toast.success("Item updated successfully!");
@@ -77,7 +79,6 @@ export const StockItemsList = ({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
       icon: "warning",
-
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
@@ -86,7 +87,7 @@ export const StockItemsList = ({
 
     if (confirmation.isConfirmed) {
       try {
-        const res = await Axios.delete(`/stock/item/${id}`);
+        const res = await Axios.delete(`/stock/item/${id}?wing=${wing}`); // Include the wing in the delete request
         toast.success(res.data.message);
         refetchHandler();
       } catch (error) {
@@ -95,6 +96,7 @@ export const StockItemsList = ({
       }
     }
   };
+
   return (
     <div>
       <div className="overflow-x-auto max-h-64 px-1 mt-4">
@@ -231,7 +233,6 @@ export const StockItemsList = ({
           >
             {editItemId ? "Update" : "Add"}
           </button>
-          {/* close button on editmode */}
         </div>
       </form>
     </div>

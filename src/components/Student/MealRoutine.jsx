@@ -2,11 +2,14 @@ import React, { useEffect, useState, useRef } from "react";
 import { Axios } from "../../api/api";
 import { format, isToday } from "date-fns";
 import { useReactToPrint } from "react-to-print";
-import { fixedButtonClass } from "../../Utils/constant";
+import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
+
 const MealRoutine = () => {
   const [mealData, setMealData] = useState([]);
+  const [selectedWing, setSelectedWing] = useState("MALE");
   const currentDay = format(new Date(), "EEEE").toUpperCase();
   const mealRef = useRef();
+
   const handlePrint = useReactToPrint({
     content: () => mealRef.current,
     documentTitle: "Meal Routine",
@@ -22,9 +25,11 @@ const MealRoutine = () => {
     SATURDAY: "শনিবার",
   };
 
-  const fetchMealRoutineData = async () => {
+  const fetchMealRoutineData = async (wing) => {
     try {
-      const response = await Axios.get("/meal/routine");
+      const response = await Axios.get("/meal/routine", {
+        params: { wing }, // Pass the selected wing as a query parameter
+      });
       setMealData(response.data);
     } catch (error) {
       console.error("Error fetching meal routine data:", error);
@@ -32,40 +37,49 @@ const MealRoutine = () => {
   };
 
   useEffect(() => {
-    fetchMealRoutineData();
-  }, []);
+    fetchMealRoutineData(selectedWing); // Fetch data when wing changes
+  }, [selectedWing]);
+
+  const handleWingChange = (e) => {
+    setSelectedWing(e.target.value); // Update selected wing
+  };
 
   return (
     <>
-      <div className=" lg:mt-10 mb-4 px-5 lg:mr-12">
-        <h2 className="text-3xl font-semibold">Meal Routine</h2>
-        <div className="divider"></div>
+      <div className="lg:mt-10 mb-4 px-5 lg:mr-12">
+        {/* Header with Dropdown */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-3xl font-semibold">Meal Routine</h2>
+          <div className="flex items-center">
+            <select
+              value={selectedWing}
+              onChange={handleWingChange}
+              className={`${fixedInputClass} h-auto cursor-pointer w-44 font-extralight text-sm`}
+            >
+              <option value="">Gender</option>
+              <option value="MALE">MALE</option>
+              <option value="FEMALE">FEMALE</option>
+            </select>
+          </div>
+        </div>
+
         <div ref={mealRef} className="container flex justify-start max-w-7xl">
           <div className="relative shadow-md w-full">
-            <table className="text-sm text-left text-black w-full">
+            <table className="w-full table-auto text-sm text-left text-black border-collapse">
               <thead className="text-xs uppercase shadow-[0_8px_30px_rgb(0,0,0,0.30) text-black w-full">
                 <tr className="font-notoSerifBangla font-extrabold text-base">
-                  <th
-                    className={`text-center text-black table-auto border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3`}
-                  >
+                  {/* First column with smaller width */}
+                  <th className="w-1/6 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
                     দিন
                   </th>
-                  <th
-                    scope="col"
-                    className={`text-black text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3 $`}
-                  >
+                  {/* Remaining columns with equal width */}
+                  <th className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
                     সকাল
                   </th>
-                  <th
-                    scope="col"
-                    className={`text-black text-center px-2 border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3 `}
-                  >
+                  <th className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
                     দুপুর
                   </th>
-                  <th
-                    scope="col"
-                    className={`text-center text-black border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3`}
-                  >
+                  <th className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
                     রাত
                   </th>
                 </tr>
@@ -80,37 +94,16 @@ const MealRoutine = () => {
                         : ""
                     }`}
                   >
-                    <th
-                      className={` text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3 ${
-                        isToday(new Date()) && routine.day === currentDay
-                          ? "font-extrabold  md:text-lg"
-                          : ""
-                      }`}
-                    >
-                      <p
-                        className={`${
-                          isToday(new Date()) && routine.day === currentDay
-                            ? "font-extrabold md:text-lg bg-emerald-700 rounded-full text-white"
-                            : ""
-                        }`}
-                      >
-                        {dayNameMap[routine.day] || routine.day}
-                      </p>
-                    </th>
-                    <td
-                      scope=""
-                      className={`p-0 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3`}
-                    >
+                    <td className="w-1/6 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
+                      {dayNameMap[routine.day] || routine.day}
+                    </td>
+                    <td className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
                       {routine.breakfast}
                     </td>
-                    <td
-                      className={`text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3 `}
-                    >
+                    <td className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
                       {routine.lunch}
                     </td>
-                    <td
-                      className={`text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3`}
-                    >
+                    <td className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
                       {routine.dinner}
                     </td>
                   </tr>
@@ -120,6 +113,8 @@ const MealRoutine = () => {
           </div>
         </div>
       </div>
+
+      {/* Print Button */}
       <div className="lg:my-5 mb-10 px-5 lg:mr-12">
         <button onClick={handlePrint} className={`${fixedButtonClass} sm:w-40`}>
           Export PDF

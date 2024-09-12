@@ -9,6 +9,7 @@ import TransactionTable from "./TransactionTable";
 import { message } from "daisyui";
 import { Axios } from "../../../api/api";
 import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { fixedInputClass } from "../../../Utils/constant";
 
 const TransactionHistory = () => {
   const toastId = React.useRef(null);
@@ -23,6 +24,9 @@ const TransactionHistory = () => {
     new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
   );
   const [toDate, setToDate] = useState(new Date());
+
+  // Wing selection (MALE/FEMALE)
+  const [selectedWing, setSelectedWing] = useState("MALE");
 
   // Filter options
   const [transactionType, setTransactionType] = useState("BOTH");
@@ -41,12 +45,11 @@ const TransactionHistory = () => {
         const res = await Axios.get(
           `stock/transactions?fromDate=${formatDate(
             fromDate
-          )}&toDate=${formatDate(toDate)}`
+          )}&toDate=${formatDate(toDate)}&wing=${selectedWing}`
         );
         const data = res.data;
         setTransactions(data);
         setFilteredTransactions(data); // Initialize filtered transactions
-        console.log(data, "ssh");
       } catch (error) {
         console.error("Error fetching transactions:", error);
         toast.error("Error fetching transactions.");
@@ -54,7 +57,7 @@ const TransactionHistory = () => {
     };
 
     fetchTransactions();
-  }, [fromDate, toDate]); // Re-fetch data when fromDate or toDate changes
+  }, [fromDate, toDate, selectedWing]); // Re-fetch data when fromDate, toDate, or selectedWing changes
 
   // Function to sort transactions by date
   const sortTransactionsByDate = (transactions, order) => {
@@ -146,8 +149,6 @@ const TransactionHistory = () => {
   // Confirm delete handler
   const confirmDelete = async (recordId) => {
     try {
-      console.log(recordId, "hhh");
-      // Call the API to delete the transaction
       await Axios.delete(`/stock/transaction/${recordId}`);
 
       // Remove the deleted record from the transactions array
@@ -244,6 +245,17 @@ const TransactionHistory = () => {
             setFromDate={setFromDate}
             setToDate={setToDate}
           />
+          <div className="relative">
+            <select
+              value={selectedWing}
+              onChange={(e) => setSelectedWing(e.target.value)}
+              className={`${fixedInputClass} h-auto cursor-pointer w-44`}
+            >
+              <option value="">Gender</option>
+              <option value="MALE">MALE</option>
+              <option value="FEMALE">FEMALE</option>
+            </select>
+          </div>
           <button
             className="bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 px-2 py-2 font-thin flex items-center gap-2 hover:ring-1 ring-offset-2 ring-emerald-500 transition-all duration-300"
             onClick={exportToExcel}

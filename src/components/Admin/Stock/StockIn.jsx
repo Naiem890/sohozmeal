@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { fixedButtonClass, fixedInputClass } from "../../../Utils/constant";
+import Swal from "sweetalert2";
 import toast from "react-hot-toast";
 import { Axios } from "../../../api/api";
 
-export const StockIn = ({ stockItems, refetchHandler }) => {
+export const StockIn = ({ stockItems, refetchHandler, wing }) => {
   const [selectedItem, setSelectedItem] = useState(null);
 
   const handleStockIn = async (e) => {
@@ -12,30 +13,43 @@ export const StockIn = ({ stockItems, refetchHandler }) => {
     const price = +e.target.price.value;
     const item = selectedItem._id;
     const date = e.target.date.value;
-    console.log(item, quantity, price);
-
-    try {
-      await Axios.post("/stock", {
-        stock: {
-          item,
-          quantity,
-          price,
-          date,
-        },
-      });
-      toast.success("Stock added successfully!");
-      refetchHandler();
-      reset();
-      e.target.reset();
-    } catch (error) {
-      console.error("Error while adding stock:", error);
-      toast.error(error.response.data.error);
-    }
+    // Confirmation with SweetAlert2
+    Swal.fire({
+      title: "Confirm Stock In",
+      text: `Are you sure you want to add ${quantity} of ${selectedItem?.name} for ${price} per unit?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, add it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await Axios.post("/stock", {
+            stock: {
+              item,
+              quantity,
+              price,
+              date,
+              wing, // Include the wing in the request
+            },
+          });
+          toast.success("Stock added successfully!");
+          refetchHandler();
+          reset();
+          e.target.reset();
+        } catch (error) {
+          console.error("Error while adding stock:", error);
+          toast.error(error.response.data.error);
+        }
+      }
+    });
   };
 
   const reset = () => {
     setSelectedItem(null);
   };
+
   return (
     <form onSubmit={handleStockIn} className="">
       <div className="flex gap-2">

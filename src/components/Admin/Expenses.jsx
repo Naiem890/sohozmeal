@@ -7,6 +7,7 @@ export default function Expenses() {
   const [distinctMonths, setDistinctMonths] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [mealBillData, setMealBillData] = useState([]);
+  const [wing, setWing] = useState("MALE"); // Add wing state
 
   useEffect(() => {
     const fetchDistinctMonths = async () => {
@@ -24,7 +25,7 @@ export default function Expenses() {
         const [year, month] = selectedMonth.split("-");
         try {
           const res = await Axios.get(
-            `/bill/student?year=${year}&month=${month}`
+            `/bill/student?year=${year}&month=${month}&wing=${wing}` // Pass the selected wing
           );
           setMealBillData(res.data.mealBillData);
         } catch (err) {
@@ -33,13 +34,17 @@ export default function Expenses() {
       }
     };
     fetchBill();
-  }, [selectedMonth]);
+  }, [selectedMonth, wing]); // Trigger the effect when wing changes
 
   const handleDateChange = useCallback((date) => {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     setSelectedMonth(`${year}-${month}`);
   }, []);
+
+  const handleWingChange = (e) => {
+    setWing(e.target.value); // Update wing when user selects a different option
+  };
 
   const getDaysInMonth = useCallback((year, month) => {
     const date = new Date(year, month, 0);
@@ -63,7 +68,20 @@ export default function Expenses() {
         <h2 className="text-lg self-center xs:text-3xl font-semibold">
           Mess Bill
         </h2>
-        <div className="">
+
+        {/* Add wing selection dropdown */}
+
+        <div className=" flex gap-2">
+          <div className="">
+            <select
+              value={wing}
+              onChange={handleWingChange}
+              className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:border-blue-500 transition-all duration-300 ease-in-out w-44"
+            >
+              <option value="MALE">MALE</option>
+              <option value="FEMALE">FEMALE</option>
+            </select>
+          </div>
           <DatePickerComponent
             selectedDate={new Date(selectedMonth + "-01")}
             onDateChange={handleDateChange}
@@ -241,140 +259,6 @@ export default function Expenses() {
             </tbody>
           </table>
         </div>
-
-        {/* old table */}
-        {/* <div className=" overflow-x-auto max-h-full px-1">
-          <table className="table table-sm border-collapse border border-slate-500 table-hover w-full text-center table-pin-rows table-pin-cols overflow-x-auto">
-            <thead className="bg-gray-200 shadow-sm sticky top-0 border-b-[1px] border-slate-500">
-              <tr>
-                <th className="p-0 border border-slate-500">Date</th>
-                <th className="p-0 border border-slate-500">Breakfast</th>
-                <th className="p-0 border border-slate-500">Lunch</th>
-                <th className="p-0 border border-slate-500">Dinner</th>
-                <th className="p-0 border border-slate-500">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {daysOfMonth.map((day) => {
-                const item = mealBillData.find((data) => data.date === day);
-                return (
-                  <React.Fragment key={day}>
-                    <tr className="hover:bg-gray-100 border border-slate-500 text-center">
-                      <td className="p-0 font-bold text-lg border border-slate-500">
-                        {new Date(day).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </td>
-                      <td className="p-0 border border-slate-500">
-                        <div className="flex flex-col">
-                          <span>
-                            Total Cost:{" "}
-                            {item?.mealBill?.breakfast?.totalCost?.toFixed(2) || "0"}{" "}
-                            ৳
-                          </span>
-                          <span>
-                            Total Students: {item?.mealBill?.breakfast?.totalStudent || "0"}
-                          </span>
-                          <span>
-                            Per Head: {item?.mealBill?.breakfast?.perHeadCost?.toFixed(2) || "0"}{" "}
-                            ৳
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-0 border border-slate-500">
-                        <div className="flex flex-col">
-                          <span>
-                            Total Cost:{" "}
-                            {item?.mealBill?.lunch?.totalCost?.toFixed(2) || "0"}{" "}
-                            ৳
-                          </span>
-                          <span>
-                            Total Students: {item?.mealBill?.lunch?.totalStudent || "0"}
-                          </span>
-                          <span>
-                            Per Head: {item?.mealBill?.lunch?.perHeadCost?.toFixed(2) || "0"}{" "}
-                            ৳
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-0 border border-slate-500">
-                        <div className="flex flex-col">
-                          <span>
-                            Total Cost:{" "}
-                            {item?.mealBill?.dinner?.totalCost?.toFixed(2) || "0"}{" "}
-                            ৳
-                          </span>
-                          <span>
-                            Total Students: {item?.mealBill?.dinner?.totalStudent || "0"}
-                          </span>
-                          <span>
-                            Per Head: {item?.mealBill?.dinner?.perHeadCost?.toFixed(2) || "0"}{" "}
-                            ৳
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-0 border border-slate-500">
-                        <div className="flex flex-col">
-                          <div>
-                            Total Cost:{" "}
-                            {(
-                              (item?.mealBill?.breakfast?.totalCost || 0) +
-                              (item?.mealBill?.lunch?.totalCost || 0) +
-                              (item?.mealBill?.dinner?.totalCost || 0)
-                            ).toFixed(2)}{" "}
-                            ৳
-                          </div>
-                          <div>
-                            Per Head:{" "}
-                            {(
-                              (item?.mealBill?.breakfast?.perHeadCost || 0) +
-                              (item?.mealBill?.lunch?.perHeadCost || 0) +
-                              (item?.mealBill?.dinner?.perHeadCost || 0)
-                            ).toFixed(2)}{" "}
-                            ৳
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  </React.Fragment>
-                );
-              })}
-              { (
-                <tr className="border-t">
-                  <td colSpan="4" className="text-right font-bold text-xl p-0">
-                    Grand Total
-                  </td>
-                  <td className="p-0 font-bold text-xl">
-                    {mealBillData
-                      .reduce(
-                        (total, item) =>
-                          total +
-                          (item.mealBill.breakfast.totalCost || 0) +
-                          (item.mealBill.lunch.totalCost || 0) +
-                          (item.mealBill.dinner.totalCost || 0),
-                        0
-                      )
-                      .toFixed(2)}{" "}
-                    ৳
-                    <br />
-                    {mealBillData
-                      .reduce(
-                        (total, item) =>
-                          total +
-                          (item.mealBill.breakfast.perHeadCost || 0) +
-                          (item.mealBill.lunch.perHeadCost || 0) +
-                          (item.mealBill.dinner.perHeadCost || 0),
-                        0
-                      )
-                      .toFixed(2)}{" "}
-                    ৳
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div> */}
       </div>
     </div>
   );

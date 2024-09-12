@@ -14,6 +14,7 @@ export const StockSummaryTable = ({ stocks }) => {
               <th className="uppercase">Quantity</th>
               <th className="uppercase">Unit</th>
               <th className="uppercase">Price</th>
+              <th className="uppercase">Wing</th> {/* Added Wing column */}
             </tr>
           </thead>
           <tbody>
@@ -26,7 +27,7 @@ export const StockSummaryTable = ({ stocks }) => {
                 <td>{stock?.quantity}</td>
                 <td>{stock?.item?.unit}</td>
                 <td>{stock?.price}</td>
-                {/* TODO: need to change the property name */}
+                <td>{stock?.wing}</td> {/* Displaying the wing */}
               </tr>
             ))}
           </tbody>

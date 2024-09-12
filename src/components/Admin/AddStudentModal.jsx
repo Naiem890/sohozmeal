@@ -7,7 +7,11 @@ import {
   fixedButtonClass,
   fixedInputClass,
 } from "../../Utils/constant";
-import { XCircleIcon } from "@heroicons/react/24/outline";
+import {
+  XCircleIcon,
+  CheckCircleIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline"; // Import icons
 
 export const AddStudentModal = ({
   showAddStudentModal,
@@ -19,9 +23,12 @@ export const AddStudentModal = ({
   const [profileImage, setProfileImage] = useState(null);
   const [image, setImage] = useState("");
   const [hallId, setHallId] = useState("");
-  const [roomNo, setRoomNo] = useState(null); // Add roomNo state
-  const [residence, setResidence] = useState("NOT_SELECTED"); // Add residence state
-  const [gender, setGender] = useState("MALE"); // Add gender state
+  const [suggestedHallId, setSuggestedHallId] = useState("");
+  const [roomNo, setRoomNo] = useState(null);
+  const [residence, setResidence] = useState("NOT_SELECTED");
+  const [gender, setGender] = useState("MALE"); // Default gender to MALE
+  const [isHallIdAvailable, setIsHallIdAvailable] = useState(null); // Now it's null, not true or false
+  const [hallIdChecked, setHallIdChecked] = useState(false); // Track if Hall ID is checked
 
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -32,16 +39,42 @@ export const AddStudentModal = ({
     });
   };
 
+  const getHallId = async (selectedGender) => {
+    try {
+      const response = await Axios.get("/student/hallId", {
+        params: { wing: selectedGender },
+      });
+      setSuggestedHallId(response.data.hallId); // Suggest the next hallId
+    } catch (error) {
+      toast.error("Failed to fetch Hall ID.");
+      console.error(error);
+    }
+  };
+
+  const checkHallIdAvailability = async (inputHallId, selectedGender) => {
+    try {
+      const response = await Axios.get("/student/checkHallId", {
+        params: { hallId: inputHallId, wing: selectedGender },
+      });
+      setIsHallIdAvailable(!response.data.exists); // Set availability status (true/false)
+      setHallIdChecked(true); // Mark as checked
+    } catch (error) {
+      toast.error("Failed to check Hall ID availability.");
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
-    const getHallId = async () => {
-      const response = await Axios.get("/student/hallId");
-      setHallId(response.data.hallId);
-    };
-    getHallId();
-  }, [refetchHallIdHandler]);
+    getHallId(gender); // Fetch hallId based on gender when the modal opens or gender changes
+  }, [gender, refetchHallIdHandler]);
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
+    if (!isHallIdAvailable || !hallIdChecked) {
+      toast.error("Please enter a valid and available Hall ID.");
+      return;
+    }
+
     try {
       const formData = new FormData();
       formData.append("profileImage", profileImage);
@@ -50,10 +83,11 @@ export const AddStudentModal = ({
       formData.append("studentId", e.target.studentId.value);
       formData.append("department", e.target.department.value);
       formData.append("batch", e.target.batch.value);
-      formData.append("gender", gender); // Add gender to formData
-      formData.append("hallId", hallId); // Use hallId from state
-      formData.append("roomNo", roomNo); // Add roomNo to formData
-      formData.append("residence", residence || "NOT_SELECTED"); // Add residence to formData
+      formData.append("gender", gender);
+      formData.append("hallId", hallId);
+      formData.append("roomNo", roomNo);
+      formData.append("residence", residence || "NOT_SELECTED");
+
       const response = await Axios.post("/student/add", formData);
 
       setShowAddStudentModal(false);
@@ -63,6 +97,22 @@ export const AddStudentModal = ({
       toast.success(response.data.message);
     } catch (error) {
       toast.error(error.response.data.message);
+    }
+  };
+
+  const handleUseSuggestedHallId = () => {
+    setHallId(suggestedHallId); // Automatically set the hallId to the suggested value
+    checkHallIdAvailability(suggestedHallId, gender); // Check if suggested Hall ID is available
+  };
+
+  const handleHallIdChange = (e) => {
+    const inputHallId = e.target.value;
+    setHallId(inputHallId); // Set the manually inputted hallId
+    setHallIdChecked(false); // Reset hallIdChecked since the input has changed
+
+    // Check the availability of the entered hallId
+    if (inputHallId.trim() !== "") {
+      checkHallIdAvailability(inputHallId, gender);
     }
   };
 
@@ -139,18 +189,40 @@ export const AddStudentModal = ({
             className={`${fixedInputClass} mt-2`}
           />
         </div>
+
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Hall Id
           </label>
-          <input
-            type="text"
-            name="hallId"
-            value={hallId}
-            placeholder="Type here"
-            readOnly // Make the input field unchangeable
-            className={`${fixedInputClass} mt-2 bg-gray-200 cursor-not-allowed`}
-          />
+          <div className="flex items-center relative">
+            <input
+              type="text"
+              name="hallId"
+              value={hallId}
+              onChange={handleHallIdChange} // Manually input or change Hall ID
+              placeholder="Enter Hall ID"
+              className={`${fixedInputClass} mt-2 pr-10`} // Add padding for the icons
+            />
+            {hallId && hallIdChecked && (
+              <span className="absolute right-2 top-5 flex items-center">
+                {isHallIdAvailable ? (
+                  <CheckCircleIcon className="w-7 h-7 text-green-600 font-bold" />
+                ) : (
+                  <XMarkIcon className="w-7 h-7 text-red-600 font-bold" />
+                )}
+              </span>
+            )}
+          </div>
+
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={handleUseSuggestedHallId}
+              className="text-sm text-blue-600 underline"
+            >
+              Use Suggested Hall ID: {suggestedHallId}
+            </button>
+          </div>
         </div>
 
         <div className="">
@@ -189,7 +261,7 @@ export const AddStudentModal = ({
             type="text"
             name="roomNo"
             value={roomNo}
-            onChange={(e) => setRoomNo(e.target.value)} // Update roomNo state
+            onChange={(e) => setRoomNo(e.target.value)}
             placeholder="Enter Room Number"
             className={`${fixedInputClass} mt-2`}
           />
@@ -203,7 +275,7 @@ export const AddStudentModal = ({
           <select
             name="residence"
             value={residence}
-            onChange={(e) => setResidence(e.target.value)} // Update residence state
+            onChange={(e) => setResidence(e.target.value)}
             className={`${fixedInputClass} mt-2`}
           >
             <option disabled selected>
@@ -223,7 +295,7 @@ export const AddStudentModal = ({
           <select
             name="gender"
             value={gender}
-            onChange={(e) => setGender(e.target.value)} // Update gender state
+            onChange={(e) => setGender(e.target.value)}
             className={`${fixedInputClass} mt-2`}
           >
             <option disabled selected>
@@ -241,7 +313,11 @@ export const AddStudentModal = ({
           >
             Close
           </div>
-          <button type="submit" className={`${fixedButtonClass} w-auto`}>
+          <button
+            type="submit"
+            className={`${fixedButtonClass} w-auto`}
+            disabled={!hallIdChecked || !isHallIdAvailable}
+          >
             Add Student
           </button>
         </div>
