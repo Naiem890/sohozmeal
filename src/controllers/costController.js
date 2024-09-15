@@ -1,8 +1,121 @@
 const router = require("express").Router();
-const Bill = require("../models/bill");
+const Cost = require("../models/cost");
 const Meal = require("../models/meal");
+const Student = require("../models/student");
 const { createOrUpdateBill } = require("../utils/billService");
 const { validateToken } = require("../utils/validateToken");
+
+// Generate bills for all students from date x to date y
+router.post("/generate-bills", validateToken, async (req, res) => {
+  const { startDate, endDate, wing } = req.query;
+
+  try {
+    // Parse the date strings into Date objects
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ error: "Invalid date format" });
+    }
+
+    // Validate wing
+    if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+      return res.status(400).json({ error: "Invalid or missing wing parameter" });
+    }
+
+    // Fetch bills in the date range and filter by wing
+    const bills = await Cost.find({
+      date: { $gte: start, $lte: end },
+      wing: wing.toUpperCase(),
+    }).exec();
+
+    // Fetch meal attendance in the date range and filter by wing
+    const meals = await Meal.find({
+      date: { $gte: startDate, $lte: endDate },
+      wing: wing.toUpperCase(),
+    }).exec();
+
+    // Initialize a map to store meal attendance records by date and studentId
+    const mealAttendanceMap = {};
+
+    meals.forEach(meal => {
+      const mealDate = meal.date;
+      
+      if (!mealAttendanceMap[mealDate]) {
+        mealAttendanceMap[mealDate] = {};
+      }
+      
+      // Create a record for each student's meal participation
+      mealAttendanceMap[mealDate][meal.studentId] = meal.meal;
+    });
+
+    // Fetch student details and exclude fields like profileImage, password, and firstTimeLogin
+    const students = await Student.find(
+      { gender: wing.toUpperCase() },
+      { profileImage: 0, password: 0, firstTimeLogin: 0, status: 0 }
+    ).exec();
+
+    // Initialize total costs and details for all students
+    const studentInfo = {};
+
+    // Step 1: Calculate the per-head cost for each meal and accumulate the total cost for each student
+    bills.forEach(bill => {
+      const billDate = bill.date.toISOString().split("T")[0];
+
+      // Compute perHeadCosts for each meal
+      const perHeadCosts = {
+        breakfast: calculatePerHeadCost(bill.mealBill.breakfast),
+        lunch: calculatePerHeadCost(bill.mealBill.lunch),
+        dinner: calculatePerHeadCost(bill.mealBill.dinner),
+      };
+
+      // Check if there is meal attendance data for the current date
+      const attendanceOnDate = mealAttendanceMap[billDate];
+
+      if (attendanceOnDate) {
+        // Iterate over each student's meal attendance for that date
+        Object.keys(attendanceOnDate).forEach(studentId => {
+          const studentMeals = attendanceOnDate[studentId];
+
+          // Initialize student record if not already
+          if (!studentInfo[studentId]) {
+            studentInfo[studentId] = {
+              totalCost: 0,
+            };
+          }
+
+          // Add the per-head cost for each meal the student participated in
+          if (studentMeals.breakfast) studentInfo[studentId].totalCost += perHeadCosts.breakfast;
+          if (studentMeals.lunch) studentInfo[studentId].totalCost += perHeadCosts.lunch;
+          if (studentMeals.dinner) studentInfo[studentId].totalCost += perHeadCosts.dinner;
+        });
+      }
+    });
+
+    // Step 2: Combine student details with their total costs
+    const result = students.map(student => {
+      const { studentId } = student;
+      return {
+        ...student.toObject(),
+        totalCost: studentInfo[studentId] ? studentInfo[studentId].totalCost : 0
+      };
+    });
+
+    // Step 3: Send the response with the combined student details and total cost
+    res.status(200).json({
+      message: `Student bills calculated successfully for dates between ${startDate} and ${endDate}`,
+      result,
+    });
+  } catch (error) {
+    console.error("Error during bill calculation:", error);
+    res.status(500).json({ message: "An error occurred during bill calculation" });
+  }
+});
+
+// Helper function to calculate per head cost
+function calculatePerHeadCost(mealBill) {
+  return mealBill.totalStudent > 0 ? mealBill.totalCost / mealBill.totalStudent : 0;
+}
 
 // Create all bills for a specific date and wing
 router.post("/", validateToken, async (req, res) => {
@@ -131,7 +244,7 @@ router.get("/student", validateToken, async (req, res) => {
     ];
 
     // Fetch bills
-    const bills = await Bill.aggregate(billsPipeline).exec();
+    const bills = await Cost.aggregate(billsPipeline).exec();
     // console.log(bills);
 
     // Fetch meals, filtered by wing

@@ -50,10 +50,12 @@ const stockSchema = new mongoose.Schema(
     quantity: {
       type: Number,
       default: 0,
+      min: [0, 'Quantity cannot be negative'], // Prevent negative quantity
     },
     price: {
       type: Number,
       default: 0,
+      min: [0, 'Price cannot be negative'], // Prevent negative price
     },
     item: {
       type: mongoose.Schema.Types.ObjectId,

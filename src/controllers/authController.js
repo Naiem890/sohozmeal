@@ -5,11 +5,11 @@ const Student = require("../models/student"); // Adjust the path as needed
 const { validateToken } = require("../utils/validateToken");
 const Admin = require("../models/admin");
 const { checkAdminRole } = require("../utils/checkAdminRole");
+const Staff = require("../models/staff");
 
 // Student login
 router.post("/login", async (req, res) => {
   const { studentId, password } = req.body;
-  console.log(req.body);
   try {
     // Find the student by studentId
     const student = await Student.findOne({ studentId });
@@ -19,8 +19,6 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid studentId or password" });
     }
 
-    // eslint-disable-next-line no-undef
-    console.log("JWT_SECRET", process.env.JWT_SECRET);
     // Create a JWT token
     const token = jwt.sign(
       { studentId: student.studentId, role: "student", _id: student._id },
@@ -32,7 +30,7 @@ router.post("/login", async (req, res) => {
     );
 
     delete student.password;
-    res.status(200).json({ token, student, role: "student" });
+    res.status(200).json({ token, student, role: "student", wing: student.gender });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "An error occurred" });
@@ -76,11 +74,8 @@ router.post("/change-password", validateToken, async (req, res) => {
 
     // check if the given password is correct or not
     if (!bcrypt.compareSync(oldPassword, student.password)) {
-      console.log("=>>", oldPassword);
       return res.status(400).json({ message: "Wrong credential!" });
     }
-    console.log("calling this=>");
-
     // Update the student's password
     student.password = bcrypt.hashSync(password, 10);
     student.firstTimeLogin = false;
@@ -160,5 +155,64 @@ router.post("/admin/login", async (req, res) => {
     res.status(500).json({ message: "An error occurred" });
   }
 });
+
+
+// Create a new staff member (POST)
+router.post('/staff', async (req, res) => {
+  try {
+    const { staffId, name, phoneNumber, role, password } = req.body;
+
+    // Hash the password before saving (this is handled by the pre-save hook)
+    const newStaff = new Staff({
+      staffId,
+      name,
+      phoneNumber,
+      role,
+      password, // Plain password will be hashed by the pre-save hook
+    });
+
+    // Save the staff member to the database
+    const savedStaff = await newStaff.save();
+    res.status(201).json({ message: 'Staff member created successfully', staff: savedStaff });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error creating staff member', details: error.message });
+  }
+});
+
+
+// Staff login route
+router.post('/staff/login', async (req, res) => {
+  try {
+    const { staffId, password } = req.body;
+    
+    // Find the staff by staffId
+    const staffMember = await Staff.findOne({ staffId });
+    if (!staffMember) {
+      return res.status(404).json({ error: 'Staff member not found' });
+    }
+
+    // Compare the provided password with the stored hash
+    const isMatch = bcrypt.compareSync(password, staffMember.password); // Corrected order
+    console.log(isMatch);
+    
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Generate a JWT token
+    const token = jwt.sign(
+      { staffId: staffMember.staffId, role: staffMember.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Send the token to the client
+    res.status(200).json({ token, staffId: staffMember.staffId, role: staffMember.role });
+  } catch (error) {
+    res.status(500).json({ error: 'Error logging in', details: error.message });
+  }
+});
+
 
 module.exports = router;

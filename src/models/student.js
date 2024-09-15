@@ -3,13 +3,13 @@ const bcrypt = require("bcrypt");
 
 const studentSchema = new mongoose.Schema({
   studentId: { type: String, required: true, unique: true },
-  phoneNumber: { type: String, unique: true, default: null },
+  phoneNumber: { type: String, default: null },
   hallId: { type: String, required: true },
   name: { type: String, required: true },
   password: {
     type: String,
     default: function () {
-      return bcrypt.hashSync(this.studentId, 10);
+      return bcrypt.hashSync(this.studentId + "", 10);
     },
   },
   department: {
@@ -43,6 +43,12 @@ const studentSchema = new mongoose.Schema({
   roomNo: { type: String, default: null },
   residence: { type: String, default: null, enum: ["OSMANY_HALL", "EXT_D", "NOT_SELECTED", null] },
 });
+
+// Partial index for `phoneNumber` to enforce uniqueness only on non-null values
+studentSchema.index(
+  { phoneNumber: 1 },
+  { unique: true, partialFilterExpression: { phoneNumber: { $type: "string" } } }
+);
 
 // Create a compound index for `hallId` and `gender` to ensure uniqueness within the same gender
 studentSchema.index({ hallId: 1, gender: 1 }, { unique: true });

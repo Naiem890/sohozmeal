@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const billSchema = new mongoose.Schema(
+const costSchema = new mongoose.Schema(
   {
     date: {
       type: Date,
@@ -57,26 +57,26 @@ const billSchema = new mongoose.Schema(
 );
 
 // Virtual for perHeadCost of breakfast
-billSchema.virtual("mealBill.breakfast.perHeadCost").get(function () {
+costSchema.virtual("mealBill.breakfast.perHeadCost").get(function () {
   return this.mealBill.breakfast.totalStudent !== 0
     ? this.mealBill.breakfast.totalCost / this.mealBill.breakfast.totalStudent
     : 0;
 });
 
 // Virtual for perHeadCost of lunch
-billSchema.virtual("mealBill.lunch.perHeadCost").get(function () {
+costSchema.virtual("mealBill.lunch.perHeadCost").get(function () {
   return this.mealBill.lunch.totalStudent !== 0
     ? this.mealBill.lunch.totalCost / this.mealBill.lunch.totalStudent
     : 0;
 });
 
 // Virtual for perHeadCost of dinner
-billSchema.virtual("mealBill.dinner.perHeadCost").get(function () {
+costSchema.virtual("mealBill.dinner.perHeadCost").get(function () {
   return this.mealBill.dinner.totalStudent !== 0
     ? this.mealBill.dinner.totalCost / this.mealBill.dinner.totalStudent
     : 0;
 });
 
-const Bill = mongoose.model("Bill", billSchema);
+const Cost = mongoose.model("Cost", costSchema);
 
-module.exports = Bill;
+module.exports = Cost;

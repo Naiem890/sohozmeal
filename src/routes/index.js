@@ -3,14 +3,14 @@ const authController = require("../controllers/authController");
 const studentController = require("../controllers/studentController");
 const mealController = require("../controllers/mealController");
 const stockController = require("../controllers/stockController");
-const billController = require("../controllers/billController");
+const costController = require("../controllers/costController");
 const hallFeastController = require("../controllers/hallFeastController");
 
 router.use("/auth", authController);
 router.use("/student", studentController);
 router.use("/meal", mealController);
 router.use("/stock", stockController);
-router.use("/bill", billController);
+router.use("/cost", costController);
 router.use("/feast", hallFeastController);
 
 // write a test route to check the sms functionality

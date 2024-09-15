@@ -1,4 +1,4 @@
-const Bill = require("../models/bill");
+const Cost = require("../models/cost");
 const { StockTransaction } = require("../models/stock");
 const HallFeast = require("../models/hallFeast");
 const Student = require("../models/student");
@@ -84,11 +84,11 @@ async function createOrUpdateBill(date, wing) {
     const dinnerCost = mealCosts[0]?.dinnerCost || 0;
 
     // Step 4: Fetch or create a bill for the specific date and wing
-    let bill = await Bill.findOne({ date: formattedDate, wing });
+    let bill = await Cost.findOne({ date: formattedDate, wing });
 
     // If no bill exists for the given date and wing, create a new one
     if (!bill) {
-      bill = new Bill({
+      bill = new Cost({
         date: dateObj,
         wing, // Include the wing in the bill
         mealBill: {

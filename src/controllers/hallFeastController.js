@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const Bill = require("../models/bill");
+const Cost = require("../models/cost");
 const HallFeast = require("../models/hallFeast");
 const Meal = require("../models/meal");
 const Student = require("../models/student");
@@ -42,10 +42,10 @@ async function updateBillStudentsCount(date, meal, wing, includeAllStudents = fa
   const dateWithoutTime = formatDateToYYYYMMDD(date);
   try {
     // Fetch the bill for the specific date and wing
-    let bill = await Bill.findOne({ date: dateWithoutTime, wing });
+    let bill = await Cost.findOne({ date: dateWithoutTime, wing });
 
     if (!bill) {
-      bill = new Bill({ date: dateWithoutTime, mealBill: {}, wing });
+      bill = new Cost({ date: dateWithoutTime, mealBill: {}, wing });
     }
 
     if (includeAllStudents) {
