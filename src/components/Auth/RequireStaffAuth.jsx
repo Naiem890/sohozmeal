@@ -6,7 +6,7 @@ import { Axios } from "../../api/api"; // Import Axios instance
 const TOKEN_CACHE_KEY = "token_validity";
 const CACHE_EXPIRATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
-export default function RequiredStudentAuth({ children }) {
+export default function RequiredStaffAuth({ children }) {
   const location = useLocation();
   const auth = useAuthUser();
   const [isTokenValid, setIsTokenValid] = useState(null);

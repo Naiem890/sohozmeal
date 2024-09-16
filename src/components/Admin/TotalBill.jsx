@@ -44,7 +44,7 @@ export default function TotalBill() {
         const [year, month] = selectedMonth.split("-");
         try {
           const res = await Axios.get(
-            `/bill/student?year=${year}&month=${month}`
+            `/cost/student?year=${year}&month=${month}`
           );
           console.log("Response data:", res.data);
           setMealBillData(res.data.mealBillData);

@@ -3,10 +3,12 @@ import { Axios } from "../../api/api";
 import { format, isToday } from "date-fns";
 import { useReactToPrint } from "react-to-print";
 import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
+import { useAuthUser } from "react-auth-kit";
 
 const MealRoutine = () => {
+  const user = useAuthUser();
   const [mealData, setMealData] = useState([]);
-  const [selectedWing, setSelectedWing] = useState("MALE");
+  const [selectedWing, setSelectedWing] = useState(user().wing);
   const currentDay = format(new Date(), "EEEE").toUpperCase();
   const mealRef = useRef();
 
@@ -28,7 +30,7 @@ const MealRoutine = () => {
   const fetchMealRoutineData = async (wing) => {
     try {
       const response = await Axios.get("/meal/routine", {
-        params: { wing }, // Pass the selected wing as a query parameter
+        params: { wing },
       });
       setMealData(response.data);
     } catch (error) {
@@ -63,23 +65,23 @@ const MealRoutine = () => {
           </div>
         </div>
 
-        <div ref={mealRef} className="container flex justify-start max-w-7xl">
+        <div ref={mealRef} className="container flex justify-start max-w-full">
           <div className="relative shadow-md w-full">
             <table className="w-full table-auto text-sm text-left text-black border-collapse">
               <thead className="text-xs uppercase shadow-[0_8px_30px_rgb(0,0,0,0.30) text-black w-full">
                 <tr className="font-notoSerifBangla font-extrabold text-base">
                   {/* First column with smaller width */}
-                  <th className="w-1/6 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
+                  <th className="w-1/12 text-center border-2 border-emerald-700 md:text-lg md:px-2 sm:px-2 sm:py-3">
                     দিন
                   </th>
                   {/* Remaining columns with equal width */}
-                  <th className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
+                  <th className="w-1/5 text-center border-2 border-emerald-700 md:text-lg md:px-2 sm:px-1 sm:py-3">
                     সকাল
                   </th>
-                  <th className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
+                  <th className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-2 sm:px-1 sm:py-3">
                     দুপুর
                   </th>
-                  <th className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
+                  <th className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-2 sm:px-1 sm:py-3">
                     রাত
                   </th>
                 </tr>
@@ -94,16 +96,16 @@ const MealRoutine = () => {
                         : ""
                     }`}
                   >
-                    <td className="w-1/6 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
+                    <td className="w-1/12 text-center border-2 border-emerald-700 md:text-lg md:px-2 sm:px-1 sm:py-3">
                       {dayNameMap[routine.day] || routine.day}
                     </td>
-                    <td className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
+                    <td className="w-1/5 text-center border-2 border-emerald-700 md:text-lg md:px-2 sm:px-1 sm:py-3">
                       {routine.breakfast}
                     </td>
-                    <td className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
+                    <td className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-2 sm:px-1 sm:py-3">
                       {routine.lunch}
                     </td>
-                    <td className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-4 sm:px-2 sm:py-3">
+                    <td className="w-1/3 text-center border-2 border-emerald-700 md:text-lg md:px-2 sm:px-1 sm:py-3">
                       {routine.dinner}
                     </td>
                   </tr>

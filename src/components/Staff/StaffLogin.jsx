@@ -2,46 +2,40 @@ import { useSignIn } from "react-auth-kit";
 import { toast } from "react-hot-toast";
 import MISTImage from "../../assets/MIST.png";
 import { useNavigate } from "react-router-dom";
+import { Axios } from "../../api/api";
 import Logo from "../Common/Logo";
 import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
-import { Axios } from "../../api/api";
 
-export default function Login() {
+export default function StaffLogin() {
   const signIn = useSignIn();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    const studentId = e.target.studentId.value;
+    const staffId = e.target.staffId.value;
     const password = e.target.password.value;
+
     try {
-      const result = await Axios.post("/auth/login", {
-        studentId,
+      const result = await Axios.post("/auth/staff/login", {
+        staffId,
         password,
       }).then((res) => res.data);
+
       signIn({
         token: result.token,
         expiresIn: 3600,
         tokenType: "Bearer",
         authState: {
-          studentId: studentId,
-          name: result?.student?.name,
-          role: result?.role,
-          wing: result.wing,
-          _id: result?.student?._id,
+          staffId: staffId,
+          _id: result._id,
+          role: result.role,
           isAuthenticated: true,
         },
       });
-      console.log(result, "xyz");
       toast.success("Login successful");
-      if (result?.student?.firstTimeLogin) {
-        navigate("/change-password", {
-          state: result.student.firstTimeLogin,
-        });
-      } else {
-        navigate("/dashboard/");
-      }
+
+      navigate("/staff/dashboard");
     } catch (error) {
       console.log(error);
       toast.error(error.response.data.message);
@@ -55,25 +49,24 @@ export default function Login() {
           logo={MISTImage}
           alt="Osmany Hall"
           title="Sohoz Meal (MIST)"
-          subTitle="Student Portal"
+          subTitle="Staff Portal"
         />
 
         <div className="mt-10 ">
           <form className="flex flex-col gap-4" onSubmit={handleLogin}>
             <div>
               <label
-                htmlFor="studentId"
+                htmlFor="staffId"
                 className="block text-sm font-medium leading-6 text-gray-600"
               >
-                Student ID
+                staffId
               </label>
               <input
-                id="studentId"
-                name="studentId"
+                id="staffId"
+                name="staffId"
                 type="text"
-                inputMode="numeric"
-                placeholder="202014035"
-                autoComplete="studentId"
+                autoComplete="staffId"
+                placeholder="staffId"
                 required
                 className={`${fixedInputClass} mt-2`}
               />
@@ -101,16 +94,6 @@ export default function Login() {
               Login
             </button>
           </form>
-
-          <p className="mt-10 text-center text-sm text-gray-500">
-            Forgot password?{" "}
-            <a
-              href="#"
-              className="font-semibold leading-6 text-emerald-600 hover:text-emerald-500"
-            >
-              Contact Hall Office
-            </a>
-          </p>
         </div>
       </div>
     </div>

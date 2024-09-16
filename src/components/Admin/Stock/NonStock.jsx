@@ -102,6 +102,7 @@ export const NonStock = ({ stockItems, refetchHandler, wing }) => {
             className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
             type="number"
             name="price"
+            step="any"
             placeholder="eg: 10"
             required
           />
@@ -116,6 +117,7 @@ export const NonStock = ({ stockItems, refetchHandler, wing }) => {
             className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
             type="number"
             name="quantity"
+            step="any"
             placeholder="eg: 100"
             required
           />

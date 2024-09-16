@@ -16,13 +16,12 @@ export default function BillCount() {
     const fetchBill = async () => {
       try {
         const year = selectedDate.getFullYear();
-        const month = selectedDate.getMonth() + 1;
+        const month = selectedDate.getMonth() + 1; // 1-based month for the API
 
         // Fetch the meal bill data
         const res = await Axios.get(
-          `/bill/student?year=${year}&month=${month}&wing=${wing}`
+          `/cost/student?year=${year}&month=${month}&wing=${wing}`
         );
-        console.log(res.data, "hiihih");
         setMealBillData(res.data.mealBillData);
 
         // Fetch the hall feast data for the selected month and wing
@@ -41,20 +40,28 @@ export default function BillCount() {
     setSelectedDate(date);
   }, []);
 
+  // Correctly calculate the days of the selected month
   const getDaysArray = useMemo(
     () => (year, month) => {
-      const numDays = new Date(year, month, 0).getDate();
-      return Array.from(
-        { length: numDays },
-        (_, i) => new Date(year, month - 1, i + 1).toISOString().split("T")[0]
-      );
+      const firstDayOfMonth = new Date(year, month - 1, 2);
+      const lastDayOfMonth = new Date(year, month, 1);
+      const days = [];
+      for (
+        let day = firstDayOfMonth;
+        day <= lastDayOfMonth;
+        day.setDate(day.getDate() + 1)
+      ) {
+        days.push(new Date(day).toISOString().split("T")[0]);
+      }
+      console.log(days);
+      return days;
     },
     []
   );
 
   const daysOfMonth = getDaysArray(
     selectedDate.getFullYear(),
-    selectedDate.getMonth() + 1
+    selectedDate.getMonth() + 1 // Pass the 1-based month value
   );
 
   return (
@@ -63,6 +70,7 @@ export default function BillCount() {
         <h2 className="text-lg self-center xs:text-3xl font-semibold">
           Mess Bill
         </h2>
+        {console.log(mealBillData)}
         <div className="">
           <DatePicker
             selected={selectedDate}
@@ -127,7 +135,7 @@ export default function BillCount() {
 
                 return (
                   <tr key={day} className="hover:bg-gray-100">
-                    <td className="py-1 whitespace-nowrap text-left">
+                    <td className="py-1  text-left">
                       {convertToDDMMYYYY(day)}
                     </td>
                     {billData ? (
@@ -135,8 +143,8 @@ export default function BillCount() {
                         <td
                           className={`${
                             breakfastOn
-                              ? "text-green-600 font-bold whitespace-nowrap"
-                              : "text-red-600 font-bold whitespace-nowrap"
+                              ? "text-green-600 font-bold "
+                              : "text-red-600 font-bold "
                           }`}
                         >
                           {billData.mealBill.breakfast.perHeadCost.toFixed(2)} ৳
@@ -144,8 +152,8 @@ export default function BillCount() {
                         <td
                           className={`${
                             lunchOn
-                              ? "text-green-600 font-bold whitespace-nowrap"
-                              : "text-red-600 font-bold whitespace-nowrap"
+                              ? "text-green-600 font-bold "
+                              : "text-red-600 font-bold "
                           }`}
                         >
                           {billData.mealBill.lunch.perHeadCost.toFixed(2)} ৳
@@ -153,22 +161,20 @@ export default function BillCount() {
                         <td
                           className={`${
                             dinnerOn
-                              ? "text-green-600 font-bold whitespace-nowrap"
-                              : "text-red-600 font-bold whitespace-nowrap"
+                              ? "text-green-600 font-bold "
+                              : "text-red-600 font-bold "
                           }`}
                         >
                           {billData.mealBill.dinner.perHeadCost.toFixed(2)} ৳
                         </td>
-                        <td className="whitespace-nowrap">
-                          {dailyTotal.toFixed(2)} ৳
-                        </td>
+                        <td className="">{dailyTotal.toFixed(2)} ৳</td>
                       </>
                     ) : (
                       <>
-                        <td className="whitespace-nowrap">0.00 ৳</td>
-                        <td className="whitespace-nowrap">0.00 ৳</td>
-                        <td className="whitespace-nowrap">0.00 ৳</td>
-                        <td className="whitespace-nowrap">0.00 ৳</td>
+                        <td className="">0.00 ৳</td>
+                        <td className="">0.00 ৳</td>
+                        <td className="">0.00 ৳</td>
+                        <td className="">0.00 ৳</td>
                       </>
                     )}
                   </tr>

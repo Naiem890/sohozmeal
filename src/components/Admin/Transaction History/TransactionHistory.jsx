@@ -6,7 +6,6 @@ import EditTransactionModal from "./EditTransactionModal";
 import DateFilters from "./DateFilters";
 import FilterOptions from "./FilterOptions";
 import TransactionTable from "./TransactionTable";
-import { message } from "daisyui";
 import { Axios } from "../../../api/api";
 import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { fixedInputClass } from "../../../Utils/constant";
@@ -17,7 +16,6 @@ const TransactionHistory = () => {
   const [editingRecord, setEditingRecord] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
-  const [deleteRecord, setDeleteRecord] = useState(null);
 
   // Date range for filtering
   const [fromDate, setFromDate] = useState(
@@ -62,8 +60,8 @@ const TransactionHistory = () => {
   // Function to sort transactions by date
   const sortTransactionsByDate = (transactions, order) => {
     return [...transactions].sort((a, b) => {
-      const dateA = new Date(a.date).getTime(); // Convert to timestamp
-      const dateB = new Date(b.date).getTime(); // Convert to timestamp
+      const dateA = new Date(a.createdAt).getTime(); // Convert to timestamp
+      const dateB = new Date(b.createdAt).getTime(); // Convert to timestamp
       return order === "ASC" ? dateA - dateB : dateB - dateA;
     });
   };
@@ -71,7 +69,7 @@ const TransactionHistory = () => {
   // Memoize filtered transactions
   const filteredData = useMemo(() => {
     const filtered = transactions.filter((transaction) => {
-      const transactionDate = new Date(transaction.date);
+      const transactionDate = new Date(transaction.createdAt);
       const withinDateRange =
         transactionDate >= fromDate && transactionDate <= toDate;
       const typeMatch =
@@ -234,6 +232,7 @@ const TransactionHistory = () => {
 
   return (
     <div className="lg:my-10 mb-10 px-5 lg:mr-12">
+      {console.log(sortOrder, "lsdf")}
       <div className="flex justify-between gap-2 h-auto ">
         <h2 className="text-lg self-center xs:text-3xl font-semibold">
           Transaction History

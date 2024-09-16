@@ -19,6 +19,10 @@ import BillCount from "./components/Student/BillCount";
 import TotalBill from "./components/Admin/TotalBill";
 import TransactionHistory from "./components/Admin/Transaction History/TransactionHistory";
 import { Meal } from "./components/Admin/MealSheet/Meal";
+import StaffLogin from "./components/Staff/StaffLogin";
+import RequiredStaffAuth from "./components/Auth/RequireStaffAuth";
+import StaffDashboard from "./components/Staff/StaffDashboard";
+import Complaints from "./components/Staff/Complaints";
 
 function App() {
   return (
@@ -27,7 +31,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminLogin />} />
+        <Route path="/staff" element={<StaffLogin />} />
         <Route
           path="/change-password"
           element={
@@ -65,8 +70,19 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="change-password" element={<ChangePassword />} />
           <Route path="bill-payment" element={<BillPayment />} />
-          <Route path="bill-count" element={<BillCount />} />
+          <Route path="cost-count" element={<BillCount />} />
           <Route path="meal-routine" element={<MealRoutine />} />
+        </Route>
+
+        <Route
+          path="/staff/dashboard"
+          element={
+            <RequiredStaffAuth>
+              <StaffDashboard />
+            </RequiredStaffAuth>
+          }
+        >
+          <Route index element={<Complaints />} />
         </Route>
       </Routes>
     </>

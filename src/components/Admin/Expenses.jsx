@@ -25,7 +25,7 @@ export default function Expenses() {
         const [year, month] = selectedMonth.split("-");
         try {
           const res = await Axios.get(
-            `/bill/student?year=${year}&month=${month}&wing=${wing}` // Pass the selected wing
+            `/cost/student?year=${year}&month=${month}&wing=${wing}` // Pass the selected wing
           );
           setMealBillData(res.data.mealBillData);
         } catch (err) {

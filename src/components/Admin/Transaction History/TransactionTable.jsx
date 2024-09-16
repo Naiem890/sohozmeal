@@ -17,8 +17,9 @@ const TransactionTable = ({
             <th className="w-1/7">Transaction Type</th>
             <th className="w-1/7">Meal</th>
             <th className="w-1/7">Transaction Amount</th>
-            <th className="w-1/7 cursor-pointer" onClick={toggleSortOrder}>
-              Date {sortOrder === "ASC" ? "↑" : "↓"}
+            <th className="w-1/7">Date</th>
+            <th className="cursor-pointer" onClick={toggleSortOrder}>
+              Created {sortOrder === "ASC" ? "↑" : "↓"}
             </th>
             <th className="w-1/7">Actions</th>
           </tr>

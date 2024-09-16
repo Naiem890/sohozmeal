@@ -8,13 +8,15 @@ const EditTransactionModal = ({
 }) => {
   const [formData, setFormData] = useState(record);
   const [errors, setErrors] = useState({});
-  const [hasEditedpricePerUnit, setHasEditedpricePerUnit] = useState(false); // Track user edits
+  const [pricePerUnit, setPricePerUnit] = useState(
+    record.transactionAmount / record.quantityChange || "0"
+  );
 
   // Update formData whenever a new record is passed
   useEffect(() => {
     if (record) {
       setFormData(record);
-      setHasEditedpricePerUnit(false); // Reset the flag when a new record is loaded
+      setPricePerUnit(record.transactionAmount / record.quantityChange);
     }
   }, [record]);
 
@@ -24,8 +26,11 @@ const EditTransactionModal = ({
     if (formData.quantityChange <= 0) {
       newErrors.quantityChange = "Quantity must be greater than zero";
     }
-    if (formData.type === "IN" && formData.pricePerUnit <= 0) {
-      newErrors.pricePerUnit = "Transaction amount must be greater than zero";
+    if (formData.type === "IN" && pricePerUnit <= 0) {
+      newErrors.pricePerUnit = "Price per unit must be greater than zero";
+    }
+    if (formData.type === "OUT" && pricePerUnit < 0) {
+      newErrors.pricePerUnit = "Price per unit must be valid";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -36,15 +41,8 @@ const EditTransactionModal = ({
     let convertedValue = value;
 
     // Prevent NaN by handling empty values
-    if (type === "number" || name === "pricePerUnit") {
+    if (type === "number") {
       convertedValue = value === "" ? "" : parseFloat(value); // Ensure float parsing
-    } else {
-      convertedValue = value;
-    }
-
-    // If the user edits the pricePerUnit, set the flag to true
-    if (name === "pricePerUnit") {
-      setHasEditedpricePerUnit(true);
     }
 
     setFormData({ ...formData, [name]: convertedValue });
@@ -53,6 +51,9 @@ const EditTransactionModal = ({
   const handleFormSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
+      formData.transactionAmount = pricePerUnit * formData.quantityChange;
+      formData.pricePerUnit = pricePerUnit;
+      console.log(formData, "hii");
       handleSave(formData);
     }
   };
@@ -67,7 +68,7 @@ const EditTransactionModal = ({
               <label className="label">Item Name</label>
               <input
                 name="itemName"
-                value={formData.item.name}
+                value={formData?.item?.name || ""} // Ensure item name is handled properly
                 disabled={true} // Disable item name input
                 className="input input-bordered"
               />
@@ -77,10 +78,11 @@ const EditTransactionModal = ({
               <input
                 type="number"
                 name="quantityChange"
+                step="any"
                 value={formData.quantityChange || ""} // Handle empty value
                 onChange={handleChange}
                 className="input input-bordered"
-                min="1"
+                min="0"
                 required
               />
               {errors.quantityChange && (
@@ -99,41 +101,41 @@ const EditTransactionModal = ({
                 <option value="OUT">OUT</option>
               </select>
             </div>
-            <div className="form-control">
-              <label className="label">Meal</label>
-              <select
-                name="meal"
-                value={formData.meal}
-                onChange={handleChange}
-                className="select select-bordered"
-                required
-              >
-                <option value="BREAKFAST">BREAKFAST</option>
-                <option value="LUNCH">LUNCH</option>
-                <option value="DINNER">DINNER</option>
-                <option value="-">-</option>
-              </select>
-            </div>
-            {formData.type === "IN" && (
+            {console.log(formData.item.category, "skd")}
+            {formData?.type !== "IN" && (
+              <div className="form-control">
+                <label className="label">Meal</label>
+                <select
+                  name="meal"
+                  value={formData.meal}
+                  onChange={handleChange}
+                  className="select select-bordered"
+                  required
+                >
+                  <option value="BREAKFAST">BREAKFAST</option>
+                  <option value="LUNCH">LUNCH</option>
+                  <option value="DINNER">DINNER</option>
+                </select>
+              </div>
+            )}
+            {/* Conditionally show the Unit Price field based on transaction type and item category */}
+            {(formData?.item?.category === "NON_STORED" ||
+              formData.type === "IN") && (
               <div className="form-control">
                 <label className="label">Unit Price</label>
                 <input
                   type="number"
-                  step="0.01" // Allow decimals with step
+                  step="any" // Allow decimals with step
                   name="pricePerUnit"
-                  value={
-                    // Use calculated value only if the user hasn't edited the field
-                    !hasEditedpricePerUnit
-                      ? (
-                          formData.transactionAmount /
-                            formData.quantityChange || ""
-                        ).toFixed(2)
-                      : formData.pricePerUnit || "" // Use user input if they have edited
-                  }
-                  onChange={handleChange}
+                  value={pricePerUnit}
+                  onChange={(e) => setPricePerUnit(e.target.value)}
                   className="input input-bordered"
-                  min="1"
-                  required
+                  min="0"
+                  required={formData.type === "IN"} // Required for IN transactions
+                  disabled={
+                    formData.type === "OUT" &&
+                    formData?.item?.category === "STORED"
+                  } // Disable for OUT transactions of STORED items
                 />
                 {errors.pricePerUnit && (
                   <span className="text-red-500">{errors.pricePerUnit}</span>

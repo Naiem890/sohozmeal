@@ -1,6 +1,7 @@
 import { TrashIcon } from "@heroicons/react/24/outline";
-
+import { formatDateTime } from "../../../Utils/formatDateString";
 const TransactionRow = ({ record, showEditModal, handleDelete }) => {
+  const formattedDate = formatDateTime(record.createdAt);
   return (
     <tr
       className="hover:bg-gray-200 cursor-pointer"
@@ -13,6 +14,9 @@ const TransactionRow = ({ record, showEditModal, handleDelete }) => {
       <td className="py-1">{record.meal}</td>
       <td className="py-1">{record.transactionAmount.toFixed(2)} ৳</td>
       <td className="py-1">{new Date(record.date).toLocaleDateString()}</td>
+      <td>
+        {formattedDate.date} {formattedDate.time}
+      </td>
       <td className="py-1">
         <button
           title="Delete Account"

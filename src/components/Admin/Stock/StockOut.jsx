@@ -106,6 +106,7 @@ export const StockOut = ({ stocks, refetchHandler, wing }) => {
             className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
             type="number"
             name="quantity"
+            step="any"
             placeholder="eg: 10"
             required
           />
