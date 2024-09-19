@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const Cost = require("../models/cost");
 const Meal = require("../models/meal");
+const { StockItem, StockTransaction, Stock } = require("../models/stock");
 const Student = require("../models/student");
 const { createOrUpdateBill } = require("../utils/billService");
 const { validateToken } = require("../utils/validateToken");
@@ -116,6 +117,175 @@ router.post("/generate-bills", validateToken, async (req, res) => {
 function calculatePerHeadCost(mealBill) {
   return mealBill.totalStudent > 0 ? mealBill.totalCost / mealBill.totalStudent : 0;
 }
+
+router.post("/sync", validateToken, async (req, res) => {
+  try {
+    const { month, year, wing } = req.query;
+    const stockItems = await StockItem.find();
+
+    // Initialize objects to store the leftover items, IN items, OUT items, and average prices
+    let leftOverItems = {};
+    let inItems = {};
+    let outItems = {};
+    let avgItemPrice = {};
+
+    // Define the start and end dates for the given month and year
+    const startDate = new Date(year, month - 1, 1); // Start of the month
+    const endDate = new Date(year, month, 0, 23, 59, 59); // Last day of the month
+
+    // Define next month's dates
+    const nextMonth = (month % 12) + 1;
+    const nextYear = Number(month) === 12 ? Number(year) + 1 : year;
+    const nextMonthStartDate = new Date(nextYear, nextMonth - 1, 2);
+    const nextMonthEndDate = new Date(nextYear, nextMonth, 0, 23, 59, 59);
+
+    const bulkStockUpdates = [];
+    const bulkTransactionUpdates = [];
+    const newLeftOverTransactions = [];
+
+    // Use for...of to handle async operations
+    for (const item of stockItems) {
+      // Fetch all transactions in parallel
+      const [leftOverTransactions, inTransactions, outTransactions] = await Promise.all([
+        StockTransaction.find({
+          item: item._id,
+          type: "LEFT_OVER",
+          date: { $gte: startDate, $lte: endDate },
+          wing: wing,
+        }),
+        StockTransaction.find({
+          item: item._id,
+          type: "IN",
+          date: { $gte: startDate, $lte: endDate },
+          wing: wing,
+        }),
+        StockTransaction.find({
+          item: item._id,
+          type: "OUT",
+          date: { $gte: startDate, $lte: endDate },
+          wing: wing,
+        })
+      ]);
+
+      // Map item._id to its corresponding transactions
+      leftOverItems[item._id] = leftOverTransactions[0] || null; // First LEFT_OVER transaction
+      inItems[item._id] = inTransactions;
+      outItems[item._id] = outTransactions;
+
+      let previousLeftOver = 0;
+      let stockIn = 0;
+      let stockOut = 0;
+      let totalAmount = 0;
+      let averagePrice = 0;
+
+      // Calculate the previous leftover quantity and total amount
+      if (leftOverTransactions.length > 0) {
+        previousLeftOver = leftOverTransactions[0].quantityChange;
+        totalAmount += leftOverTransactions[0].transactionAmount;
+      }
+
+      // Calculate stockIn (IN transactions) and total amount
+      inTransactions.forEach((transaction) => {
+        stockIn += transaction.quantityChange;
+        totalAmount += transaction.transactionAmount;
+      });
+
+      // Calculate stockOut (OUT transactions)
+      outTransactions.forEach((transaction) => {
+        stockOut += transaction.quantityChange;
+      });
+
+      // Calculate total quantity as previousLeftOver + stockIn - stockOut
+      const totalQuantity = previousLeftOver + stockIn - stockOut;
+
+      // Calculate average price if totalQuantity is not zero
+      averagePrice = totalQuantity > 0 ? totalAmount / (previousLeftOver + stockIn) : 0;
+      avgItemPrice[item._id] = averagePrice;
+
+      // Update OUT transaction amounts based on the average price
+      if (outTransactions.length > 0) {
+        outTransactions.forEach((transaction) => {
+          const newTransactionAmount = averagePrice * transaction.quantityChange;
+          bulkTransactionUpdates.push({
+            updateOne: {
+              filter: { _id: transaction._id },
+              update: { $set: { transactionAmount: newTransactionAmount } },
+            },
+          });
+        });
+      }
+
+      // Check if the stock already exists for the item
+      const stock = await Stock.findOne({ item: item._id, wing: wing });
+      if (stock) {
+        // Update the stock with the calculated total quantity and price
+        bulkStockUpdates.push({
+          updateOne: {
+            filter: { _id: stock._id },
+            update: { $set: { quantity: totalQuantity, price: averagePrice } },
+          },
+        });
+      } else if (inTransactions.length > 0 || outTransactions.length > 0 || leftOverTransactions.length > 0) {
+        return res.status(500).json({ message: "Stock not found but transaction found!" });
+      }
+
+      // Calculate the overall quantity for the next month
+      const nextMonthLeftoverQuantity = stockIn + previousLeftOver - stockOut;
+
+      // Check if a leftover transaction exists for the next month
+      const nextMonthLeftOver = await StockTransaction.findOne({
+        item: item._id,
+        type: "LEFT_OVER",
+        date: { $gte: nextMonthStartDate, $lte: nextMonthEndDate },
+        wing: wing,
+      });
+
+      if (nextMonthLeftOver) {
+        // If the leftover transaction exists, update it with the new quantity and price
+        bulkTransactionUpdates.push({
+          updateOne: {
+            filter: { _id: nextMonthLeftOver._id },
+            update: {
+              $set: {
+                quantityChange: nextMonthLeftoverQuantity,
+                transactionAmount: averagePrice * nextMonthLeftoverQuantity
+              }
+            }
+          }
+        });
+      } else if (nextMonthLeftoverQuantity > 0) {
+        // Create a new LEFT_OVER transaction for the next month if it doesn't exist
+        newLeftOverTransactions.push({
+          item: item._id,
+          type: "LEFT_OVER",
+          meal: "-",
+          date: nextMonthStartDate,
+          wing: wing,
+          quantityChange: nextMonthLeftoverQuantity,
+          transactionAmount: averagePrice * nextMonthLeftoverQuantity,
+        });
+      }
+    }
+
+    // Perform bulk updates for stocks and transactions
+    if (bulkStockUpdates.length > 0) {
+      await Stock.bulkWrite(bulkStockUpdates);
+    }
+    if (bulkTransactionUpdates.length > 0) {
+      await StockTransaction.bulkWrite(bulkTransactionUpdates);
+    }
+
+    // Insert new leftover transactions if any
+    if (newLeftOverTransactions.length > 0) {
+      await StockTransaction.insertMany(newLeftOverTransactions);
+    }
+
+    res.status(200).json({ message: "done", leftOverItems, inItems, outItems, avgItemPrice });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "An error occurred", error });
+  }
+});
 
 // Create all bills for a specific date and wing
 router.post("/", validateToken, async (req, res) => {

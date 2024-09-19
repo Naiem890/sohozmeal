@@ -96,7 +96,7 @@ const stockTransactionSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["IN", "OUT"],
+      enum: ["IN", "OUT", "LEFT_OVER"],
     },
     category: {
       type: String,
@@ -106,12 +106,12 @@ const stockTransactionSchema = new mongoose.Schema(
     meal: {
       type: String,
       required: true,
-      enum: ["BREAKFAST", "LUNCH", "DINNER", "-"], // "-" for stock in transactions
+      enum: ["BREAKFAST", "LUNCH", "DINNER", "-"], 
     },
     wing: {
       type: String,
       enum: ["MALE", "FEMALE"],
-      required: true, // Add wing field for both male and female wings
+      required: true,
     },
     transactionAmount: {
       type: Number,
@@ -122,7 +122,6 @@ const stockTransactionSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
 const StockTransaction = mongoose.model("StockTransaction", stockTransactionSchema);
 
 module.exports = { Stock, StockItem, StockTransaction };
