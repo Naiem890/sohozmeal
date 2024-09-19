@@ -36,7 +36,7 @@ const FilterOptions = ({
   }, [dropdownRef]);
 
   return (
-    <div className="flex justify-between">
+    <div className="flex justify-between mt-4">
       <div className="flex items-center gap-2">
         <span>Transaction Type</span>
         <button

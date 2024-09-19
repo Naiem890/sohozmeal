@@ -6,20 +6,25 @@ import {
   UserGroupIcon,
   CurrencyBangladeshiIcon,
   PencilIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
 } from "@heroicons/react/24/outline";
 import { useSignOut } from "react-auth-kit";
 import { toast } from "react-hot-toast";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 import { Axios } from "../../api/api";
-import MISTImage from "../../assets/MIST.png";
-import Logo from "../Common/Logo";
 
-export default function Aside({ toggleDrawer }) {
+export default function AdminAside({
+  toggleDrawer,
+  isCollapsed,
+  toggleCollapse,
+}) {
   const signOut = useSignOut();
   const navigate = useNavigate();
-  const location = useLocation(); // Get the current path
+  const location = useLocation();
 
+  // Handle SignOut confirmation and logic
   const handleSignOut = async () => {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -28,37 +33,36 @@ export default function Aside({ toggleDrawer }) {
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-
       confirmButtonText: "Yes, Logout!",
     });
 
     if (result.isConfirmed) {
       try {
-        const logout = await Axios.post("/auth/logout", {});
-        console.log(logout);
+        await Axios.post("/auth/logout", {});
         localStorage.clear();
         signOut();
         navigate("/");
         toast.success("Logged out successfully!");
       } catch (error) {
-        console.log(error);
+        console.error("Logout error: ", error);
       }
     }
   };
 
+  // Sidebar links
   const asideLinks = [
     {
-      link: "All Students",
+      link: "Students",
       path: "/admin/dashboard/",
       icon: <UserGroupIcon className="h-6 w-6" />,
     },
     {
-      link: "Meal Sheet",
+      link: "Meal",
       path: "/admin/dashboard/meal",
       icon: <PencilIcon className="h-6 w-6" />,
     },
     {
-      link: "Meal Routine",
+      link: "Routine",
       path: "/admin/dashboard/meal-routine",
       icon: <TableCellsIcon className="w-6 h-6" />,
     },
@@ -68,53 +72,65 @@ export default function Aside({ toggleDrawer }) {
       icon: <ShoppingBagIcon className="h-6 w-6" />,
     },
     {
+      link: "Transaction",
+      path: "/admin/dashboard/transaction-history",
+      icon: <CurrencyBangladeshiIcon className="h-6 w-6" />,
+    },
+    {
       link: "Expenses",
       path: "/admin/dashboard/expenses",
       icon: <ShoppingCartIcon className="h-6 w-6" />,
     },
-    {
-      link: "Transaction History",
-      path: "/admin/dashboard/transaction-history",
-      icon: <CurrencyBangladeshiIcon className="h-6 w-6" />,
-    },
   ];
 
   return (
-    <div className="drawer-side z-[200]">
-      <label htmlFor="my-drawer-2" className="drawer-overlay"></label>
-      <ul className="menu  flex flex-col p-0 w-72 sm:w-80 min-h-full bg-[#f6f6f6] text-base-content font-medium">
-        <div className="menu-title py-10 px-6">
-          <Logo
-            logo={MISTImage}
-            alt="Osmany Hall"
-            title="Sohoz Meal (MIST)"
-            subTitle="Admin Portal"
-          />
-        </div>
-        {asideLinks.map((link, index) => (
-          <li key={index} className="px-4 text-base">
-            <Link
-              to={link.path}
-              onClick={toggleDrawer}
-              className={`py-4 rounded-lg hover:bg-white hover:shadow-md ${
-                location.pathname === link.path
-                  ? "bg-gray-300 shadow-md"
-                  : "text-gray-600"
-              }`}
-            >
-              {link.icon}
-              <span className="ml-2">{link.link}</span>
-            </Link>
-          </li>
-        ))}
+    <div
+      className={`fixed z-[200] top-0 left-0 ${
+        isCollapsed ? "w-20" : "w-52"
+      } bg-[#f6f6f6] h-screen overflow-y-auto overflow-x-hidden transition-all duration-300`}
+    >
+      {/* Collapse Button */}
+      <div className="py-10 px-6 flex justify-between items-center">
+        <button onClick={toggleCollapse} className="btn btn-circle btn-sm">
+          {isCollapsed ? (
+            <ChevronDoubleRightIcon className="h-6 w-6" />
+          ) : (
+            <ChevronDoubleLeftIcon className="h-6 w-6" />
+          )}
+        </button>
+      </div>
 
+      {/* Links */}
+      <ul className="menu flex flex-col p-0 text-base-content font-medium">
+        {asideLinks.map((link, index) => {
+          const isActive = location.pathname === link.path;
+          return (
+            <li key={index} className="px-4 text-base">
+              <Link
+                to={link.path}
+                onClick={toggleDrawer}
+                className={`py-4 rounded-lg flex items-center transition-all duration-200 ${
+                  isActive
+                    ? "bg-gray-300 shadow-md"
+                    : "text-gray-600 hover:bg-white hover:shadow-md"
+                }`}
+              >
+                {link.icon}
+                {/* Show text only when not collapsed */}
+                {!isCollapsed && <span className="ml-2">{link.link}</span>}
+              </Link>
+            </li>
+          );
+        })}
+
+        {/* Sign Out Button */}
         <li className="px-4 text-base">
           <button
             onClick={handleSignOut}
-            className="py-4 rounded-lg text-red-600 hover:text-white hover:bg-red-600 active:bg-red-600"
+            className="py-4 rounded-lg text-red-600 hover:text-white hover:bg-red-600 flex items-center transition-all duration-200"
           >
             <ArrowRightOnRectangleIcon className="h-6 w-6" />
-            <span className="ml-2">Logout</span>
+            {!isCollapsed && <span className="ml-2">Logout</span>}
           </button>
         </li>
       </ul>

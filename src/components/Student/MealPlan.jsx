@@ -87,7 +87,7 @@ export default function MealPlan() {
     [distinctMonths]
   );
   return (
-    <div className="lg:my-10 mb-10 px-5 lg:mr-12">
+    <div className="lg:my-10 mb-10 px-5">
       <h2 className="text-3xl font-semibold">Meal Plan</h2>
       <div className="divider"></div>
       <div className="flex justify-between items-center mb-6 gap-10 flex-wrap">

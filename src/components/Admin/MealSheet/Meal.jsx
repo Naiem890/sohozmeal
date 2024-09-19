@@ -289,7 +289,7 @@ export const Meal = () => {
   };
 
   return (
-    <div className="px-5 lg:mr-12 max-h-screen overflow-hidden">
+    <div className="flex flex-col h-screen">
       <MealControls
         fromDate={fromDate}
         setFromDate={setFromDate}

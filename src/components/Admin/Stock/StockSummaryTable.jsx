@@ -1,8 +1,9 @@
 import React from "react";
 
-export const StockSummaryTable = ({ stocks }) => {
+export const StockSummaryTable = ({ stockOutItem }) => {
+  console.log(stockOutItem, "stocksummary");
   return (
-    <div className="mb-24">
+    <div className="">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Stock Summary</h2>
       </div>
@@ -14,11 +15,10 @@ export const StockSummaryTable = ({ stocks }) => {
               <th className="uppercase">Quantity</th>
               <th className="uppercase">Unit</th>
               <th className="uppercase">Price</th>
-              <th className="uppercase">Wing</th> {/* Added Wing column */}
             </tr>
           </thead>
           <tbody>
-            {stocks.map((stock) => (
+            {stockOutItem.map((stock) => (
               <tr
                 className=" hover:shadow-sm rounded-lg hover:bg-emerald-50 transition-all border-b-0"
                 key={stock._id}
@@ -27,7 +27,6 @@ export const StockSummaryTable = ({ stocks }) => {
                 <td>{stock?.quantity}</td>
                 <td>{stock?.item?.unit}</td>
                 <td>{stock?.price}</td>
-                <td>{stock?.wing}</td> {/* Displaying the wing */}
               </tr>
             ))}
           </tbody>

@@ -178,10 +178,10 @@ export const StudentList = () => {
   };
 
   return (
-    <div className="lg:my-10 mb-10 px-5 lg:mr-12">
-      <h2 className="text-3xl font-semibold">All Students</h2>
-      <div className="divider"></div>
-      <div className="flex justify-between items-center mb-6 gap-12">
+    <div className="mt-2 flex flex-col h-screen">
+      <h2 className="text-2xl font-semibold mb-2">All Students</h2>
+      {/* <div className="divider"></div> */}
+      <div className="flex justify-between items-center mb-2 gap-12">
         <div className="">
           <h3 className="text-xl font-semibold mr-4 basis-1/3">
             Total Students: {filteredStudents.length}
@@ -230,10 +230,12 @@ export const StudentList = () => {
           </button>
         </div>
       </div>
-      <div className="overflow-x-auto max-h-screen overflow-y-scroll px-1 pb-64">
+
+      {/* Flex container for dynamic sizing and scroll */}
+      <div className="flex-grow overflow-auto px-1 pb-4 mb-2">
         <table className="table table-sm table-hover w-full">
           <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
-            <tr className="">
+            <tr>
               <th onClick={() => toggleSort("hallId")} className="uppercase">
                 Hall Id {sortBy === "hallId" && (sortAsc ? "↑" : "↓")}
               </th>
@@ -253,7 +255,7 @@ export const StudentList = () => {
                 Department {sortBy === "department" && (sortAsc ? "↑" : "↓")}
               </th>
               <th onClick={() => toggleSort("batch")} className="uppercase">
-                Batch {sortBy === "department" && (sortAsc ? "↑" : "↓")}
+                Batch {sortBy === "batch" && (sortAsc ? "↑" : "↓")}
               </th>
               <th className="uppercase text-center">Action</th>
             </tr>
@@ -261,15 +263,15 @@ export const StudentList = () => {
           <tbody>
             {filteredStudents.map((student) => (
               <tr
-                className=" hover:shadow-sm rounded-lg hover:bg-emerald-50 transition-all border-b-0"
+                className="hover:shadow-sm rounded-lg hover:bg-emerald-50 transition-all border-b-0"
                 key={student._id}
               >
                 <td>{student.hallId}</td>
                 <td>{student.studentId}</td>
                 <td>{student.gender}</td>
                 <td>{student.name}</td>
-                <td>{`${student.department}`}</td>
-                <td>{`${student.batch || ""}`}</td>
+                <td>{student.department}</td>
+                <td>{student.batch || ""}</td>
                 <td className="flex gap-4 justify-center">
                   <button
                     onClick={() => handleEditAccount(student)}

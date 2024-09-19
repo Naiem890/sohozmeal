@@ -70,7 +70,7 @@ export default function TotalBill() {
   );
 
   return (
-    <div className="lg:my-10 mb-10 px-5 lg:mr-12">
+    <div className="lg:my-10 mb-10 px-5">
       <h2 className="text-3xl font-semibold">
         Hello, <span className="font-green">{name.split(" ")[0]}</span>, Your
         Meal Bill Count:

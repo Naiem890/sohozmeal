@@ -63,7 +63,7 @@ export default function Expenses() {
   const daysOfMonth = getDaysInMonth(year, month);
 
   return (
-    <div className="lg:my-10 mb-10 px-5 lg:mr-12">
+    <div className="mt-2">
       <div className="flex justify-between gap-2 h-auto">
         <h2 className="text-lg self-center xs:text-3xl font-semibold">
           Mess Bill
@@ -88,9 +88,8 @@ export default function Expenses() {
           />
         </div>
       </div>
-      <div className="divider"></div>
-      <div className="md:mt-7 w-full">
-        <div className=" px-1 w-full">
+      <div className="my-4">
+        <div className="">
           <table className="table table-xs border-collapse border border-slate-500 table-hover h-full text-center">
             <thead className="bg-gray-200 border border-slate-500 z-10">
               <tr className="border">

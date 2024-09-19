@@ -139,9 +139,9 @@ const MealRoutineAdmin = () => {
   };
 
   return (
-    <div className="lg:my-10 mb-10 px-5 lg:mr-12">
+    <div className="mt-2">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-3xl font-semibold">Meal Routine</h2>
+        <h2 className="text-2xl font-semibold">Meal Routine</h2>
         {/* Wing Selection Dropdown */}
         <div className="flex items-center">
           {/* <label className="mr-2 font-semibold">Select Wing:</label> */}
@@ -157,7 +157,6 @@ const MealRoutineAdmin = () => {
         </div>
       </div>
 
-      <div className="divider"></div>
       <div ref={mealRef} className="container flex justify-start max-w-7xl">
         <div className="relative shadow-md w-full">
           <table className="text-sm text-left text-black w-full">

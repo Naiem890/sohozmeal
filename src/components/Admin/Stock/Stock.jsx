@@ -8,6 +8,7 @@ import { StockIn } from "./StockIn";
 import { StockItemsList } from "./StockItemsList";
 import { StockOut } from "./StockOut";
 import { StockSummaryTable } from "./StockSummaryTable";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 const MODE = {
   STOCK_IN: "stockIn",
@@ -19,42 +20,15 @@ const MODE = {
 export const Stock = () => {
   const [stocks, setStocks] = useState([]);
   const [stockItems, setStockItems] = useState([]);
-  const [mode, setMode] = useState(MODE.STOCK_IN); // Default mode is "stockIn"
+  const [summarySelectedItem, setSummarySelectedItem] = useState(null);
+  const [mode, setMode] = useState(MODE.STOCK_IN);
   const [units, setUnits] = useState([]);
   const [categories, setCategories] = useState([]);
   const [refetch, setRefetch] = useState(false);
-  const [stockTransaction, setStockTransaction] = useState([]);
-  const [wing, setWing] = useState(""); // Initialize with an empty string for wing
-
-  // SweetAlert2 to prompt the user for MALE or FEMALE
-  const promptWingSelection = async () => {
-    const { value: wingInput } = await Swal.fire({
-      title: "Enter Wing",
-      input: "text",
-      inputLabel: "Please enter 'MALE' or 'FEMALE'",
-      inputPlaceholder: "MALE or FEMALE",
-      showCancelButton: false,
-      allowOutsideClick: false,
-      confirmButtonText: "Submit",
-      preConfirm: (input) => {
-        const validWing = ["MALE", "FEMALE"].includes(input.toUpperCase());
-        if (!validWing) {
-          Swal.showValidationMessage("You must enter 'MALE' or 'FEMALE'");
-        }
-        return input.toUpperCase();
-      },
-    });
-
-    if (wingInput) {
-      setWing(wingInput); // Set the wing state
-      toast.success(`Wing set to ${wingInput}`);
-    }
-  };
-
-  useEffect(() => {
-    promptWingSelection(); // Prompt for wing selection on page load
-  }, []);
-
+  const [wing, setWing] = useState("MALE");
+  const [localTransactions, setLocalTransactions] = useState([]); // Local transactions state
+  const [editTransaction, setEditTransaction] = useState(null); // State to handle editing
+  // console.log(stocks, stockItems, "hh");
   useEffect(() => {
     if (wing) {
       const fetchStocks = async () => {
@@ -81,24 +55,78 @@ export const Stock = () => {
         }
       };
 
-      const fetchStockTransaction = async () => {
-        try {
-          const res = await Axios(`/stock/transactions/all?wing=${wing}`); // Fetch transactions by wing
-          setStockTransaction(res.data);
-        } catch (error) {
-          console.error("Error while fetching stock items:", error);
-          toast.error(error.response.data.error);
-        }
-      };
-
       fetchStockItems();
       fetchStocks();
-      fetchStockTransaction();
     }
-  }, [refetch, wing]); // Refetch when wing changes
+  }, [refetch, wing]);
 
-  const refetchHandler = () => {
-    setRefetch((prev) => !prev);
+  // Add transactions to local state
+  const addTransaction = (transaction) => {
+    if (editTransaction) {
+      // Edit the existing transaction
+      setLocalTransactions((prevTransactions) =>
+        prevTransactions.map((t, index) =>
+          index === editTransaction.index ? transaction : t
+        )
+      );
+      setEditTransaction(null); // Clear edit mode
+      toast.success("Transaction updated!");
+    } else {
+      // Add new transaction
+      setLocalTransactions((prevTransactions) => [
+        ...prevTransactions,
+        transaction,
+      ]);
+      toast.success("Transaction added locally!");
+    }
+  };
+
+  // Delete a local transaction
+  const handleDeleteTransaction = (index) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "This transaction will be removed locally.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setLocalTransactions((prevTransactions) =>
+          prevTransactions.filter((_, i) => i !== index)
+        );
+        toast.success("Transaction deleted locally!");
+      }
+    });
+  };
+
+  // Submit all transactions
+  const handleSubmitTransactions = async () => {
+    try {
+      // console.log(localTransactions, "nnah");
+      const res = await Axios.post("/stock/transaction/batch", {
+        transactions: localTransactions,
+        wing,
+      });
+      toast.success("All transactions submitted successfully!");
+      setLocalTransactions([]); // Clear local transactions
+      setRefetch((prev) => !prev); // Refetch data
+    } catch (error) {
+      console.error("Error while submitting transactions:", error);
+      toast.error("Error submitting transactions. Please try again.");
+    }
+  };
+
+  // Handle clicking on a transaction row for editing
+  const handleEditTransaction = (transaction, index) => {
+    setEditTransaction({ transaction, index }); // Set the transaction to be edited
+    if (transaction.category === "NON_STORED") {
+      setMode(MODE.NON_STOCK_ITEMS);
+    } else if (transaction.type === "IN") {
+      setMode(MODE.STOCK_IN);
+    } else if (transaction.type === "OUT") {
+      setMode(MODE.STOCK_OUT);
+    }
   };
 
   const renderModeComponent = () => {
@@ -106,37 +134,43 @@ export const Stock = () => {
       case MODE.STOCK_IN:
         return (
           <StockIn
-            refetchHandler={refetchHandler}
             stockItems={stockItems.filter((item) => item.category === "STORED")}
-            wing={wing} // Pass wing to StockIn
+            addTransaction={addTransaction}
+            wing={wing}
+            editTransaction={editTransaction}
+            summarySelectedItem={summarySelectedItem}
+            setSummarySelectedItem={setSummarySelectedItem}
           />
         );
       case MODE.STOCK_OUT:
         return (
           <StockOut
-            refetchHandler={refetchHandler}
             stocks={stocks}
+            addTransaction={addTransaction}
             wing={wing}
+            editTransaction={editTransaction}
+            setSummarySelectedItem={setSummarySelectedItem}
           />
-        ); // Pass wing to StockOut
+        );
       case MODE.ITEMS_LIST:
         return (
           <StockItemsList
             categories={categories}
             units={units}
             stockItems={stockItems}
-            refetchHandler={refetchHandler}
-            wing={wing} // Pass wing to StockItemsList if needed
+            refetchHandler={() => setRefetch((prev) => !prev)}
+            wing={wing}
           />
         );
       case MODE.NON_STOCK_ITEMS:
         return (
           <NonStock
-            refetchHandler={refetchHandler}
-            stockItems={stockItems.filter((item) => {
-              return item.category === "NON_STORED";
-            })}
-            wing={wing} // Pass wing to NonStock if needed
+            stockItems={stockItems.filter(
+              (item) => item.category === "NON_STORED"
+            )}
+            addTransaction={addTransaction}
+            wing={wing}
+            editTransaction={editTransaction}
           />
         );
       default:
@@ -145,13 +179,13 @@ export const Stock = () => {
   };
 
   return (
-    <div className="mb-10 lg:my-7 px-5 lg:mr-12">
-      <div className="flex justify-between ">
-        <h2 className="text-3xl font-semibold">Stock</h2>
-        <div className="flex justify-end pb-4 text-sm font-extralight">
+    <div className="mt-2">
+      <div className="flex justify-between">
+        <h2 className="text-2xl font-semibold">Stock</h2>
+        <div className="flex justify-end text-sm font-extralight">
           <select
             value={wing}
-            onChange={(e) => setWing(e.target.value)} // Handle wing selection
+            onChange={(e) => setWing(e.target.value)}
             className={`${fixedInputClass} h-auto cursor-pointer w-44`}
           >
             <option value="">Gender</option>
@@ -160,10 +194,9 @@ export const Stock = () => {
           </select>
         </div>
       </div>
-      <div className="divider"></div>
-      <div className="grid grid-cols-2 gap-16">
-        <StockSummaryTable stocks={stocks} />
-        <div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="col-span-2">
           <div className="pb-3">
             <div className="join join-vertical lg:join-horizontal">
               <button
@@ -192,7 +225,7 @@ export const Stock = () => {
                   mode === MODE.ITEMS_LIST
                     ? "!bg-indigo-600"
                     : "bg-gray-400 text-neutral-600 hover:bg-gray-500"
-                } ${fixedButtonClass} btn-xs !w-auto px-4 focus:ring-indigo-600 ml-1 h-10 `}
+                } ${fixedButtonClass} btn-xs !w-auto px-4 focus:ring-indigo-600 ml-1 h-10`}
               >
                 Items List
               </button>
@@ -210,43 +243,89 @@ export const Stock = () => {
           </div>
           {renderModeComponent()}
         </div>
+        <div>
+          {console.log(summarySelectedItem, stocks, "stockhihi")}
+          {/* Stock Summary */}
+          <StockSummaryTable
+            stockOutItem={
+              summarySelectedItem
+                ? stocks?.filter(
+                    (stock) => stock?.item?._id === summarySelectedItem?._id
+                  )
+                : stocks
+            }
+          />
+        </div>
       </div>
-      <div className="mb-36">
+
+      <div className="mb-36 mt-4">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">Transaction Summary</h2>
         </div>
+
+        {/* Transaction Summary Table */}
         <div className="overflow-x-auto max-h-72 mt-4">
           <table className="table-fixed w-full">
             <thead className="bg-white shadow-sm sticky top-0 border-b border-gray-200 h-9">
-              <tr className="">
+              <tr>
                 <th className="uppercase text-left pl-3">Name</th>
-                <th className="uppercase text-left pl-3">Quantity Change</th>
+                <th className="uppercase text-left pl-3">Quantity</th>
+                <th className="uppercase text-left pl-3">Price</th>{" "}
+                {/* Added Price column */}
                 <th className="uppercase text-left pl-3">Type</th>
                 <th className="uppercase text-left pl-3">Meal</th>
                 <th className="uppercase text-left pl-3">Date</th>
+                <th className="uppercase text-left pl-3">Actions</th>
               </tr>
             </thead>
-
             <tbody className="max-h-full overflow-y-auto">
-              {stockTransaction &&
-                stockTransaction.map((stock) => (
-                  <tr
-                    className={`hover:shadow-sm rounded-lg transition-all border-b border-gray-200 ${
-                      stock.type === "IN" ? "bg-green-100" : "bg-red-100"
-                    }`}
-                    key={stock._id}
-                  >
-                    <td className="px-4 py-2">{stock.item?.name}</td>
-                    <td className="px-4 py-2">
-                      {stock.quantityChange} {stock.item?.unit}
-                    </td>
-                    <td className="px-4 py-2">{stock.type}</td>
-                    <td className="px-4 py-2">{stock.meal}</td>
-                    <td className="px-4 py-2">{stock.date.split("T")[0]}</td>
-                  </tr>
-                ))}
+              {localTransactions.map((transaction, index) => (
+                <tr
+                  key={index}
+                  className={`hover:shadow-sm rounded-lg transition-all border-b border-gray-200 ${
+                    transaction.type === "IN" ? "bg-green-100" : "bg-red-100"
+                  }`}
+                >
+                  <td className="px-4 py-2">{transaction.name}</td>
+                  <td className="px-4 py-2">{transaction.quantity}</td>
+                  <td className="px-4 py-2">{transaction.price || "_"}</td>{" "}
+                  {/* Display Price */}
+                  <td className="px-4 py-2">{transaction.type}</td>
+                  <td className="px-4 py-2">{transaction.meal || "_"}</td>
+                  <td className="px-4 py-2">{transaction.date}</td>
+                  <td className="px-4 py-2 flex gap-4 justify-start">
+                    {/* Edit button with round icon */}
+                    <button
+                      className="bg-blue-100 p-2 rounded-full text-blue-500 hover:text-blue-600 hover:bg-blue-200"
+                      onClick={() => handleEditTransaction(transaction, index)}
+                      title="Edit"
+                    >
+                      <PencilIcon className="h-5 w-5" />
+                    </button>
+
+                    {/* Delete button with round icon */}
+                    <button
+                      className="bg-red-100 p-2 rounded-full text-red-500 hover:text-red-600 hover:bg-red-200"
+                      onClick={() => handleDeleteTransaction(index)}
+                      title="Delete"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Submit All Button */}
+        <div className="mt-4">
+          <button
+            onClick={handleSubmitTransactions}
+            className={`${fixedButtonClass} btn-xs sm:w-24 !h-9 w-full`}
+          >
+            Submit
+          </button>
         </div>
       </div>
     </div>

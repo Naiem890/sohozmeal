@@ -231,10 +231,9 @@ const TransactionHistory = () => {
   };
 
   return (
-    <div className="lg:my-10 mb-10 px-5 lg:mr-12">
-      {console.log(sortOrder, "lsdf")}
+    <div className="mt-2">
       <div className="flex justify-between gap-2 h-auto ">
-        <h2 className="text-lg self-center xs:text-3xl font-semibold">
+        <h2 className="text-lg self-center xs:text-2xl font-semibold">
           Transaction History
         </h2>
         <div className="flex justify-center items-center gap-2">
@@ -267,7 +266,6 @@ const TransactionHistory = () => {
         </div>
       </div>
 
-      <div className="divider"></div>
       <FilterOptions
         transactionType={transactionType}
         mealType={mealType}
