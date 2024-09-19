@@ -652,8 +652,6 @@ router.put("/transaction/:transactionId", validateToken, async (req, res) => {
   }
 });
 
-
-
 // Delete a stock transaction (include wing in lookup)
 router.delete("/transaction/:id", validateToken, async (req, res) => {
   try {
@@ -726,5 +724,135 @@ router.delete("/transaction/:id", validateToken, async (req, res) => {
     res.status(500).json({ error: "Error deleting stock transaction" });
   }
 });
+
+// Batch add stock transactions
+router.post("/transaction/batch", validateToken, async (req, res) => {
+  const { transactions, wing } = req.body;
+
+  if (!transactions || !Array.isArray(transactions)) {
+    return res.status(400).json({ error: "Transactions are missing or invalid" });
+  }
+
+  try {
+    const inTransactions = [];
+    const outTransactions = [];
+    const nonStoredTransactions = [];
+
+    // Step 1: Categorize transactions into IN, OUT, and NON_STORED
+    transactions.forEach((transaction) => {
+      if (transaction.type === "IN") {
+        transaction.meal = "-"; // For IN transactions, meal type is not required
+        inTransactions.push(transaction);
+      } else if (transaction.type === "OUT" && transaction.category !== "NON_STORED") {
+        outTransactions.push(transaction);
+      } else if (transaction.category === "NON_STORED") {
+        nonStoredTransactions.push(transaction);
+      }
+    });
+
+    // Step 2: Process IN transactions first
+    for (let transaction of inTransactions) {
+      const { item, quantity, price, date, name } = transaction;
+
+      // Find or create the stock item in StockItem collection
+      let stockItem = await StockItem.findOne({ name, wing });
+      if (!stockItem) {
+        stockItem = new StockItem({ name, wing, unit: 'KG', category: 'STORED' });
+        await stockItem.save();
+      }
+
+      // Find or create stock
+      let stock = await Stock.findOne({ item: stockItem._id, wing });
+      if (!stock) {
+        stock = new Stock({ item: stockItem._id, quantity: parseFloat(quantity), wing });
+        await stock.save();
+      } else {
+        // Ensure the quantity is treated as a number
+        const newQuantity = stock.quantity + parseFloat(quantity);
+        stock.quantity = newQuantity;
+        await stock.save();
+      }
+
+      // Create the stock transaction for IN
+      const stockTransaction = new StockTransaction({
+        item: stockItem._id,
+        quantityChange: parseFloat(quantity), // Ensure quantity is a number
+        type: "IN",
+        date: new Date(date),
+        transactionAmount: parseFloat(quantity) * parseFloat(price), // Ensure price and quantity are numbers
+        meal: "-",
+        wing,
+      });
+      await stockTransaction.save();
+    }
+    // Step 3: Process OUT transactions
+    for (let transaction of outTransactions) {
+      const { item, quantity, date, meal, name } = transaction;
+
+      // Find the stock item by name
+      let stockItem = await StockItem.findOne({ name, wing });
+      if (!stockItem) {
+        return res.status(400).json({ error: `Stock item not found: ${name}` });
+      }
+
+      // Find the stock record
+      let stock = await Stock.findOne({ item: stockItem._id, wing });
+      if (!stock || stock.quantity < parseFloat(quantity)) {
+        return res.status(400).json({ error: `Not enough stock for item: ${name}` });
+      }
+
+      // Update the stock quantity
+      stock.quantity -= parseFloat(quantity); // Ensure quantity is a number
+      console.log(stock, "sdf");
+      await stock.save();
+
+      // Create the stock transaction for OUT
+      const stockTransaction = new StockTransaction({
+        item: stockItem._id,
+        quantityChange: parseFloat(quantity), // Ensure quantity is a number
+        type: "OUT",
+        date: new Date(date),
+        transactionAmount: parseFloat(quantity) * stock.price, // Ensure transaction amount is numeric
+        meal,
+        wing,
+      });
+      console.log(stockTransaction, "shk");
+      await stockTransaction.save();
+    }
+
+    // Step 4: Process NON_STORED transactions
+    for (let transaction of nonStoredTransactions) {
+      const { item, quantity, price, date, meal, name } = transaction;
+
+      // Find or create the stock item in StockItem collection
+      let stockItem = await StockItem.findOne({ name, wing });
+      if (!stockItem) {
+        stockItem = new StockItem({ name, wing, unit: 'PCS', category: 'NON_STORED' });
+        await stockItem.save();
+      }
+
+      // Create the stock transaction for NON_STORED
+      const stockTransaction = new StockTransaction({
+        item: stockItem._id,
+        quantityChange: parseFloat(quantity), // Ensure quantity is a number
+        type: "OUT",
+        date: new Date(date),
+        transactionAmount: parseFloat(quantity) * parseFloat(price), // Ensure price and quantity are numbers
+        category: "NON_STORED",
+        meal,
+        wing,
+      });
+      await stockTransaction.save();
+    }
+
+    res.json({
+      message: "All transactions processed successfully",
+    });
+  } catch (error) {
+    console.error("Error processing transactions:", error);
+    res.status(500).json({ error: "Error processing transactions" });
+  }
+});
+
 
 module.exports = router;
