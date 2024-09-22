@@ -4,6 +4,7 @@ const Meal = require("../models/meal");
 const { StockItem, StockTransaction, Stock } = require("../models/stock");
 const Student = require("../models/student");
 const { createOrUpdateBill } = require("../utils/billService");
+const { createOrUpdateCostForMonth } = require("../utils/createOrUpdateCostForMonth");
 const { validateToken } = require("../utils/validateToken");
 
 // Generate bills for all students from date x to date y
@@ -121,7 +122,7 @@ function calculatePerHeadCost(mealBill) {
 router.post("/sync", validateToken, async (req, res) => {
   try {
     const { month, year, wing } = req.query;
-    const stockItems = await StockItem.find();
+    const stockItems = await StockItem.find({category: "STORED"});
 
     // Initialize objects to store the leftover items, IN items, OUT items, and average prices
     let leftOverItems = {};
@@ -194,12 +195,11 @@ router.post("/sync", validateToken, async (req, res) => {
       outTransactions.forEach((transaction) => {
         stockOut += transaction.quantityChange;
       });
-
       // Calculate total quantity as previousLeftOver + stockIn - stockOut
       const totalQuantity = previousLeftOver + stockIn - stockOut;
 
       // Calculate average price if totalQuantity is not zero
-      averagePrice = totalQuantity > 0 ? totalAmount / (previousLeftOver + stockIn) : 0;
+      averagePrice = (previousLeftOver + stockIn) > 0 ? totalAmount / (previousLeftOver + stockIn) : 0;
       avgItemPrice[item._id] = averagePrice;
 
       // Update OUT transaction amounts based on the average price
@@ -492,5 +492,34 @@ router.get("/student", validateToken, async (req, res) => {
       .json({ message: "An error occurred while fetching bills and meals" });
   }
 });
+
+// Route to create or update bills for all days in a given month
+router.post("/monthly", validateToken, async (req, res) => {
+  const { month, year, wing } = req.query;
+
+  try {
+    // Validate the input parameters
+    if (!month || !year || isNaN(month) || isNaN(year)) {
+      return res.status(400).json({ error: "Invalid month or year" });
+    }
+
+    if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+      return res.status(400).json({ error: "Invalid or missing wing parameter" });
+    }
+
+    // Call the service function to process all bills for the given month and wing
+    const result = await createOrUpdateCostForMonth(year, month, wing.toUpperCase());
+
+    // Send a success response
+    res.status(200).json({
+      message: `Bills generated successfully for the ${wing} wing for the month of ${month}-${year}`,
+      result,
+    });
+  } catch (error) {
+    console.error("Error generating monthly bills:", error);
+    res.status(500).json({ error: "An error occurred while generating monthly bills" });
+  }
+});
+
 
 module.exports = router;

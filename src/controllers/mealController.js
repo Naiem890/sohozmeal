@@ -4,6 +4,7 @@ const Student = require("../models/student");
 const Routine = require("../models/routine");
 const { validateToken } = require("../utils/validateToken");
 const HallFeast = require("../models/hallFeast");
+const { checkAdminRole } = require("../utils/checkAdminRole");
 
 const weekDays = [
   "SATURDAY",
@@ -385,9 +386,18 @@ router.delete("/plan", async (req, res) => {
   }
 });
 
+// Helper function to format the date to YYYY-MM-DD with leading zeros
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Ensure 2 digits for month
+  const day = date.getDate().toString().padStart(2, '0'); // Ensure 2 digits for day
+  return `${year}-${month}-${day}`;
+};
+
+
 router.get("/students", async (req, res) => {
   const { date, gender } = req.query;
-  console.log("sss:", date, gender);
   if (!date) {
     return res.status(400).json({ error: "Date parameter is required" });
   }
@@ -434,5 +444,69 @@ router.get("/students", async (req, res) => {
   }
 });
 
+// Toggle meal status for a student
+router.put('/toggle', validateToken, checkAdminRole, async (req, res) => {
+  const { studentId, date: queryDate, meal, wing } = req.query;
+
+  // Validate required parameters
+  if (!studentId || !queryDate || !meal || !wing) {
+    return res.status(400).json({ error: "Missing required parameters: studentId, date, meal, or wing" });
+  }
+
+  if (!["breakfast", "lunch", "dinner"].includes(meal)) {
+    return res.status(400).json({ error: "Invalid meal type. Must be one of: breakfast, lunch, dinner" });
+  }
+
+  if (!["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+    return res.status(400).json({ error: "Invalid wing. Must be MALE or FEMALE" });
+  }
+
+  try {
+    // Convert the queryDate to a JavaScript Date object
+    const startDate = new Date(queryDate);
+    startDate.setHours(0, 0, 0, 0); // Set time to the start of the day
+
+    const endDate = new Date(queryDate);
+    endDate.setHours(23, 59, 59, 999); // Set time to the end of the day
+
+    // Retrieve the meal to be updated for the student on the specified date
+    const mealToUpdate = await Meal.findOne({
+      studentId,
+      date: formatDate(queryDate),  // Match exactly with the provided query date
+    });
+
+    if (!mealToUpdate) {
+      return res.status(404).json({ message: "Meal not found for this student on the specified date" });
+    }
+
+    // Check if a hall feast exists for the same date and meal type
+    const hallFeastExists = await HallFeast.findOne({
+      date: { $gte: startDate, $lte: endDate }, // Match the date within the range
+      meal
+    });
+    if (hallFeastExists) {
+      return res.status(403).json({
+        message: `You cannot change the ${meal} status because a hall feast is scheduled for ${queryDate}.`,
+      });
+    }
+
+    // Toggle the meal status (true -> false, false -> true)
+    const currentMealStatus = mealToUpdate.meal[meal];
+    const newMealStatus = !currentMealStatus;
+
+    // Update the meal status
+    mealToUpdate.meal[meal] = newMealStatus;
+    await mealToUpdate.save();
+
+    // Send response back with the updated status
+    res.status(200).json({
+      message: `The ${meal.toUpperCase()} for ${queryDate} has been successfully ${newMealStatus ? "enabled" : "disabled"} for the student.`,
+      meal: mealToUpdate,
+    });
+  } catch (error) {
+    console.error("Error toggling meal status:", error);
+    res.status(500).json({ message: "An error occurred while toggling the meal status" });
+  }
+});
 
 module.exports = router;

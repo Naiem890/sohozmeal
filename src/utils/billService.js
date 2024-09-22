@@ -77,7 +77,6 @@ async function createOrUpdateBill(date, wing) {
         },
       },
     ]);
-
     // Check if mealCosts exist
     const breakfastCost = mealCosts[0]?.breakfastCost || 0;
     const lunchCost = mealCosts[0]?.lunchCost || 0;

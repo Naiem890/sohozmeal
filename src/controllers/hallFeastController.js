@@ -50,7 +50,7 @@ async function updateBillStudentsCount(date, meal, wing, includeAllStudents = fa
 
     if (includeAllStudents) {
       // Set total students to all students of the specific wing if feast is created
-      const totalStudents = await Student.countDocuments({ wing: wing.toUpperCase() });
+      const totalStudents = await Student.countDocuments({ gender: wing.toUpperCase() });
       bill.mealBill[meal].totalStudent = totalStudents;
     } else {
       // const totalStudentsWithMealOn = studentsWithMealOn.length > 0 ? studentsWithMealOn[0].count : 0;
@@ -100,7 +100,7 @@ async function updateBillStudentsCount(date, meal, wing, includeAllStudents = fa
 // Create a new HallFeast and update the bill for a specific wing
 router.post("/", async (req, res) => {
   const { date, meal, wing } = req.body;
-
+  console.log(wing, "shovo");
   try {
     // Validate wing
     if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
