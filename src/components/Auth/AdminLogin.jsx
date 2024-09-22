@@ -31,6 +31,7 @@ export default function AdminLogin() {
           _id: result._id,
           role: "admin",
           isAuthenticated: true,
+          wing: result.wing,
         },
       });
       toast.success("Login successful");
