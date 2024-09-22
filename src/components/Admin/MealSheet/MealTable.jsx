@@ -4,6 +4,7 @@ import { MealLocks } from "./MealLocks";
 
 export const MealTable = ({
   students,
+  setStudents,
   sortBy,
   setSortBy,
   sortAsc,
@@ -15,6 +16,7 @@ export const MealTable = ({
   lunchLock,
   dinnerLock,
   handleMealLock,
+  date,
 }) => {
   const toggleSort = (column) => {
     if (sortBy === column) {
@@ -67,9 +69,11 @@ export const MealTable = ({
               <MealRow
                 key={student._id}
                 student={student}
+                setStudents={setStudents}
                 breakfastFeast={breakfastFeast}
                 lunchFeast={lunchFeast}
                 dinnerFeast={dinnerFeast}
+                date={date}
               />
             ))}
           </tbody>

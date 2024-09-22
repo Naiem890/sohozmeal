@@ -230,6 +230,25 @@ const TransactionHistory = () => {
     }
   };
 
+  const handleSync = async () => {
+    try {
+      const year = toDate.getFullYear();
+      const month = Number(toDate.getMonth()) + 1;
+      const wing = selectedWing;
+
+      // Send the query parameters along with the POST request
+      const res = await Axios.post(
+        `/cost/sync?year=${year}&month=${month}&wing=${wing}`
+      );
+
+      toast.success("Sync Successful");
+      console.log(res, "kk");
+    } catch (e) {
+      console.log(e);
+      toast.error("Something error occurred!");
+    }
+  };
+
   return (
     <div className="mt-2">
       <div className="flex justify-between gap-2 h-auto ">
@@ -237,6 +256,12 @@ const TransactionHistory = () => {
           Transaction History
         </h2>
         <div className="flex justify-center items-center gap-2">
+          <button
+            className="btn btn-sm bg-emerald-500 rounded-md text-white font-extralight hover:bg-emerald-600"
+            onClick={handleSync}
+          >
+            Sync
+          </button>
           <DateFilters
             fromDate={fromDate}
             toDate={toDate}

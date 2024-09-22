@@ -80,7 +80,6 @@ export const Meal = () => {
         const result = await Axios.get(
           `/feast/date/${formattedDate}/wing/${gender}`
         );
-        console.log(result.data, "kksk");
         if (result.data.length > 0) {
           setBreakfastLock(result.data[0].meal.includes("breakfast"));
           setLunchLock(result.data[0].meal.includes("lunch"));
@@ -311,6 +310,7 @@ export const Meal = () => {
 
       <MealTable
         students={filteredStudents}
+        setStudents={setStudents}
         sortBy={sortBy}
         setSortBy={setSortBy}
         sortAsc={sortAsc}
@@ -322,6 +322,7 @@ export const Meal = () => {
         lunchLock={lunchLock}
         dinnerLock={dinnerLock}
         handleMealLock={handleMealLock}
+        date={fromDate}
       />
     </div>
   );

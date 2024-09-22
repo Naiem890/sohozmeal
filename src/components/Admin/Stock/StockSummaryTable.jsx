@@ -1,7 +1,6 @@
 import React from "react";
 
 export const StockSummaryTable = ({ stockOutItem }) => {
-  console.log(stockOutItem, "stocksummary");
   return (
     <div className="">
       <div className="flex justify-between items-center">
@@ -23,10 +22,10 @@ export const StockSummaryTable = ({ stockOutItem }) => {
                 className=" hover:shadow-sm rounded-lg hover:bg-emerald-50 transition-all border-b-0"
                 key={stock._id}
               >
-                <td>{stock?.item?.name}</td>
-                <td>{stock?.quantity}</td>
-                <td>{stock?.item?.unit}</td>
-                <td>{stock?.price}</td>
+                <td className="text-base">{stock?.item?.name}</td>
+                <td className="text-base">{stock?.quantity?.toFixed(2)}</td>
+                <td className="text-base">{stock?.item?.unit}</td>
+                <td className="text-base">{stock?.price?.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>

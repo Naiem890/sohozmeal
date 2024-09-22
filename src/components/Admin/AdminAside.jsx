@@ -14,6 +14,7 @@ import { toast } from "react-hot-toast";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 import { Axios } from "../../api/api";
+import mistlogo from "../../assets/MIST.png";
 
 export default function AdminAside({
   toggleDrawer,
@@ -90,7 +91,7 @@ export default function AdminAside({
       } bg-[#f6f6f6] h-screen overflow-y-auto overflow-x-hidden transition-all duration-300`}
     >
       {/* Collapse Button */}
-      <div className="py-10 px-6 flex justify-between items-center">
+      <div className=" py-4 px-6 flex justify-end items-center">
         <button onClick={toggleCollapse} className="btn btn-circle btn-sm">
           {isCollapsed ? (
             <ChevronDoubleRightIcon className="h-6 w-6" />
@@ -99,6 +100,22 @@ export default function AdminAside({
           )}
         </button>
       </div>
+
+      {!isCollapsed && (
+        <div className="flex justify-between items-center mb-4 px-2">
+          <div>
+            <img src={mistlogo} className="w-24" />
+          </div>
+          <div>
+            <h2 className="font-bold text-3xl text-end text-black opacity-50">
+              Admin
+            </h2>
+            <h2 className="font-thin text-end text-black opacity-50">
+              Male Wing
+            </h2>
+          </div>
+        </div>
+      )}
 
       {/* Links */}
       <ul className="menu flex flex-col p-0 text-base-content font-medium">

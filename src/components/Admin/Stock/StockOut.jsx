@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { fixedButtonClass, fixedInputClass } from "../../../Utils/constant";
 import Swal from "sweetalert2";
 import toast from "react-hot-toast";
@@ -9,11 +9,20 @@ export const StockOut = ({
   wing,
   editTransaction,
   setSummarySelectedItem,
+  childRef, // Pass childRef here
+  submitRef,
+  stockOutSubmit,
 }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [quantity, setQuantity] = useState("");
   const [meal, setMeal] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+
+  // Refs for focusing elements
+  const dateRef = useRef(null);
+  const mealRef = useRef(null);
+  const itemRef = useRef(null);
+  const quantityRef = useRef(null);
 
   // Prefill form fields when editing a transaction
   useEffect(() => {
@@ -26,6 +35,20 @@ export const StockOut = ({
       setDate(date);
     }
   }, [editTransaction, stocks]);
+
+  // Assign childRef to the date input (first child element)
+  useEffect(() => {
+    if (childRef) {
+      childRef.current = dateRef.current;
+    }
+  }, [childRef]);
+
+  // Focus on the Date input when no other field has focus
+  useEffect(() => {
+    if (document.activeElement === document.body) {
+      dateRef.current?.focus();
+    }
+  }, []);
 
   const handleStockOut = (e) => {
     e.preventDefault();
@@ -46,7 +69,6 @@ export const StockOut = ({
       reverseButtons: true,
     }).then((result) => {
       if (result.isConfirmed) {
-        // Add the transaction locally
         const transaction = {
           type: "OUT",
           item: selectedItem.item._id,
@@ -66,9 +88,8 @@ export const StockOut = ({
             : "Stock out transaction added locally!"
         );
 
-        // Reset the form
+        // Reset the form but keep the selected date
         resetForm();
-        e.target.reset();
       } else {
         toast.info("Stock out action was canceled.");
       }
@@ -79,37 +100,55 @@ export const StockOut = ({
     setSelectedItem(null);
     setQuantity("");
     setMeal("");
-    setDate(new Date().toISOString().split("T")[0]);
+    // Do not reset the date, so it persists after submission
+    setTimeout(() => itemRef.current?.focus(), 0); // Focus on the item field after reset
+  };
+
+  // Handle keyboard navigation with arrow keys
+  const handleKeyDown = (e, nextRef, prevRef) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+      e.preventDefault();
+      nextRef?.current?.focus();
+    } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      prevRef?.current?.focus();
+    }
   };
 
   return (
     <form onSubmit={handleStockOut} className="mb-4">
       {/* First row - Inputs */}
       <div className="flex gap-2 flex-wrap">
+        {/* Date Field */}
         <div className="">
-          <label className="block text-sm font-medium leading-6 text-gray-600">
+          <label className="block text-md font-medium leading-6 text-gray-600">
             Date
           </label>
           <input
+            ref={dateRef} // Reference for auto-focus and childRef assignment
             required
-            className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
+            className={`${fixedInputClass} disabled:bg-gray-200 !text-md h-9 mt-2`}
             type="date"
             name="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, mealRef, null)} // Arrow navigation between Date and Meal
           />
         </div>
 
+        {/* Meal Dropdown Field */}
         <div className="">
-          <label className="block text-sm font-medium leading-6 text-gray-600">
+          <label className="block text-md font-medium leading-6 text-gray-600">
             Meal
           </label>
           <select
+            ref={mealRef}
             required
             name="meal"
-            className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 disabled:bg-gray-200-200 mt-2`}
+            className={`${fixedInputClass} disabled:bg-gray-200 !text-md h-9 disabled:bg-gray-200-200 mt-2`}
             value={meal}
             onChange={(e) => setMeal(e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, itemRef, dateRef)} // Arrow navigation between Meal and Date
           >
             <option value="" disabled>
               Meal
@@ -122,22 +161,26 @@ export const StockOut = ({
           </select>
         </div>
 
+        {/* Item Dropdown Field */}
         <div className="">
-          <label className="block text-sm font-medium leading-6 text-gray-600">
+          <label className="block text-md font-medium leading-6 text-gray-600">
             Item
           </label>
           <select
+            ref={itemRef}
             required
             name="item"
-            className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 disabled:bg-gray-200-200 mt-2`}
+            className={`${fixedInputClass} disabled:bg-gray-200 !text-md h-9 disabled:bg-gray-200-200 mt-2`}
             value={selectedItem?._id || ""}
             onChange={(e) => {
-              const seletedStock = stocks.find(
+              const selectedStock = stocks.find(
                 (stock) => stock._id === e.target.value
               );
-              setSummarySelectedItem(seletedStock?.item);
-              setSelectedItem(() => seletedStock);
+              setSummarySelectedItem(selectedStock?.item);
+              setSelectedItem(() => selectedStock);
+              setTimeout(() => quantityRef.current?.focus(), 0); // Focus on quantity after selection
             }}
+            onKeyDown={(e) => handleKeyDown(e, quantityRef, mealRef)} // Arrow navigation between Item and Meal
           >
             <option value={null}>Item</option>
             {stocks.map(({ item, _id }) => (
@@ -148,12 +191,14 @@ export const StockOut = ({
           </select>
         </div>
 
+        {/* Quantity Field */}
         <div className="">
-          <label className="block text-sm font-medium leading-6 text-gray-600">
+          <label className="block text-md font-medium leading-6 text-gray-600">
             Quantity
           </label>
           <input
-            className={`${fixedInputClass} disabled:bg-gray-200 !text-xs h-9 mt-2`}
+            ref={quantityRef}
+            className={`${fixedInputClass} disabled:bg-gray-200 !text-md h-9 mt-2`}
             type="number"
             name="quantity"
             step="any"
@@ -161,6 +206,7 @@ export const StockOut = ({
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             required
+            onKeyDown={(e) => handleKeyDown(e, stockOutSubmit, itemRef)} // Arrow navigation between Quantity and Item
           />
         </div>
       </div>
@@ -168,8 +214,10 @@ export const StockOut = ({
       {/* Second row - Stock Out button */}
       <div className="flex justify-start mt-4">
         <button
+          ref={stockOutSubmit}
           type="submit"
           className={`${fixedButtonClass} btn-xs sm:w-24 !h-9`}
+          onKeyDown={(e) => handleKeyDown(e, submitRef, quantityRef)} // Submit on Enter
         >
           {editTransaction ? "Update" : "Stock Out"}
         </button>

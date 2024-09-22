@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import formatDate from "../../Utils/formatDateString";
 import { Axios } from "../../api/api";
 import DatePickerComponent from "../Common/DatePickerComponent";
+import toast from "react-hot-toast";
 
 export default function Expenses() {
   const [distinctMonths, setDistinctMonths] = useState([]);
@@ -62,16 +63,39 @@ export default function Expenses() {
   const [year, month] = selectedMonth.split("-");
   const daysOfMonth = getDaysInMonth(year, month);
 
+  const handleGenerate = async () => {
+    try {
+      const yearMonth = selectedMonth.split("-");
+      const year = yearMonth[0];
+      const month = yearMonth[1];
+
+      const res = await Axios.post(
+        `/cost/monthly?month=${month}&year=${year}&wing=${wing}`
+      );
+      toast.success("Bill Generation Successful");
+      console.log(res);
+    } catch (e) {
+      console.log(e);
+      toast.error("Error Occurred.");
+    }
+  };
+
   return (
     <div className="mt-2">
       <div className="flex justify-between gap-2 h-auto">
-        <h2 className="text-lg self-center xs:text-3xl font-semibold">
+        <h2 className="text-lg self-center xs:text-2xl font-semibold">
           Mess Bill
         </h2>
 
         {/* Add wing selection dropdown */}
 
-        <div className=" flex gap-2">
+        <div className=" flex gap-2 justify-center items-center">
+          <button
+            className="btn btn-sm bg-emerald-500 rounded-md text-white font-extralight hover:bg-emerald-600"
+            onClick={handleGenerate}
+          >
+            Generate
+          </button>
           <div className="">
             <select
               value={wing}
