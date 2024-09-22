@@ -121,41 +121,63 @@ router.post(
   }
 );
 
-// Admin login
+// Admin Registration Route (Modified to include 'wing' as required)
+router.post("/admin/register", async (req, res) => {
+  const { email, password, wing } = req.body;
+
+  // Ensure 'wing' is provided
+  if (!wing || !["MALE", "FEMALE", "ALL"].includes(wing)) {
+    return res.status(400).json({ message: "Invalid or missing wing. It must be 'MALE', 'FEMALE', or 'ALL'." });
+  }
+
+  try {
+    // Check if admin already exists
+    const existingAdmin = await Admin.findOne({ email: { $regex: new RegExp(email, "i") } });
+    if (existingAdmin) {
+      return res.status(400).json({ message: "Admin with this email already exists" });
+    }
+
+    // Create new admin and hash password
+    // const hashedPassword = await bcrypt.hash(password, 10);
+    const newAdmin = new Admin({
+      email,
+      password,
+      wing 
+    });
+
+    await newAdmin.save();
+
+    res.status(201).json({ message: "Admin registered successfully", admin: newAdmin });
+  } catch (error) {
+    res.status(500).json({ message: "An error occurred during registration" });
+  }
+});
+
+// Admin Login Route (Unchanged logic, but returns wing)
 router.post("/admin/login", async (req, res) => {
   const { email, password } = req.body;
-  console.log(req.body);
+
   try {
     const admin = await Admin.findOne({
       email: { $regex: new RegExp(email, "i") },
     });
 
-    console.log("admin", admin);
     if (!admin || !bcrypt.compareSync(password, admin.password)) {
-      return res
-        .status(401)
-        .json({ message: "Invalid admin email or password" });
+      return res.status(401).json({ message: "Invalid admin email or password" });
     }
 
-    // eslint-disable-next-line no-undef
-    console.log("JWT_SECRET", process.env.JWT_SECRET);
     // Create a JWT token
     const token = jwt.sign(
-      { email: admin.email, _id: admin._id, role: "admin" },
-      // eslint-disable-next-line no-undef
+      { email: admin.email, _id: admin._id, role: "admin", wing: admin.wing },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "24h",
-      }
+      { expiresIn: "24h" }
     );
 
-    res.status(200).json({ token, admin, role: "admin" });
+    res.status(200).json({ token, admin, role: "admin", wing: admin.wing });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "An error occurred" });
+    res.status(500).json({ message: "An error occurred during login" });
   }
 });
-
 
 // Create a new staff member (POST)
 router.post('/staff', async (req, res) => {
