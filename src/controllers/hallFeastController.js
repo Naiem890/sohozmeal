@@ -190,14 +190,18 @@ router.get("/date/:date/wing/:wing", async (req, res) => {
     const hallFeast = await HallFeast.find({ date, wing: wing.toUpperCase() });
 
     if (!hallFeast || hallFeast.length === 0) {
-      return res.status(404).json({ error: `No HallFeast found for this date and ${wing} wing` });
+      // Returning an empty array instead of a 404
+      return res.status(200).json([]);
     }
 
+    // Return the hallFeast data
     res.status(200).json(hallFeast);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error fetching HallFeast:", error);
+    res.status(500).json({ error: "An internal server error occurred" });
   }
 });
+
 
 // Delete a HallFeast by date, meal, and wing, and update the bill
 router.delete("/date/:date/meal/:meal/wing/:wing", async (req, res) => {
