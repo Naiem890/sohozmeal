@@ -26,14 +26,18 @@ async function createOrUpdateCostForMonth(year, month, wing) {
     const promises = datesInMonth.map(async (dateObj) => {
       const formattedDate = dateObj.toISOString().split("T")[0];
 
-      // Fetch data for the hall feast, students, meals, and transactions
+      // Get all students based on their gender (wing)
+      const students = await Student.find({ gender: wing }).lean();
+      const studentIds = students.map(student => student.studentId);
+
+      // Fetch data for the hall feast, meal counts, and meal costs
       const [hallFeasts, totalStudents, breakfastMealCount, lunchMealCount, dinnerMealCount, mealCosts] =
         await Promise.all([
           HallFeast.find({ date: formattedDate }).lean(),
-          Student.countDocuments({ wing }), // Count students by wing
-          Meal.countDocuments({ "meal.breakfast": true, date: formattedDate, wing }),
-          Meal.countDocuments({ "meal.lunch": true, date: formattedDate, wing }),
-          Meal.countDocuments({ "meal.dinner": true, date: formattedDate, wing }),
+          Student.countDocuments({ gender: wing }),
+          Meal.countDocuments({ "meal.breakfast": true, date: formattedDate, studentId: { $in: studentIds } }),
+          Meal.countDocuments({ "meal.lunch": true, date: formattedDate, studentId: { $in: studentIds } }),
+          Meal.countDocuments({ "meal.dinner": true, date: formattedDate, studentId: { $in: studentIds } }),
           StockTransaction.aggregate([
             {
               $match: {
@@ -116,5 +120,6 @@ async function createOrUpdateCostForMonth(year, month, wing) {
     throw new Error("Error processing bills for the month.");
   }
 }
+
 
 module.exports = { createOrUpdateCostForMonth };
