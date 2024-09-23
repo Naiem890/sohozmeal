@@ -156,16 +156,16 @@ router.post("/admin/register", async (req, res) => {
 // Admin Login Route (Unchanged logic, but returns wing)
 router.post("/admin/login", async (req, res) => {
   const { email, password } = req.body;
-
+  console.log(email, password, "ssksr");
   try {
     const admin = await Admin.findOne({
-      email: { $regex: new RegExp(email, "i") },
+      email: email,
     });
 
     if (!admin || !bcrypt.compareSync(password, admin.password)) {
       return res.status(401).json({ message: "Invalid admin email or password" });
     }
-
+    console.log(admin, "sshr");
     // Create a JWT token
     const token = jwt.sign(
       { email: admin.email, _id: admin._id, role: "admin", wing: admin.wing },
