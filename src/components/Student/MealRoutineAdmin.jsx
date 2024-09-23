@@ -11,7 +11,9 @@ import { useAuthUser } from "react-auth-kit";
 const MealRoutineAdmin = () => {
   const auth = useAuthUser()();
   const [mealData, setMealData] = useState([]);
-  const [selectedWing, setSelectedWing] = useState(auth.wing); // Default to MALE wing
+  const [selectedWing, setSelectedWing] = useState(
+    auth.wing === "ALL" ? "MALE" : auth.wing
+  ); // Default to MALE wing
   const currentDay = format(new Date(), "EEEE").toUpperCase();
   const mealRef = useRef();
 

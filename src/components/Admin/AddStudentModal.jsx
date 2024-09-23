@@ -28,7 +28,9 @@ export const AddStudentModal = ({
   const [suggestedHallId, setSuggestedHallId] = useState("");
   const [roomNo, setRoomNo] = useState(null);
   const [residence, setResidence] = useState("NOT_SELECTED");
-  const [gender, setGender] = useState(auth.wing); // Default gender to MALE
+  const [gender, setGender] = useState(
+    auth.wing === "ALL" ? "MALE" : auth.wing
+  ); // Default gender to MALE
   const [isHallIdAvailable, setIsHallIdAvailable] = useState(null); // Now it's null, not true or false
   const [hallIdChecked, setHallIdChecked] = useState(false); // Track if Hall ID is checked
 

@@ -10,7 +10,7 @@ export default function Expenses() {
   const [distinctMonths, setDistinctMonths] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [mealBillData, setMealBillData] = useState([]);
-  const [wing, setWing] = useState(auth.wing); // Add wing state
+  const [wing, setWing] = useState(auth.wing === "ALL" ? "MALE" : auth.wing); // Add wing state
 
   useEffect(() => {
     const fetchDistinctMonths = async () => {

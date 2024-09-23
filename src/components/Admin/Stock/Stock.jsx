@@ -27,7 +27,7 @@ export const Stock = () => {
   const [units, setUnits] = useState([]);
   const [categories, setCategories] = useState([]);
   const [refetch, setRefetch] = useState(false);
-  const [wing, setWing] = useState(auth.wing);
+  const [wing, setWing] = useState(auth.wing === "ALL" ? "MALE" : auth.wing);
   const [localTransactions, setLocalTransactions] = useState([]);
   const [editTransaction, setEditTransaction] = useState(null);
 

@@ -26,7 +26,9 @@ const TransactionHistory = () => {
   const [toDate, setToDate] = useState(new Date());
 
   // Wing selection (MALE/FEMALE)
-  const [selectedWing, setSelectedWing] = useState(auth.wing);
+  const [selectedWing, setSelectedWing] = useState(
+    auth.wing === "ALL" ? "MALE" : auth.wing
+  );
 
   // Filter options
   const [transactionType, setTransactionType] = useState("BOTH");

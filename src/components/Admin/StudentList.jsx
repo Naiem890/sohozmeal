@@ -24,7 +24,9 @@ export const StudentList = () => {
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [department, setDepartment] = useState("");
-  const [gender, setGender] = useState(auth.wing);
+  const [gender, setGender] = useState(
+    auth.wing === "ALL" ? "MALE" : auth.wing
+  );
   const [showModal, setShowModal] = useState(false);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [search, setSearch] = useState("");

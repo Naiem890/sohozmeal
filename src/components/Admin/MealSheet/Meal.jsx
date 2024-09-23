@@ -15,7 +15,9 @@ export const Meal = () => {
   const [sortAsc, setSortAsc] = useState(true);
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
-  const [gender, setGender] = useState(auth.wing);
+  const [gender, setGender] = useState(
+    auth.wing === "ALL" ? "MALE" : auth.wing
+  );
   const [residence, setResidence] = useState("");
   const [search, setSearch] = useState("");
   const [refetch, setRefetch] = useState(false);
