@@ -6,10 +6,12 @@ import toast from "react-hot-toast";
 import { useReactToPrint } from "react-to-print";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx"; // Import xlsx for Excel file generation
+import { useAuthUser } from "react-auth-kit";
 
 const MealRoutineAdmin = () => {
+  const auth = useAuthUser()();
   const [mealData, setMealData] = useState([]);
-  const [selectedWing, setSelectedWing] = useState("MALE"); // Default to MALE wing
+  const [selectedWing, setSelectedWing] = useState(auth.wing); // Default to MALE wing
   const currentDay = format(new Date(), "EEEE").toUpperCase();
   const mealRef = useRef();
 
@@ -95,7 +97,6 @@ const MealRoutineAdmin = () => {
 
     if (result.isConfirmed) {
       try {
-        console.log(mealData, "xxs");
         // Include the selectedWing in the query parameters
         const { data: response } = await Axios.put(
           `/meal/routine?wing=${selectedWing}`,
@@ -143,18 +144,20 @@ const MealRoutineAdmin = () => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Meal Routine</h2>
         {/* Wing Selection Dropdown */}
-        <div className="flex items-center">
-          {/* <label className="mr-2 font-semibold">Select Wing:</label> */}
-          <select
-            value={selectedWing}
-            onChange={handleWingChange}
-            className={`${fixedInputClass} h-auto cursor-pointer w-60`}
-          >
-            <option value="">Gender</option>
-            <option value="MALE">MALE</option>
-            <option value="FEMALE">FEMALE</option>
-          </select>
-        </div>
+        {auth.wing === "ALL" && (
+          <div className="flex items-center">
+            {/* <label className="mr-2 font-semibold">Select Wing:</label> */}
+            <select
+              value={selectedWing}
+              onChange={handleWingChange}
+              className={`${fixedInputClass} h-auto cursor-pointer w-60`}
+            >
+              <option value="">Gender</option>
+              <option value="MALE">MALE</option>
+              <option value="FEMALE">FEMALE</option>
+            </select>
+          </div>
+        )}
       </div>
 
       <div ref={mealRef} className="container flex justify-start max-w-7xl">

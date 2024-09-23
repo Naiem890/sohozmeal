@@ -28,7 +28,7 @@ export const NonStock = ({
   useEffect(() => {
     if (editTransaction) {
       const { item, quantity, meal, date, price } = editTransaction.transaction;
-      const selectedItemObject = stockItems.find((i) => i.name === item);
+      const selectedItemObject = stockItems.find((i) => i._id === item);
       setSelectedItem(selectedItemObject);
       setQuantity(quantity);
       setMeal(meal);

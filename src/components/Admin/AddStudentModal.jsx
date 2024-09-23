@@ -12,6 +12,7 @@ import {
   CheckCircleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline"; // Import icons
+import { useAuthUser } from "react-auth-kit";
 
 export const AddStudentModal = ({
   showAddStudentModal,
@@ -20,13 +21,14 @@ export const AddStudentModal = ({
   setRefetchHallIdHandler,
   refetchHallIdHandler,
 }) => {
+  const auth = useAuthUser()();
   const [profileImage, setProfileImage] = useState(null);
   const [image, setImage] = useState("");
   const [hallId, setHallId] = useState("");
   const [suggestedHallId, setSuggestedHallId] = useState("");
   const [roomNo, setRoomNo] = useState(null);
   const [residence, setResidence] = useState("NOT_SELECTED");
-  const [gender, setGender] = useState("MALE"); // Default gender to MALE
+  const [gender, setGender] = useState(auth.wing); // Default gender to MALE
   const [isHallIdAvailable, setIsHallIdAvailable] = useState(null); // Now it's null, not true or false
   const [hallIdChecked, setHallIdChecked] = useState(false); // Track if Hall ID is checked
 
@@ -288,23 +290,25 @@ export const AddStudentModal = ({
         </div>
 
         {/* Gender */}
-        <div className="">
-          <label className="block text-sm font-medium leading-6 text-gray-600">
-            Gender
-          </label>
-          <select
-            name="gender"
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-            className={`${fixedInputClass} mt-2`}
-          >
-            <option disabled selected>
-              Select Gender
-            </option>
-            <option value="MALE">MALE</option>
-            <option value="FEMALE">FEMALE</option>
-          </select>
-        </div>
+        {auth.wing === "ALL" && (
+          <div className="">
+            <label className="block text-sm font-medium leading-6 text-gray-600">
+              Gender
+            </label>
+            <select
+              name="gender"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className={`${fixedInputClass} mt-2`}
+            >
+              <option disabled selected>
+                Select Gender
+              </option>
+              <option value="MALE">MALE</option>
+              <option value="FEMALE">FEMALE</option>
+            </select>
+          </div>
+        )}
 
         <div className="mt-4 col-span-full flex justify-end gap-6">
           <div

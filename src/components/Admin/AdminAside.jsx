@@ -9,7 +9,7 @@ import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
 } from "@heroicons/react/24/outline";
-import { useSignOut } from "react-auth-kit";
+import { useAuthUser, useSignOut } from "react-auth-kit";
 import { toast } from "react-hot-toast";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -21,6 +21,7 @@ export default function AdminAside({
   isCollapsed,
   toggleCollapse,
 }) {
+  const auth = useAuthUser()();
   const signOut = useSignOut();
   const navigate = useNavigate();
   const location = useLocation();
@@ -111,7 +112,7 @@ export default function AdminAside({
               Admin
             </h2>
             <h2 className="font-thin text-end text-black opacity-50">
-              Male Wing
+              {`${auth.wing}`} Wing
             </h2>
           </div>
         </div>

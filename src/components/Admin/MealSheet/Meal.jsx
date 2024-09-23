@@ -6,14 +6,16 @@ import { MealStats } from "./MealStats";
 import { Axios } from "../../../api/api";
 import { MealControls } from "./MealControls";
 import Swal from "sweetalert2";
+import { useAuthUser } from "react-auth-kit";
 
 export const Meal = () => {
+  const auth = useAuthUser()();
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("roomNo");
   const [sortAsc, setSortAsc] = useState(true);
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
-  const [gender, setGender] = useState("MALE");
+  const [gender, setGender] = useState(auth.wing);
   const [residence, setResidence] = useState("");
   const [search, setSearch] = useState("");
   const [refetch, setRefetch] = useState(false);

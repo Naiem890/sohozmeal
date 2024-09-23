@@ -1,3 +1,4 @@
+import { useAuthUser } from "react-auth-kit";
 import { fixedInputClass, RESIDENCES } from "../../../Utils/constant";
 
 export const MealStats = ({
@@ -11,6 +12,7 @@ export const MealStats = ({
   lunchCount,
   dinnerCount,
 }) => {
+  const auth = useAuthUser()();
   return (
     <div className="flex gap-4 my-2 justify-between">
       {/* Meal Counts */}
@@ -28,17 +30,19 @@ export const MealStats = ({
 
       {/* Filters */}
       <div className="flex gap-2">
-        <select
-          value={gender}
-          onChange={(e) => setGender(e.target.value)}
-          className={`${fixedInputClass} h-auto w-36 cursor-pointer`}
-        >
-          <option selected value="">
-            Gender
-          </option>
-          <option value="MALE">MALE</option>
-          <option value="FEMALE">FEMALE</option>
-        </select>
+        {auth.wing === "ALL" && (
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            className={`${fixedInputClass} h-auto w-36 cursor-pointer`}
+          >
+            <option selected value="">
+              Gender
+            </option>
+            <option value="MALE">MALE</option>
+            <option value="FEMALE">FEMALE</option>
+          </select>
+        )}
         <select
           value={residence}
           onChange={(e) => setResidence(e.target.value)}

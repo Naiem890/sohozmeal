@@ -3,12 +3,14 @@ import formatDate from "../../Utils/formatDateString";
 import { Axios } from "../../api/api";
 import DatePickerComponent from "../Common/DatePickerComponent";
 import toast from "react-hot-toast";
+import { useAuthUser } from "react-auth-kit";
 
 export default function Expenses() {
+  const auth = useAuthUser()();
   const [distinctMonths, setDistinctMonths] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [mealBillData, setMealBillData] = useState([]);
-  const [wing, setWing] = useState("MALE"); // Add wing state
+  const [wing, setWing] = useState(auth.wing); // Add wing state
 
   useEffect(() => {
     const fetchDistinctMonths = async () => {
@@ -96,16 +98,18 @@ export default function Expenses() {
           >
             Generate
           </button>
-          <div className="">
-            <select
-              value={wing}
-              onChange={handleWingChange}
-              className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:border-blue-500 transition-all duration-300 ease-in-out w-44"
-            >
-              <option value="MALE">MALE</option>
-              <option value="FEMALE">FEMALE</option>
-            </select>
-          </div>
+          {auth.wing === "ALL" && (
+            <div className="">
+              <select
+                value={wing}
+                onChange={handleWingChange}
+                className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:border-blue-500 transition-all duration-300 ease-in-out w-44"
+              >
+                <option value="MALE">MALE</option>
+                <option value="FEMALE">FEMALE</option>
+              </select>
+            </div>
+          )}
           <DatePickerComponent
             selectedDate={new Date(selectedMonth + "-01")}
             onDateChange={handleDateChange}

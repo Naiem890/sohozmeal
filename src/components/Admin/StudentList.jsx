@@ -16,13 +16,15 @@ import { Axios } from "../../api/api";
 import { EditStudentModal } from "./EditStudentModal";
 import { AddStudentModal } from "./AddStudentModal";
 import { set } from "date-fns";
+import { useAuthUser } from "react-auth-kit";
 export const StudentList = () => {
+  const auth = useAuthUser()();
   const [sortBy, setSortBy] = useState(null);
   const [sortAsc, setSortAsc] = useState(true);
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [department, setDepartment] = useState("");
-  const [gender, setGender] = useState("");
+  const [gender, setGender] = useState(auth.wing);
   const [showModal, setShowModal] = useState(false);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [search, setSearch] = useState("");
@@ -35,7 +37,6 @@ export const StudentList = () => {
 
     async function fetchStudents() {
       const result = await Axios.get("/student/all");
-      console.log("students", result.data);
       setStudents(result.data);
     }
   }, [refetch]);
@@ -188,17 +189,19 @@ export const StudentList = () => {
           </h3>
         </div>
         <div className="flex gap-2 basis-2/3">
-          <select
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-            className={`${fixedInputClass} h-auto basis-1/4`}
-          >
-            <option selected value="">
-              Gender
-            </option>
-            <option value="MALE">MALE</option>
-            <option value="FEMALE">FEMALE</option>
-          </select>
+          {auth.wing === "ALL" && (
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className={`${fixedInputClass} h-auto basis-1/4`}
+            >
+              <option selected value="">
+                Gender
+              </option>
+              <option value="MALE">MALE</option>
+              <option value="FEMALE">FEMALE</option>
+            </select>
+          )}
           <select
             value={department}
             onChange={(e) => setDepartment(e.target.value)}

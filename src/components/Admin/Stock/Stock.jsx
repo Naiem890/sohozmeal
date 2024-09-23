@@ -9,6 +9,7 @@ import { StockItemsList } from "./StockItemsList";
 import { StockOut } from "./StockOut";
 import { StockSummaryTable } from "./StockSummaryTable";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { useAuthUser } from "react-auth-kit";
 
 const MODE = {
   STOCK_IN: "stockIn",
@@ -18,6 +19,7 @@ const MODE = {
 };
 
 export const Stock = () => {
+  const auth = useAuthUser()();
   const [stocks, setStocks] = useState([]);
   const [stockItems, setStockItems] = useState([]);
   const [summarySelectedItem, setSummarySelectedItem] = useState(null);
@@ -25,7 +27,7 @@ export const Stock = () => {
   const [units, setUnits] = useState([]);
   const [categories, setCategories] = useState([]);
   const [refetch, setRefetch] = useState(false);
-  const [wing, setWing] = useState("MALE");
+  const [wing, setWing] = useState(auth.wing);
   const [localTransactions, setLocalTransactions] = useState([]);
   const [editTransaction, setEditTransaction] = useState(null);
 
@@ -209,6 +211,7 @@ export const Stock = () => {
   };
 
   const handleEditTransaction = (transaction, index) => {
+    console.log(transaction, index, "shovoo");
     setEditTransaction({ transaction, index });
     if (transaction.category === "NON_STORED") {
       setMode(MODE.NON_STOCK_ITEMS);
@@ -284,17 +287,19 @@ export const Stock = () => {
     <div className="mt-2">
       <div className="flex justify-between">
         <h2 className="text-2xl font-semibold">Stock</h2>
-        <div className="flex justify-end text-sm font-extralight">
-          <select
-            value={wing}
-            onChange={(e) => setWing(e.target.value)}
-            className={`${fixedInputClass} h-auto cursor-pointer w-44`}
-          >
-            <option value="">Gender</option>
-            <option value="MALE">MALE</option>
-            <option value="FEMALE">FEMALE</option>
-          </select>
-        </div>
+        {auth.wing === "ALL" && (
+          <div className="flex justify-end text-sm font-extralight">
+            <select
+              value={wing}
+              onChange={(e) => setWing(e.target.value)}
+              className={`${fixedInputClass} h-auto cursor-pointer w-44`}
+            >
+              <option value="">Gender</option>
+              <option value="MALE">MALE</option>
+              <option value="FEMALE">FEMALE</option>
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-4">

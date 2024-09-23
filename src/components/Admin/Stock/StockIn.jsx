@@ -34,7 +34,8 @@ export const StockIn = ({
   useEffect(() => {
     if (editTransaction) {
       const { item, quantity, price, date } = editTransaction.transaction;
-      const selectedItem = stockItems.find((i) => i.name === item);
+      const selectedItem = stockItems.find((i) => i._id === item);
+      console.log(stockItems, item, "kkkjkj");
       setSummarySelectedItem(selectedItem);
       setQuantity(quantity);
       setPrice(price);

@@ -9,8 +9,10 @@ import TransactionTable from "./TransactionTable";
 import { Axios } from "../../../api/api";
 import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { fixedInputClass } from "../../../Utils/constant";
+import { useAuthUser } from "react-auth-kit";
 
 const TransactionHistory = () => {
+  const auth = useAuthUser()();
   const toastId = React.useRef(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
@@ -24,7 +26,7 @@ const TransactionHistory = () => {
   const [toDate, setToDate] = useState(new Date());
 
   // Wing selection (MALE/FEMALE)
-  const [selectedWing, setSelectedWing] = useState("MALE");
+  const [selectedWing, setSelectedWing] = useState(auth.wing);
 
   // Filter options
   const [transactionType, setTransactionType] = useState("BOTH");
@@ -268,17 +270,19 @@ const TransactionHistory = () => {
             setFromDate={setFromDate}
             setToDate={setToDate}
           />
-          <div className="relative">
-            <select
-              value={selectedWing}
-              onChange={(e) => setSelectedWing(e.target.value)}
-              className={`${fixedInputClass} h-auto cursor-pointer w-44`}
-            >
-              <option value="">Gender</option>
-              <option value="MALE">MALE</option>
-              <option value="FEMALE">FEMALE</option>
-            </select>
-          </div>
+          {auth.wing === "ALL" && (
+            <div className="relative">
+              <select
+                value={selectedWing}
+                onChange={(e) => setSelectedWing(e.target.value)}
+                className={`${fixedInputClass} h-auto cursor-pointer w-44`}
+              >
+                <option value="">Gender</option>
+                <option value="MALE">MALE</option>
+                <option value="FEMALE">FEMALE</option>
+              </select>
+            </div>
+          )}
           <button
             className="bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 px-2 py-2 font-thin flex items-center gap-2 hover:ring-1 ring-offset-2 ring-emerald-500 transition-all duration-300"
             onClick={exportToExcel}

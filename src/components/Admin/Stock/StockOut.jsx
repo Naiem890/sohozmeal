@@ -28,7 +28,7 @@ export const StockOut = ({
   useEffect(() => {
     if (editTransaction) {
       const { item, quantity, meal, date } = editTransaction.transaction;
-      const stockItem = stocks.find((stock) => stock.item.name === item);
+      const stockItem = stocks.find((stock) => stock.item._id === item);
       setSelectedItem(stockItem);
       setQuantity(quantity);
       setMeal(meal);
