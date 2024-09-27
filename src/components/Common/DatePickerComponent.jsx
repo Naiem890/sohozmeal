@@ -14,8 +14,7 @@ export default function DatePickerComponent({ selectedDate, onDateChange }) {
       dateFormat="MM/yyyy"
       showMonthYearPicker
       maxDate={maxDate}
-      className="focus:ring-1 focus:ring-emerald-500 rounded-lg text-sm"
-      wrapperClassName="w-full"
+      className="focus:ring-1 focus:ring-emerald-500 rounded-lg text-sm z-50"
     />
   );
 }

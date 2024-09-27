@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import toast, { Toaster } from "react-hot-toast";
 import * as XLSX from "xlsx"; // Import xlsx for Excel file generation
 import EditTransactionModal from "./EditTransactionModal";
 import DateFilters from "./DateFilters";
@@ -13,7 +12,6 @@ import { useAuthUser } from "react-auth-kit";
 
 const TransactionHistory = () => {
   const auth = useAuthUser()();
-  const toastId = React.useRef(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -43,6 +41,7 @@ const TransactionHistory = () => {
   // Fetch transactions from API
   useEffect(() => {
     const fetchTransactions = async () => {
+      const toastId = toast.loading("Fetching transactions...");
       try {
         const res = await Axios.get(
           `stock/transactions?fromDate=${formatDate(
@@ -52,9 +51,10 @@ const TransactionHistory = () => {
         const data = res.data;
         setTransactions(data);
         setFilteredTransactions(data); // Initialize filtered transactions
+        toast.success("Transactions fetched successfully!", { id: toastId });
       } catch (error) {
         console.error("Error fetching transactions:", error);
-        toast.error("Error fetching transactions.");
+        toast.error("Error fetching transactions.", { id: toastId });
       }
     };
 
@@ -108,7 +108,7 @@ const TransactionHistory = () => {
 
   // Show delete confirmation toast
   const showDeleteConfirmation = (record) => {
-    toastId.current = toast(
+    toast((t) => (
       <div>
         <p>Are you sure you want to delete this transaction?</p>
         <p>
@@ -125,27 +125,20 @@ const TransactionHistory = () => {
             className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded"
             onClick={() => {
               confirmDelete(record._id);
-              toast.dismiss(toastId.current);
+              toast.dismiss(t.id);
             }}
           >
             Confirm
           </button>
           <button
             className="bg-gray-300 hover:bg-gray-400 px-4 py-1 rounded"
-            onClick={() => toast.dismiss(toastId.current)}
+            onClick={() => toast.dismiss(t.id)}
           >
             Cancel
           </button>
         </div>
-      </div>,
-      {
-        position: "top-right",
-        autoClose: false,
-        closeOnClick: false,
-        draggable: false,
-        hideProgressBar: true,
-      }
-    );
+      </div>
+    ));
   };
 
   // Confirm delete handler
@@ -183,29 +176,33 @@ const TransactionHistory = () => {
 
   // Function to export data to Excel
   const exportToExcel = () => {
-    const flattenedData = flattenData(filteredTransactions);
-    const ws = XLSX.utils.json_to_sheet(flattenedData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Transactions");
+    try {
+      const flattenedData = flattenData(filteredTransactions);
+      const ws = XLSX.utils.json_to_sheet(flattenedData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Transactions");
 
-    // Get the current date and time
-    const currentDate = new Date();
-    const datePart = currentDate
-      .toLocaleDateString("en-GB")
-      .replace(/\//g, "-"); // Format date as dd-mm-yyyy
-    const timePart = currentDate
-      .toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      })
-      .replace(/:/g, "-"); // Format time as HH-MM-SS
+      // Get the current date and time
+      const currentDate = new Date();
+      const datePart = currentDate
+        .toLocaleDateString("en-GB")
+        .replace(/\//g, "-"); // Format date as dd-mm-yyyy
+      const timePart = currentDate
+        .toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+        .replace(/:/g, "-"); // Format time as HH-MM-SS
 
-    // Create the file name
-    const fileName = `${datePart}_${timePart}_transaction-history.xlsx`;
+      // Create the file name
+      const fileName = `${datePart}_${timePart}_transaction-history.xlsx`;
 
-    // Write the Excel file
-    XLSX.writeFile(wb, fileName);
+      // Write the Excel file
+      XLSX.writeFile(wb, fileName);
+    } catch (error) {
+      toast.error("Error exporting Excel file");
+    }
   };
 
   const handleUpdateSave = async (updatedRecord) => {
@@ -235,6 +232,7 @@ const TransactionHistory = () => {
   };
 
   const handleSync = async () => {
+    const toastId = toast.loading("Syncing...");
     try {
       const year = toDate.getFullYear();
       const month = Number(toDate.getMonth()) + 1;
@@ -245,11 +243,10 @@ const TransactionHistory = () => {
         `/cost/sync?year=${year}&month=${month}&wing=${wing}`
       );
 
-      toast.success("Sync Successful");
-      console.log(res, "kk");
+      toast.success("Sync successful!", { id: toastId });
     } catch (e) {
       console.log(e);
-      toast.error("Something error occurred!");
+      toast.error("Sync failed!", { id: toastId });
     }
   };
 
@@ -318,8 +315,6 @@ const TransactionHistory = () => {
           handleCancel={() => setIsModalVisible(false)}
         />
       )}
-
-      <ToastContainer />
     </div>
   );
 };

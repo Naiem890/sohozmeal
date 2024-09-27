@@ -14,9 +14,15 @@ export default function Expenses() {
 
   useEffect(() => {
     const fetchDistinctMonths = async () => {
-      const res = await Axios.get("/meal/months");
-      setDistinctMonths(res.data);
-      setSelectedMonth(res.data.slice(-1)[0]);
+      const toastId = toast.loading("Loading available months...");
+      try {
+        const res = await Axios.get("/meal/months");
+        setDistinctMonths(res.data);
+        setSelectedMonth(res.data.slice(-1)[0]);
+        toast.success("Available months loaded", { id: toastId });
+      } catch (error) {
+        toast.error("Error loading months", { id: toastId });
+      }
     };
 
     fetchDistinctMonths();
@@ -25,19 +31,21 @@ export default function Expenses() {
   useEffect(() => {
     const fetchBill = async () => {
       if (selectedMonth) {
+        const toastId = toast.loading("Loading bill data...");
         const [year, month] = selectedMonth.split("-");
         try {
           const res = await Axios.get(
-            `/cost/student?year=${year}&month=${month}&wing=${wing}` // Pass the selected wing
+            `/cost/student?year=${year}&month=${month}&wing=${wing}`
           );
           setMealBillData(res.data.mealBillData);
+          toast.success("Bill data loaded", { id: toastId });
         } catch (err) {
-          console.log("Error fetching bill data:", err);
+          toast.error("Error fetching bill data", { id: toastId });
         }
       }
     };
     fetchBill();
-  }, [selectedMonth, wing]); // Trigger the effect when wing changes
+  }, [selectedMonth, wing]);
 
   const handleDateChange = useCallback((date) => {
     const year = date.getFullYear();
@@ -46,7 +54,7 @@ export default function Expenses() {
   }, []);
 
   const handleWingChange = (e) => {
-    setWing(e.target.value); // Update wing when user selects a different option
+    setWing(e.target.value);
   };
 
   const getDaysInMonth = useCallback((year, month) => {
@@ -66,6 +74,7 @@ export default function Expenses() {
   const daysOfMonth = getDaysInMonth(year, month);
 
   const handleGenerate = async () => {
+    const toastId = toast.loading("Generating bill...");
     try {
       const yearMonth = selectedMonth.split("-");
       const year = yearMonth[0];
@@ -74,11 +83,10 @@ export default function Expenses() {
       const res = await Axios.post(
         `/cost/monthly?month=${month}&year=${year}&wing=${wing}`
       );
-      toast.success("Bill Generation Successful");
+      toast.success("Bill generation successful", { id: toastId });
       console.log(res);
     } catch (e) {
-      console.log(e);
-      toast.error("Error Occurred.");
+      toast.error("Error occurred during bill generation", { id: toastId });
     }
   };
 
@@ -91,9 +99,9 @@ export default function Expenses() {
 
         {/* Add wing selection dropdown */}
 
-        <div className=" flex gap-2 justify-center items-center">
+        <div className=" flex justify-center items-center">
           <button
-            className="btn btn-sm bg-emerald-500 rounded-md text-white font-extralight hover:bg-emerald-600"
+            className="btn btn-sm mr-2 bg-emerald-500 rounded-md text-white font-extralight hover:bg-emerald-600"
             onClick={handleGenerate}
           >
             Generate
@@ -103,7 +111,7 @@ export default function Expenses() {
               <select
                 value={wing}
                 onChange={handleWingChange}
-                className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:border-blue-500 transition-all duration-300 ease-in-out w-44"
+                className="border mr-2 border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:border-blue-500 transition-all duration-300 ease-in-out w-44"
               >
                 <option value="MALE">MALE</option>
                 <option value="FEMALE">FEMALE</option>
