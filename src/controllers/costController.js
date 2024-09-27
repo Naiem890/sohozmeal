@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const Cost = require("../models/cost");
+const HallFeast = require("../models/hallFeast");
 const Meal = require("../models/meal");
 const { StockItem, StockTransaction, Stock } = require("../models/stock");
 const Student = require("../models/student");
@@ -521,5 +522,510 @@ router.post("/monthly", validateToken, async (req, res) => {
   }
 });
 
+router.get("/monthly/all", validateToken, async (req, res) => {
+  try {
+    const { month, year, wing } = req.query;
+
+    // Validate month and year
+    if (!month || !year || isNaN(month) || isNaN(year)) {
+      return res.status(400).json({ error: "Invalid month or year" });
+    }
+
+    // Validate wing
+    if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+      return res.status(400).json({ error: "Invalid or missing wing parameter" });
+    }
+
+    // Fetch all students of the specified wing (gender) and include the required fields
+    const students = await Student.find(
+      { gender: wing.toUpperCase() },
+      {
+        studentId: 1,
+        name: 1,
+        hallId: 1,
+        batch: 1,
+        department: 1,
+        roomNo: 1,
+        gender: 1,
+        residence: 1,
+        _id: 0,
+      }
+    ).exec();
+
+    // Extract only the studentId field into an array and map details into a new object
+    const studentIds = students.map(student => student.studentId);
+    const studentDetailsById = students.reduce((acc, student) => {
+      acc[student.studentId] = {
+        name: student.name,
+        hallId: student.hallId,
+        batch: student.batch,
+        department: student.department,
+        roomNo: student.roomNo,
+        gender: student.gender,
+        residence: student.residence,
+      };
+      return acc;
+    }, {});
+
+    if (!students || studentIds.length === 0) {
+      return res.status(404).json({ message: "No students found for the specified wing" });
+    }
+
+    // Calculate start and end dates of the month and convert them to string format (YYYY-MM-DD)
+    const startDateString = `${year}-${month.toString().padStart(2, '0')}-01`;
+    const endDateString = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate().toString().padStart(2, '0')}`;
+
+    // Fetch all meals within the specified date range and for the studentIds
+    const meals = await Meal.find(
+      {
+        studentId: { $in: studentIds },
+        date: { $gte: startDateString, $lte: endDateString },
+      },
+      { studentId: 1, date: 1, meal: 1, _id: 0 }
+    ).exec();
+
+    // Fetch all hall feasts for the specified month and wing
+    const hallFeasts = await HallFeast.find({
+      date: { $gte: new Date(startDateString), $lte: new Date(endDateString) },
+      wing: wing.toUpperCase(),
+    }).exec();
+
+    // Fetch all costs for the given month and wing
+    const costs = await Cost.find({
+      date: { $gte: new Date(startDateString), $lte: new Date(endDateString) },
+      wing: wing.toUpperCase(),
+    }).exec();
+
+    // Initialize the result object to store meal status for each studentId and their total cost
+    const mealStatusByStudent = {};
+    const studentMonthlyCosts = {};
+
+    // Initialize meal status and total cost for each student for each day of the month
+    studentIds.forEach(studentId => {
+      mealStatusByStudent[studentId] = {};
+      studentMonthlyCosts[studentId] = 0;
+
+      for (let day = 1; day <= new Date(year, month, 0).getDate(); day++) {
+        const formattedDate = `${day.toString().padStart(2, "0")}-${month}-${year}`;
+        mealStatusByStudent[studentId][formattedDate] = {
+          breakfast: false,
+          lunch: false,
+          dinner: false,
+          perHeadCost: {
+            breakfast: 0,
+            lunch: 0,
+            dinner: 0,
+          },
+        };
+      }
+    });
+
+    // Helper function to calculate per-head cost
+    const calculatePerHeadCost = (totalCost, totalStudent) => {
+      return totalStudent > 0 ? totalCost / totalStudent : 0;
+    };
+
+    // Populate meal status based on the fetched meals and calculate monthly cost
+    meals.forEach(meal => {
+      const mealDate = new Date(meal.date).getUTCDate();
+      const formattedDate = `${mealDate.toString().padStart(2, "0")}-${month}-${year}`;
+
+      if (mealStatusByStudent[meal.studentId]) {
+        mealStatusByStudent[meal.studentId][formattedDate] = {
+          breakfast: meal.meal.breakfast,
+          lunch: meal.meal.lunch,
+          dinner: meal.meal.dinner,
+          perHeadCost: {
+            breakfast: 0,
+            lunch: 0,
+            dinner: 0,
+          },
+        };
+      }
+    });
+
+    // Override meal status with hall feast participation (true for all students)
+    hallFeasts.forEach(feast => {
+      const feastDate = new Date(feast.date).getUTCDate();
+      const formattedDate = `${feastDate.toString().padStart(2, "0")}-${month}-${year}`;
+
+      // For all students, mark the feast meal as true
+      studentIds.forEach(studentId => {
+        if (mealStatusByStudent[studentId] && mealStatusByStudent[studentId][formattedDate]) {
+          mealStatusByStudent[studentId][formattedDate][feast.meal] = true;
+        }
+      });
+    });
+
+    // Calculate total monthly cost for each student based on per-head cost and participation
+    costs.forEach(cost => {
+      const costDate = new Date(cost.date).getUTCDate();
+      const formattedDate = `${costDate.toString().padStart(2, "0")}-${month}-${year}`;
+
+      const perHeadBreakfastCost = calculatePerHeadCost(cost.mealBill.breakfast.totalCost, cost.mealBill.breakfast.totalStudent);
+      const perHeadLunchCost = calculatePerHeadCost(cost.mealBill.lunch.totalCost, cost.mealBill.lunch.totalStudent);
+      const perHeadDinnerCost = calculatePerHeadCost(cost.mealBill.dinner.totalCost, cost.mealBill.dinner.totalStudent);
+
+      studentIds.forEach(studentId => {
+        const mealStatus = mealStatusByStudent[studentId][formattedDate];
+        if (mealStatus) {
+          if (mealStatus.breakfast) {
+            studentMonthlyCosts[studentId] += perHeadBreakfastCost;
+            mealStatusByStudent[studentId][formattedDate].perHeadCost.breakfast = perHeadBreakfastCost;
+          }
+          if (mealStatus.lunch) {
+            studentMonthlyCosts[studentId] += perHeadLunchCost;
+            mealStatusByStudent[studentId][formattedDate].perHeadCost.lunch = perHeadLunchCost;
+          }
+          if (mealStatus.dinner) {
+            studentMonthlyCosts[studentId] += perHeadDinnerCost;
+            mealStatusByStudent[studentId][formattedDate].perHeadCost.dinner = perHeadDinnerCost;
+          }
+        }
+      });
+    });
+
+    // Return the meal status, total monthly cost, and student details for each student
+    res.status(200).json({
+      message: `Meal status, hall feast information, monthly costs, and student details for the ${wing} wing for the month of ${month}-${year}`,
+      studentMonthlyCosts,
+      studentDetailsById,
+    });
+  } catch (error) {
+    console.error("Error fetching meal status, hall feasts, monthly costs, and student details:", error);
+    res.status(500).json({ error: "An error occurred while fetching meal status, hall feasts, monthly costs, and student details" });
+  }
+});
+
+// router.get("/monthly/student", validateToken, async (req, res) => {
+//   try {
+//     const { month, year, studentId } = req.query;
+
+//     // Validate month, year, and studentId
+//     if (!month || !year || isNaN(month) || isNaN(year)) {
+//       return res.status(400).json({ error: "Invalid month or year" });
+//     }
+    
+//     if (!studentId) {
+//       return res.status(400).json({ error: "Invalid or missing studentId parameter" });
+//     }
+
+//     // Fetch the student to verify if the student exists
+//     const student = await Student.findOne({ studentId }, {
+//       studentId: 1,
+//       name: 1,
+//       hallId: 1,
+//       batch: 1,
+//       department: 1,
+//       roomNo: 1,
+//       gender: 1,
+//       residence: 1,
+//       _id: 0,
+//     }).exec();
+
+//     if (!student) {
+//       return res.status(404).json({ message: "Student not found" });
+//     }
+
+//     // Calculate start and end dates of the month and convert them to string format (YYYY-MM-DD)
+//     const startDateString = `${year}-${month.toString().padStart(2, '0')}-01`;
+//     const endDateString = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate().toString().padStart(2, '0')}`;
+
+//     // Fetch all meals for the student within the specified date range
+//     const meals = await Meal.find(
+//       {
+//         studentId,
+//         date: { $gte: startDateString, $lte: endDateString },
+//       },
+//       { studentId: 1, date: 1, meal: 1, _id: 0 }
+//     ).exec();
+
+//     // Fetch all hall feasts for the specified month and the student's gender
+//     const hallFeasts = await HallFeast.find({
+//       date: { $gte: new Date(startDateString), $lte: new Date(endDateString) },
+//       wing: student.gender.toUpperCase(),
+//     }).exec();
+
+//     // Fetch all costs for the given month and the student's gender
+//     const costs = await Cost.find({
+//       date: { $gte: new Date(startDateString), $lte: new Date(endDateString) },
+//       wing: student.gender.toUpperCase(),
+//     }).exec();
+
+//     // Initialize the meal status object and total cost
+//     const mealStatusByDay = {};
+//     let totalMonthlyCost = 0;
+
+//     // Initialize meal status and total cost for each day of the month
+//     for (let day = 1; day <= new Date(year, month, 0).getDate(); day++) {
+//       const formattedDate = `${day.toString().padStart(2, "0")}-${month}-${year}`;
+//       mealStatusByDay[formattedDate] = {
+//         breakfast: false,
+//         lunch: false,
+//         dinner: false,
+//         perHeadCost: {
+//           breakfast: 0,
+//           lunch: 0,
+//           dinner: 0,
+//         },
+//       };
+//     }
+
+//     // Helper function to calculate per-head cost
+//     const calculatePerHeadCost = (totalCost, totalStudent) => {
+//       return totalStudent > 0 ? totalCost / totalStudent : 0;
+//     };
+
+//     // Populate meal status based on the fetched meals
+//     meals.forEach(meal => {
+//       const mealDate = new Date(meal.date).getUTCDate();
+//       const formattedDate = `${mealDate.toString().padStart(2, "0")}-${month}-${year}`;
+
+//       if (mealStatusByDay[formattedDate]) {
+//         mealStatusByDay[formattedDate] = {
+//           breakfast: meal.meal.breakfast,
+//           lunch: meal.meal.lunch,
+//           dinner: meal.meal.dinner,
+//           perHeadCost: {
+//             breakfast: 0,
+//             lunch: 0,
+//             dinner: 0,
+//           },
+//         };
+//       }
+//     });
+
+//     // Override meal status with hall feast participation (true for the student)
+//     hallFeasts.forEach(feast => {
+//       const feastDate = new Date(feast.date).getUTCDate();
+//       const formattedDate = `${feastDate.toString().padStart(2, "0")}-${month}-${year}`;
+
+//       if (mealStatusByDay[formattedDate]) {
+//         mealStatusByDay[formattedDate][feast.meal] = true;
+//       }
+//     });
+
+//     // Calculate total monthly cost for the student based on per-head cost and participation
+//     costs.forEach(cost => {
+//       const costDate = new Date(cost.date).getUTCDate();
+//       const formattedDate = `${costDate.toString().padStart(2, "0")}-${month}-${year}`;
+
+//       const perHeadBreakfastCost = calculatePerHeadCost(cost.mealBill.breakfast.totalCost, cost.mealBill.breakfast.totalStudent);
+//       const perHeadLunchCost = calculatePerHeadCost(cost.mealBill.lunch.totalCost, cost.mealBill.lunch.totalStudent);
+//       const perHeadDinnerCost = calculatePerHeadCost(cost.mealBill.dinner.totalCost, cost.mealBill.dinner.totalStudent);
+
+//       const mealStatus = mealStatusByDay[formattedDate];
+//       if (mealStatus) {
+//         if (mealStatus.breakfast) {
+//           totalMonthlyCost += perHeadBreakfastCost;
+//           mealStatus.perHeadCost.breakfast = perHeadBreakfastCost;
+//         }
+//         if (mealStatus.lunch) {
+//           totalMonthlyCost += perHeadLunchCost;
+//           mealStatus.perHeadCost.lunch = perHeadLunchCost;
+//         }
+//         if (mealStatus.dinner) {
+//           totalMonthlyCost += perHeadDinnerCost;
+//           mealStatus.perHeadCost.dinner = perHeadDinnerCost;
+//         }
+//       }
+//     });
+
+//     // Return the meal status and total monthly cost for the student
+//     res.status(200).json({
+//       message: `Meal status and monthly cost for student ${studentId} for the month of ${month}-${year}`,
+//       studentDetails: student,
+//       mealStatusByDay,
+//       totalMonthlyCost,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching meal status and monthly cost for student:", error);
+//     res.status(500).json({ error: "An error occurred while fetching meal status and monthly cost for student" });
+//   }
+// });
+
+router.get("/monthly/student", validateToken, async (req, res) => {
+  try {
+    const { month, year, studentId } = req.query;
+
+    // Validate month, year, and studentId
+    if (!month || !year || isNaN(month) || isNaN(year)) {
+      return res.status(400).json({ error: "Invalid month or year" });
+    }
+
+    if (!studentId) {
+      return res.status(400).json({ error: "Invalid or missing studentId parameter" });
+    }
+
+    // Fetch the student to verify if the student exists
+    const student = await Student.findOne({ studentId }, {
+      studentId: 1,
+      name: 1,
+      hallId: 1,
+      batch: 1,
+      department: 1,
+      roomNo: 1,
+      gender: 1,
+      residence: 1,
+      _id: 0,
+    }).exec();
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Calculate start and end dates of the month and convert them to string format (YYYY-MM-DD)
+    const startDateString = `${year}-${month.toString().padStart(2, '0')}-01`;
+    const endDateString = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate().toString().padStart(2, '0')}`;
+
+    // Fetch all meals for the student within the specified date range
+    const meals = await Meal.find(
+      {
+        studentId,
+        date: { $gte: startDateString, $lte: endDateString },
+      },
+      { studentId: 1, date: 1, meal: 1, _id: 0 }
+    ).exec();
+
+    // Fetch all hall feasts for the specified month and the student's gender
+    const hallFeasts = await HallFeast.find({
+      date: { $gte: new Date(startDateString), $lte: new Date(endDateString) },
+      wing: student.gender.toUpperCase(),
+    }).exec();
+
+    // Fetch all costs for the given month and the student's gender
+    const costs = await Cost.find({
+      date: { $gte: new Date(startDateString), $lte: new Date(endDateString) },
+      wing: student.gender.toUpperCase(),
+    }).exec();
+
+    // Initialize the meal status object and total cost
+    const mealStatusByDay = {};
+    let totalMonthlyCost = 0;
+
+    // Initialize meal status and total cost for each day of the month
+    for (let day = 1; day <= new Date(year, month, 0).getDate(); day++) {
+      const formattedDate = `${day.toString().padStart(2, "0")}-${month}-${year}`;
+      mealStatusByDay[formattedDate] = {
+        breakfast: false,
+        lunch: false,
+        dinner: false,
+        perHeadCost: {
+          breakfast: 0,
+          lunch: 0,
+          dinner: 0,
+        },
+      };
+    }
+
+    // Helper function to calculate per-head cost
+    const calculatePerHeadCost = (totalCost, totalStudent) => {
+      return totalStudent > 0 ? totalCost / totalStudent : 0;
+    };
+
+    // Populate meal status based on the fetched meals
+    meals.forEach((meal) => {
+      const mealDate = new Date(meal.date).getUTCDate();
+      const formattedDate = `${mealDate.toString().padStart(2, "0")}-${month}-${year}`;
+
+      if (mealStatusByDay[formattedDate]) {
+        mealStatusByDay[formattedDate] = {
+          breakfast: meal.meal.breakfast,
+          lunch: meal.meal.lunch,
+          dinner: meal.meal.dinner,
+          perHeadCost: {
+            breakfast: 0,
+            lunch: 0,
+            dinner: 0,
+          },
+        };
+      }
+    });
+
+    // Handle hall feasts and override meal status if necessary
+    hallFeasts.forEach((feast) => {
+      const feastDate = new Date(feast.date).getUTCDate();
+      const formattedDate = `${feastDate.toString().padStart(2, "0")}-${month}-${year}`;
+      
+      if (mealStatusByDay[formattedDate]) {
+        const feastMeal = feast.meal; // e.g., breakfast, lunch, or dinner
+        mealStatusByDay[formattedDate][feastMeal] = true;
+
+        // Find the cost for the feast day from the costs array
+        const costForDay = costs.find(
+          (cost) => new Date(cost.date).getUTCDate() === feastDate
+        );
+
+        if (costForDay) {
+          const perHeadCost = calculatePerHeadCost(
+            costForDay.mealBill[feastMeal].totalCost,
+            costForDay.mealBill[feastMeal].totalStudent
+          );
+          
+          // Assign the cost to the respective meal
+          mealStatusByDay[formattedDate].perHeadCost[feastMeal] = perHeadCost;
+          totalMonthlyCost += perHeadCost; // Add the cost to the total monthly cost
+        }
+      }
+    });
+
+    // Calculate total monthly cost for the student based on per-head cost and participation
+    costs.forEach((cost) => {
+      const costDate = new Date(cost.date).getUTCDate();
+      const formattedDate = `${costDate.toString().padStart(2, "0")}-${month}-${year}`;
+
+      const perHeadBreakfastCost = calculatePerHeadCost(
+        cost.mealBill.breakfast.totalCost,
+        cost.mealBill.breakfast.totalStudent
+      );
+      const perHeadLunchCost = calculatePerHeadCost(
+        cost.mealBill.lunch.totalCost,
+        cost.mealBill.lunch.totalStudent
+      );
+      const perHeadDinnerCost = calculatePerHeadCost(
+        cost.mealBill.dinner.totalCost,
+        cost.mealBill.dinner.totalStudent
+      );
+
+      const mealStatus = mealStatusByDay[formattedDate];
+      if (mealStatus) {
+        if (
+          mealStatus.breakfast &&
+          !hallFeasts.some((feast) => feast.date.toString() === cost.date.toString())
+        ) {
+          totalMonthlyCost += perHeadBreakfastCost;
+          mealStatus.perHeadCost.breakfast = perHeadBreakfastCost;
+        }
+        if (
+          mealStatus.lunch &&
+          !hallFeasts.some((feast) => feast.date.toString() === cost.date.toString())
+        ) {
+          totalMonthlyCost += perHeadLunchCost;
+          mealStatus.perHeadCost.lunch = perHeadLunchCost;
+        }
+        if (
+          mealStatus.dinner &&
+          !hallFeasts.some((feast) => feast.date.toString() === cost.date.toString())
+        ) {
+          totalMonthlyCost += perHeadDinnerCost;
+          mealStatus.perHeadCost.dinner = perHeadDinnerCost;
+        }
+      }
+    });
+
+    // Return the meal status and total monthly cost for the student
+    res.status(200).json({
+      message: `Meal status and monthly cost for student ${studentId} for the month of ${month}-${year}`,
+      studentDetails: student,
+      mealStatusByDay,
+      totalMonthlyCost,
+    });
+  } catch (error) {
+    console.error("Error fetching meal status and monthly cost for student:", error);
+    res.status(500).json({
+      error: "An error occurred while fetching meal status and monthly cost for student",
+    });
+  }
+});
 
 module.exports = router;
