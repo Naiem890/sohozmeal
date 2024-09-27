@@ -11,15 +11,17 @@ import {
 } from "@heroicons/react/24/outline"; // Using Heroicons v2
 import * as XLSX from "xlsx";
 import toast, { Toaster } from "react-hot-toast";
+import { useAuthUser } from "react-auth-kit";
 
 export const Bills = () => {
+  const auth = useAuthUser()();
   const [studentData, setStudentData] = useState({});
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState(null);
   const [sortAsc, setSortAsc] = useState(true);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [wing, setWing] = useState("MALE");
+  const [wing, setWing] = useState(auth.wing === "ALL" ? "MALE" : auth.wing);
   const [selectedStudentDetails, setSelectedStudentDetails] = useState(null); // State for selected student details
   const [showModal, setShowModal] = useState(false); // Modal visibility state
 
@@ -399,7 +401,7 @@ export const Bills = () => {
                 Download Bill
               </button>
               <button
-                className={`btn ${fixedButtonClass} w-20`}
+                className={`btn bg-emerald-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 hover:bg-emerald-600 w-20`}
                 onClick={() => setShowModal(false)}
               >
                 Close
