@@ -8,6 +8,7 @@ import {
   PencilIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { useAuthUser, useSignOut } from "react-auth-kit";
 import { toast } from "react-hot-toast";
@@ -82,6 +83,11 @@ export default function AdminAside({
       link: "Expenses",
       path: "/admin/dashboard/expenses",
       icon: <ShoppingCartIcon className="h-6 w-6" />,
+    },
+    {
+      link: "Student Bill",
+      path: "/admin/dashboard/bills",
+      icon: <DocumentTextIcon className="h-6 w-6" />,
     },
   ];
 

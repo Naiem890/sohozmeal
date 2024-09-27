@@ -23,6 +23,7 @@ import StaffLogin from "./components/Staff/StaffLogin";
 import RequiredStaffAuth from "./components/Auth/RequireStaffAuth";
 import StaffDashboard from "./components/Staff/StaffDashboard";
 import Complaints from "./components/Staff/Complaints";
+import { Bills } from "./components/Admin/Bills/Bills";
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
           <Route path="meal" element={<Meal />} />
           <Route path="stock" element={<Stock />} />
           <Route path="expenses" element={<Expenses />} />
+          <Route path="bills" element={<Bills />} />
           <Route path="totalBill" element={<TotalBill />} />
           <Route path="meal-routine" element={<MealRoutineAdmin />} />
           <Route path="transaction-history" element={<TransactionHistory />} />
