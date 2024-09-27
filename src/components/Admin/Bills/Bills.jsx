@@ -253,14 +253,16 @@ export const Bills = () => {
         </div>
 
         <div className="flex">
-          <select
-            value={wing}
-            onChange={(e) => setWing(e.target.value)}
-            className={`h-auto mr-2 rounded-lg border-0 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:leading-6`}
-          >
-            <option value="MALE">MALE</option>
-            <option value="FEMALE">FEMALE</option>
-          </select>
+          {auth.wing === "ALL" && (
+            <select
+              value={wing}
+              onChange={(e) => setWing(e.target.value)}
+              className={`h-auto mr-2 rounded-lg border-0 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:leading-6`}
+            >
+              <option value="MALE">MALE</option>
+              <option value="FEMALE">FEMALE</option>
+            </select>
+          )}
 
           <DatePicker
             selected={selectedDate}
