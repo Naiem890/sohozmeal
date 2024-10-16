@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const Student = require("../models/student");
 
 // Read the Excel file
-const workbook = xlsx.readFile("src/data/femalewing.xlsx"); // Replace with your file path
+const workbook = xlsx.readFile("src/data/male_wing_cleaned.xlsx"); // Replace with your file path
 
 // Assuming the first sheet is the one with student data
 const sheetName = workbook.SheetNames[0];
@@ -35,12 +35,13 @@ studentsData.forEach((studentData) => {
         name: studentData.name.trim(),
         hallId: studentData.hallId,
         studentId: studentData.studentId,
+        roomNo: studentData.roomNo,
         password: bcrypt.hashSync(studentData.studentId + "", 10),
         department: findKeyValue(studentData, "dept")?.split("-")?.[0]?.trim() || "",
         batch: findKeyValue(studentData, "dept")?.split("-")?.[1]?.trim() || "",
         status: "active",
-        gender: "FEMALE",
-        residence: "OSMANY_HALL",
+        gender: "MALE",
+        residence: studentData.roomNo[0]==="D" ? "EXT_D": "OSMANY_HALL",
         firstTimeLogin: true,
       };
 
