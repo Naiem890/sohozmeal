@@ -11,34 +11,12 @@ export default function MealPlan() {
   const [meals, setMeals] = useState([]);
   const [distinctMonths, setDistinctMonths] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState("");
-
-  useEffect(() => {
-    const fetchDistinctMonths = async () => {
-      const res = await Axios.get("/meal/months");
-      const months = res.data;
-      setDistinctMonths(months);
-      setSelectedMonth(months.slice(-1)[0]);
-    };
-
-    fetchDistinctMonths();
-  }, []);
-
-  useEffect(() => {
-    const fetchMeals = async () => {
-      if (selectedMonth) {
-        const year = selectedMonth.split("-")[0];
-        const month = selectedMonth.split("-")[1];
-        const res = await Axios.get(`/meal/plan?year=${year}&month=${month}`);
-        const { meals } = res.data;
-
-        const day = new Date(meals[0].date).getDay();
-        const emptyDays = Array(day).fill(null);
-        meals.unshift(...emptyDays);
-        setMeals(meals);
-      }
-    };
-    fetchMeals();
-  }, [selectedMonth]);
+  const [guestMeal, setGuestMeal] = useState({
+    breakfast: 0,
+    lunch: 0,
+    dinner: 0,
+  });
+  const [originalGuestMeal, setOriginalGuestMeal] = useState(null); // for resetting the guest meal on modal close
 
   const handleMealUpdate = async (mealId, meal) => {
     try {
@@ -60,7 +38,6 @@ export default function MealPlan() {
         );
       }
     } catch (error) {
-      // Just log the error, no need for additional toast error here
       console.error("Meal update error: ", error);
     }
   };
@@ -86,10 +63,116 @@ export default function MealPlan() {
     },
     [distinctMonths]
   );
+
+  const handleModalOpen = () => {
+    setOriginalGuestMeal({ ...guestMeal });
+    document.getElementById("my_modal_3").showModal();
+  };
+  const handleGuestCountChange = (e) => {
+    const { name, value } = e.target;
+
+    const sanitizedValue =
+      value === "" ? "" : Math.max(0, Math.floor(Number(value)));
+
+    setGuestMeal((prev) => ({
+      ...prev,
+      [name]: sanitizedValue,
+    }));
+  };
+
+  const handleModalClose = useCallback(() => {
+    if (originalGuestMeal) {
+      setGuestMeal({ ...originalGuestMeal });
+    }
+    document.getElementById("my_modal_3").close();
+  }, [originalGuestMeal]);
+
+  const handleSubmitGuestMeal = async () => {
+    try {
+      const result = await toast.promise(
+        Axios.put("/meal/guest-meal", {
+          date: validDate(),
+          guestMeal,
+        }),
+        {
+          loading: "Submitting Guest Meal...",
+          success: ({ data }) => data.message || "Guest meal submitted!",
+          error: (error) =>
+            error?.response?.data?.message || "Failed to submit guest meal.",
+        }
+      );
+
+      if (result.status === 200) {
+        setMeals((prevMeals) =>
+          prevMeals.map((prevMeal) =>
+            prevMeal.date === validDate() ? result.data.meal : prevMeal
+          )
+        );
+        setGuestMeal(result.data.meal.guestMeal);
+        document.getElementById("my_modal_3").close();
+      }
+    } catch (error) {
+      console.error("Guest meal submit error: ", error);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        handleModalClose();
+      }
+    };
+    const fetchDistinctMonths = async () => {
+      const res = await Axios.get("/meal/months");
+      const months = res.data;
+      setDistinctMonths(months);
+      setSelectedMonth(months.slice(-1)[0]);
+    };
+    fetchDistinctMonths();
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup the event listener on component unmount
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  });
+
+  useEffect(() => {
+    const fetchMeals = async () => {
+      if (selectedMonth) {
+        const year = selectedMonth.split("-")[0];
+        const month = selectedMonth.split("-")[1];
+        const res = await Axios.get(`/meal/plan?year=${year}&month=${month}`);
+        if (res.status === 200) {
+          const guestMeal = res.data.meals.find(
+            (meal) => meal.date === validDate()
+          )?.guestMeal;
+          setGuestMeal(guestMeal || { breakfast: 0, lunch: 0, dinner: 0 });
+        }
+        const { meals } = res.data;
+
+        const day = new Date(meals[0].date).getDay();
+        const emptyDays = Array(day).fill(null);
+        meals.unshift(...emptyDays);
+        setMeals(meals);
+      }
+    };
+    fetchMeals();
+  }, [selectedMonth]);
+
   return (
     <div className="lg:my-10 mb-10 px-5">
-      <h2 className="text-3xl font-semibold">Meal Plan</h2>
-      <div className="divider"></div>
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-semibold">Meal Plan</h2>
+        <button
+          onClick={handleModalOpen}
+          className="text-lg font-bold bg-emerald-500 px-4 py-2 text-white rounded-md hover:bg-emerald-600 transition-all duration-300"
+        >
+          Guest Meal
+        </button>
+      </div>
+      <div className="divider my-2"></div>
       <div className="flex justify-between items-center mb-6 gap-10 flex-wrap">
         <div className="flex gap-2 md:gap-4 sm:w-auto w-full">
           {["breakfast", "lunch", "dinner"].map((mealType, index) => (
@@ -204,6 +287,55 @@ export default function MealPlan() {
           )}
         </div>
       </div>
+      <dialog id="my_modal_3" className="modal z-10">
+        <div className="modal-box">
+          <form method="dialog">
+            {/* if there is a button in form, it will close the modal */}
+            <button
+              className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+              onClick={handleModalClose}
+            >
+              ✕
+            </button>
+          </form>
+          <h3 className="font-bold text-lg text-emerald-800">
+            Guest Meal for {validDate()}
+          </h3>
+          <div className="flex flex-col gap-4">
+            <div>
+              {["breakfast", "lunch", "dinner"].map((meal) => (
+                <label key={meal} className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">
+                      {meal.charAt(0).toUpperCase() + meal.slice(1)}
+                    </span>
+                  </div>
+                  <input
+                    name={meal}
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="Number of Guests"
+                    value={guestMeal[meal]}
+                    onChange={(e) => handleGuestCountChange(e)}
+                    onKeyDown={(e) => {
+                      if (["-", ".", "e", "E"].includes(e.key))
+                        e.preventDefault();
+                    }}
+                    className="input input-bordered focus:ring-emerald-800 focus:ring-1 focus:border-0 border-emerald-950 w-full rounded-lg"
+                  />
+                </label>
+              ))}
+            </div>
+            <button
+              className="text-lg font-bold bg-emerald-500 px-4 py-2 text-white rounded-md hover:bg-emerald-600 transition-all duration-300"
+              onClick={handleSubmitGuestMeal}
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 }
