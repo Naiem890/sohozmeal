@@ -1,5 +1,4 @@
 import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
-import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { useCallback, useEffect, useState } from "react";
 import { dateToDayConverter } from "../../Utils/dateToDayConverter";
 import { dateToYYYYMMDD } from "../../Utils/dateToYYYYMMDD";
@@ -136,7 +135,7 @@ export default function MealPlan() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  });
+  }, [handleModalClose]);
 
   useEffect(() => {
     const fetchMeals = async () => {
