@@ -31,45 +31,71 @@ async function createOrUpdateCostForMonth(year, month, wing) {
       const studentIds = students.map(student => student.studentId);
 
       // Fetch data for the hall feast, meal counts, and meal costs
-      const [hallFeasts, totalStudents, breakfastMealCount, lunchMealCount, dinnerMealCount, mealCosts] =
-        await Promise.all([
-          HallFeast.find({ date: formattedDate }).lean(),
-          Student.countDocuments({ gender: wing }),
-          Meal.countDocuments({ "meal.breakfast": true, date: formattedDate, studentId: { $in: studentIds } }),
-          Meal.countDocuments({ "meal.lunch": true, date: formattedDate, studentId: { $in: studentIds } }),
-          Meal.countDocuments({ "meal.dinner": true, date: formattedDate, studentId: { $in: studentIds } }),
-          StockTransaction.aggregate([
-            {
-              $match: {
-                date: {
-                  $gte: new Date(formattedDate),
-                  $lt: new Date(new Date(formattedDate).setDate(new Date(formattedDate).getDate() + 1)),
-                },
-                wing, // Filter by wing in transactions
+      const [hallFeasts, totalStudents, breakfastMealCount, lunchMealCount, dinnerMealCount, mealCosts, guestMealCounts] =
+      await Promise.all([
+        HallFeast.find({ date: formattedDate }).lean(),
+        Student.countDocuments({ gender: wing }),
+        Meal.countDocuments({ "meal.breakfast": true, date: formattedDate, studentId: { $in: studentIds } }),
+        Meal.countDocuments({ "meal.lunch": true, date: formattedDate, studentId: { $in: studentIds } }),
+        Meal.countDocuments({ "meal.dinner": true, date: formattedDate, studentId: { $in: studentIds } }),
+        StockTransaction.aggregate([
+          {
+            $match: {
+              date: {
+                $gte: new Date(formattedDate),
+                $lt: new Date(new Date(formattedDate).setDate(new Date(formattedDate).getDate() + 1)),
               },
+              wing, // Filter by wing in transactions
             },
-            {
-              $group: {
-                _id: null, // Group by the whole date range
-                breakfastCost: {
-                  $sum: {
-                    $cond: [{ $eq: ["$meal", "BREAKFAST"] }, "$transactionAmount", 0],
-                  },
-                },
-                lunchCost: {
-                  $sum: {
-                    $cond: [{ $eq: ["$meal", "LUNCH"] }, "$transactionAmount", 0],
-                  },
-                },
-                dinnerCost: {
-                  $sum: {
-                    $cond: [{ $eq: ["$meal", "DINNER"] }, "$transactionAmount", 0],
-                  },
+          },
+          {
+            $group: {
+              _id: null, // Group by the whole date range
+              breakfastCost: {
+                $sum: {
+                  $cond: [{ $eq: ["$meal", "BREAKFAST"] }, "$transactionAmount", 0],
                 },
               },
+              lunchCost: {
+                $sum: {
+                  $cond: [{ $eq: ["$meal", "LUNCH"] }, "$transactionAmount", 0],
+                },
+              },
+              dinnerCost: {
+                $sum: {
+                  $cond: [{ $eq: ["$meal", "DINNER"] }, "$transactionAmount", 0],
+                },
+              },
             },
-          ]),
-        ]);
+          },
+        ]),
+        Meal.aggregate([
+          {
+            $match: {
+              date: formattedDate,
+              studentId: { $in: studentIds },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              breakfast: { $sum: "$guestMeal.breakfast" },
+              lunch: { $sum: "$guestMeal.lunch" },
+              dinner: { $sum: "$guestMeal.dinner" },
+            },
+          },
+        ]),
+      ]);
+    
+    // Extract guestMealCounts if present, otherwise default to 0
+    const guestBreakfast = guestMealCounts[0]?.breakfast || 0;
+    const guestLunch = guestMealCounts[0]?.lunch || 0;
+    const guestDinner = guestMealCounts[0]?.dinner || 0;
+    
+    // Add guest meal counts to respective meal counts
+    const totalBreakfastCount = breakfastMealCount + guestBreakfast;
+    const totalLunchCount = lunchMealCount + guestLunch;
+    const totalDinnerCount = dinnerMealCount + guestDinner;
 
       // Determine if hall feasts exist for each meal
       const breakfastFeastExists = hallFeasts.some((feast) => feast.meal === "breakfast");
@@ -77,9 +103,9 @@ async function createOrUpdateCostForMonth(year, month, wing) {
       const dinnerFeastExists = hallFeasts.some((feast) => feast.meal === "dinner");
 
       // Calculate student counts based on hall feasts or meal preferences
-      const breakfastCount = breakfastFeastExists ? totalStudents : breakfastMealCount;
-      const lunchCount = lunchFeastExists ? totalStudents : lunchMealCount;
-      const dinnerCount = dinnerFeastExists ? totalStudents : dinnerMealCount;
+      const breakfastCount = breakfastFeastExists ? totalStudents : totalBreakfastCount;
+      const lunchCount = lunchFeastExists ? totalStudents : totalLunchCount;
+      const dinnerCount = dinnerFeastExists ? totalStudents : totalDinnerCount;
 
       // Extract meal costs
       const breakfastCost = mealCosts[0]?.breakfastCost || 0;

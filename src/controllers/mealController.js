@@ -420,6 +420,7 @@ router.get("/students", async (req, res) => {
     // Create a map of meal status by studentId
     const mealMap = meals.reduce((acc, meal) => {
       acc[meal.studentId] = meal.meal;
+      acc[meal.studentId].guestMeal = meal.guestMeal;
       return acc;
     }, {});
 
@@ -434,6 +435,7 @@ router.get("/students", async (req, res) => {
         residence: student.residence,
         roomNo: student.roomNo,
         meal: mealMap[student.studentId] || { breakfast: false, lunch: false, dinner: false }, // Default to false if no meal found
+        guestMeal: mealMap[student.studentId].guestMeal || { breakfast: 0, lunch: 0, dinner: 0 }
       };
     });
 
@@ -508,5 +510,59 @@ router.put('/toggle', validateToken, checkAdminRole, async (req, res) => {
     res.status(500).json({ message: "An error occurred while toggling the meal status" });
   }
 });
+
+// Update guest meal for a student on any meal by both admin and student
+// Student only can update his guest meal, admin can do for any student
+router.put("/guest-meal", validateToken, async (req, res) => {
+  try {
+    let { date, guestMeal, studentId } = req.body;
+
+    // Assign studentId from the token for students
+    if (req.user.role === "student") {
+      studentId = req.user.studentId;
+    }
+
+    // Validate required fields
+    if (!date || !guestMeal || !studentId) {
+      return res.status(400).json({
+        error: "Missing required parameters: date or guestMeal or studentId",
+      });
+    }
+
+    // Validate guestMeal values
+    const { breakfast = 0, lunch = 0, dinner = 0 } = guestMeal;
+    if (breakfast < 0 || lunch < 0 || dinner < 0) {
+      return res.status(400).json({ message: "Guest meal count cannot be negative" });
+    }
+
+    // Find the meal document
+    const mealToUpdate = await Meal.findOne({ date, studentId });
+    if (!mealToUpdate) {
+      return res.status(404).json({
+        message: "Meal not found for this student on the specified date",
+      });
+    }
+
+    // Update guestMeal fields only if they are greater than 0
+    mealToUpdate.guestMeal = {
+      breakfast: breakfast > 0 ? breakfast : mealToUpdate.guestMeal.breakfast,
+      lunch: lunch > 0 ? lunch : mealToUpdate.guestMeal.lunch,
+      dinner: dinner > 0 ? dinner : mealToUpdate.guestMeal.dinner,
+    };
+
+    // Save the updated document
+    await mealToUpdate.save();
+
+    // Respond with success
+    return res.status(200).json({
+      message: `Guest meal for ${date} has been successfully updated for ${studentId}.`,
+      meal: mealToUpdate,
+    });
+  } catch (error) {
+    console.error("Error updating guest meal:", error);
+    return res.status(500).json({ message: "An error occurred while updating guest meal" });
+  }
+});
+
 
 module.exports = router;

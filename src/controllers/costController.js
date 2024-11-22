@@ -329,12 +329,10 @@ router.post("/", validateToken, async (req, res) => {
 router.get("/student", validateToken, async (req, res) => {
   let studentId = req.user.studentId; // Default to the logged-in user's studentId
   const { month, year, studentId: queryStudentId, wing } = req.query; // Destructure query parameters
-  console.log(  month, year, studentId, queryStudentId, wing) ;
   // If the user is an admin and a studentId is provided in the query, use it
   if (req.user.role === "admin" && queryStudentId) {
     studentId = queryStudentId;
   }
-  console.log(studentId);
   try {
     // Validate month and year
     if (!month || !year || isNaN(month) || isNaN(year)) {
@@ -416,7 +414,6 @@ router.get("/student", validateToken, async (req, res) => {
 
     // Fetch bills
     const bills = await Cost.aggregate(billsPipeline).exec();
-    // console.log(bills);
 
     // Fetch meals, filtered by wing
     let combinedMealBill = [];
@@ -433,6 +430,7 @@ router.get("/student", validateToken, async (req, res) => {
             date: 1,
             meal: 1,
             wing: 1,
+            guestMeal: 1
           },
         },
         {
@@ -441,7 +439,6 @@ router.get("/student", validateToken, async (req, res) => {
       ];
 
       const meals = await Meal.aggregate(mealsPipeline).exec();
-      console.log(meals,start, end,"hhi");
       // Index meals by date for faster lookup
       const mealMap = {};
       for (const meal of meals) {
@@ -457,7 +454,8 @@ router.get("/student", validateToken, async (req, res) => {
         .map((bill) => {
           return {
             date: bill.date,
-            wing: bill.wing, // Include wing in the response
+            wing: bill.wing,
+            guestMeal: mealMap[bill.date].guestMeal,
             mealBill: {
               breakfast: {
                 ...bill.mealBill.breakfast,
@@ -581,7 +579,7 @@ router.get("/monthly/all", validateToken, async (req, res) => {
         studentId: { $in: studentIds },
         date: { $gte: startDateString, $lte: endDateString },
       },
-      { studentId: 1, date: 1, meal: 1, _id: 0 }
+      { studentId: 1, date: 1, meal: 1, guestMeal: 1, _id: 0 }
     ).exec();
 
     // Fetch all hall feasts for the specified month and wing
@@ -616,6 +614,7 @@ router.get("/monthly/all", validateToken, async (req, res) => {
             lunch: 0,
             dinner: 0,
           },
+          guestMeal: { breakfast: 0, lunch: 0, dinner: 0 },
         };
       }
     });
@@ -629,7 +628,6 @@ router.get("/monthly/all", validateToken, async (req, res) => {
     meals.forEach(meal => {
       const mealDate = new Date(meal.date).getUTCDate();
       const formattedDate = `${mealDate.toString().padStart(2, "0")}-${month}-${year}`;
-
       if (mealStatusByStudent[meal.studentId]) {
         mealStatusByStudent[meal.studentId][formattedDate] = {
           breakfast: meal.meal.breakfast,
@@ -640,6 +638,11 @@ router.get("/monthly/all", validateToken, async (req, res) => {
             lunch: 0,
             dinner: 0,
           },
+          guestMeal: {
+            breakfast: meal?.guestMeal?.breakfast || 0,
+            lunch: meal?.guestMeal?.lunch || 0,
+            dinner: meal?.guestMeal?.dinner || 0,
+          }
         };
       }
     });
@@ -668,6 +671,20 @@ router.get("/monthly/all", validateToken, async (req, res) => {
 
       studentIds.forEach(studentId => {
         const mealStatus = mealStatusByStudent[studentId][formattedDate];
+        const guestBreakfast = mealStatus.guestMeal.breakfast;
+        const guestLunch = mealStatus.guestMeal.lunch;
+        const guestDinner = mealStatus.guestMeal.dinner;
+
+        if(guestBreakfast > 0){
+          studentMonthlyCosts[studentId] += guestBreakfast * perHeadBreakfastCost;
+        }
+        if(guestLunch > 0){
+          studentMonthlyCosts[studentId] += guestLunch * perHeadLunchCost;
+        }
+        if(guestDinner > 0){
+          studentMonthlyCosts[studentId] += guestDinner * perHeadDinnerCost;
+        }
+
         if (mealStatus) {
           if (mealStatus.breakfast) {
             studentMonthlyCosts[studentId] += perHeadBreakfastCost;
@@ -696,153 +713,6 @@ router.get("/monthly/all", validateToken, async (req, res) => {
     res.status(500).json({ error: "An error occurred while fetching meal status, hall feasts, monthly costs, and student details" });
   }
 });
-
-// router.get("/monthly/student", validateToken, async (req, res) => {
-//   try {
-//     const { month, year, studentId } = req.query;
-
-//     // Validate month, year, and studentId
-//     if (!month || !year || isNaN(month) || isNaN(year)) {
-//       return res.status(400).json({ error: "Invalid month or year" });
-//     }
-    
-//     if (!studentId) {
-//       return res.status(400).json({ error: "Invalid or missing studentId parameter" });
-//     }
-
-//     // Fetch the student to verify if the student exists
-//     const student = await Student.findOne({ studentId }, {
-//       studentId: 1,
-//       name: 1,
-//       hallId: 1,
-//       batch: 1,
-//       department: 1,
-//       roomNo: 1,
-//       gender: 1,
-//       residence: 1,
-//       _id: 0,
-//     }).exec();
-
-//     if (!student) {
-//       return res.status(404).json({ message: "Student not found" });
-//     }
-
-//     // Calculate start and end dates of the month and convert them to string format (YYYY-MM-DD)
-//     const startDateString = `${year}-${month.toString().padStart(2, '0')}-01`;
-//     const endDateString = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate().toString().padStart(2, '0')}`;
-
-//     // Fetch all meals for the student within the specified date range
-//     const meals = await Meal.find(
-//       {
-//         studentId,
-//         date: { $gte: startDateString, $lte: endDateString },
-//       },
-//       { studentId: 1, date: 1, meal: 1, _id: 0 }
-//     ).exec();
-
-//     // Fetch all hall feasts for the specified month and the student's gender
-//     const hallFeasts = await HallFeast.find({
-//       date: { $gte: new Date(startDateString), $lte: new Date(endDateString) },
-//       wing: student.gender.toUpperCase(),
-//     }).exec();
-
-//     // Fetch all costs for the given month and the student's gender
-//     const costs = await Cost.find({
-//       date: { $gte: new Date(startDateString), $lte: new Date(endDateString) },
-//       wing: student.gender.toUpperCase(),
-//     }).exec();
-
-//     // Initialize the meal status object and total cost
-//     const mealStatusByDay = {};
-//     let totalMonthlyCost = 0;
-
-//     // Initialize meal status and total cost for each day of the month
-//     for (let day = 1; day <= new Date(year, month, 0).getDate(); day++) {
-//       const formattedDate = `${day.toString().padStart(2, "0")}-${month}-${year}`;
-//       mealStatusByDay[formattedDate] = {
-//         breakfast: false,
-//         lunch: false,
-//         dinner: false,
-//         perHeadCost: {
-//           breakfast: 0,
-//           lunch: 0,
-//           dinner: 0,
-//         },
-//       };
-//     }
-
-//     // Helper function to calculate per-head cost
-//     const calculatePerHeadCost = (totalCost, totalStudent) => {
-//       return totalStudent > 0 ? totalCost / totalStudent : 0;
-//     };
-
-//     // Populate meal status based on the fetched meals
-//     meals.forEach(meal => {
-//       const mealDate = new Date(meal.date).getUTCDate();
-//       const formattedDate = `${mealDate.toString().padStart(2, "0")}-${month}-${year}`;
-
-//       if (mealStatusByDay[formattedDate]) {
-//         mealStatusByDay[formattedDate] = {
-//           breakfast: meal.meal.breakfast,
-//           lunch: meal.meal.lunch,
-//           dinner: meal.meal.dinner,
-//           perHeadCost: {
-//             breakfast: 0,
-//             lunch: 0,
-//             dinner: 0,
-//           },
-//         };
-//       }
-//     });
-
-//     // Override meal status with hall feast participation (true for the student)
-//     hallFeasts.forEach(feast => {
-//       const feastDate = new Date(feast.date).getUTCDate();
-//       const formattedDate = `${feastDate.toString().padStart(2, "0")}-${month}-${year}`;
-
-//       if (mealStatusByDay[formattedDate]) {
-//         mealStatusByDay[formattedDate][feast.meal] = true;
-//       }
-//     });
-
-//     // Calculate total monthly cost for the student based on per-head cost and participation
-//     costs.forEach(cost => {
-//       const costDate = new Date(cost.date).getUTCDate();
-//       const formattedDate = `${costDate.toString().padStart(2, "0")}-${month}-${year}`;
-
-//       const perHeadBreakfastCost = calculatePerHeadCost(cost.mealBill.breakfast.totalCost, cost.mealBill.breakfast.totalStudent);
-//       const perHeadLunchCost = calculatePerHeadCost(cost.mealBill.lunch.totalCost, cost.mealBill.lunch.totalStudent);
-//       const perHeadDinnerCost = calculatePerHeadCost(cost.mealBill.dinner.totalCost, cost.mealBill.dinner.totalStudent);
-
-//       const mealStatus = mealStatusByDay[formattedDate];
-//       if (mealStatus) {
-//         if (mealStatus.breakfast) {
-//           totalMonthlyCost += perHeadBreakfastCost;
-//           mealStatus.perHeadCost.breakfast = perHeadBreakfastCost;
-//         }
-//         if (mealStatus.lunch) {
-//           totalMonthlyCost += perHeadLunchCost;
-//           mealStatus.perHeadCost.lunch = perHeadLunchCost;
-//         }
-//         if (mealStatus.dinner) {
-//           totalMonthlyCost += perHeadDinnerCost;
-//           mealStatus.perHeadCost.dinner = perHeadDinnerCost;
-//         }
-//       }
-//     });
-
-//     // Return the meal status and total monthly cost for the student
-//     res.status(200).json({
-//       message: `Meal status and monthly cost for student ${studentId} for the month of ${month}-${year}`,
-//       studentDetails: student,
-//       mealStatusByDay,
-//       totalMonthlyCost,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching meal status and monthly cost for student:", error);
-//     res.status(500).json({ error: "An error occurred while fetching meal status and monthly cost for student" });
-//   }
-// });
 
 router.get("/monthly/student", validateToken, async (req, res) => {
   try {
@@ -884,7 +754,7 @@ router.get("/monthly/student", validateToken, async (req, res) => {
         studentId,
         date: { $gte: startDateString, $lte: endDateString },
       },
-      { studentId: 1, date: 1, meal: 1, _id: 0 }
+      { studentId: 1, date: 1, meal: 1, guestMeal: 1, _id: 0 }
     ).exec();
 
     // Fetch all hall feasts for the specified month and the student's gender
@@ -915,6 +785,7 @@ router.get("/monthly/student", validateToken, async (req, res) => {
           lunch: 0,
           dinner: 0,
         },
+        guestMeal: { breakfast: 0, lunch: 0, dinner: 0 },
       };
     }
 
@@ -938,78 +809,62 @@ router.get("/monthly/student", validateToken, async (req, res) => {
             lunch: 0,
             dinner: 0,
           },
+          guestMeal: {
+            breakfast: meal?.guestMeal?.breakfast || 0,
+            lunch: meal?.guestMeal?.lunch || 0,
+            dinner: meal?.guestMeal?.dinner || 0,
+          }
         };
       }
     });
 
-    // Handle hall feasts and override meal status if necessary
-    hallFeasts.forEach((feast) => {
-      const feastDate = new Date(feast.date).getUTCDate();
-      const formattedDate = `${feastDate.toString().padStart(2, "0")}-${month}-${year}`;
-      
-      if (mealStatusByDay[formattedDate]) {
-        const feastMeal = feast.meal; // e.g., breakfast, lunch, or dinner
-        mealStatusByDay[formattedDate][feastMeal] = true;
-
-        // Find the cost for the feast day from the costs array
-        const costForDay = costs.find(
-          (cost) => new Date(cost.date).getUTCDate() === feastDate
-        );
-
-        if (costForDay) {
-          const perHeadCost = calculatePerHeadCost(
-            costForDay.mealBill[feastMeal].totalCost,
-            costForDay.mealBill[feastMeal].totalStudent
-          );
-          
-          // Assign the cost to the respective meal
-          mealStatusByDay[formattedDate].perHeadCost[feastMeal] = perHeadCost;
-          totalMonthlyCost += perHeadCost; // Add the cost to the total monthly cost
-        }
+    // Pre-process hallFeasts into a map for quick lookup by date
+    const hallFeastsMap = hallFeasts.reduce((map, feast) => {
+      const dateStr = feast.date.toISOString().split("T")[0]; // Format date as YYYY-MM-DD
+      if (!map[dateStr]) {
+        map[dateStr] = {};
       }
-    });
+      map[dateStr][feast.meal] = true; // Mark the meal as a feast
+      return map;
+    }, {});
 
-    // Calculate total monthly cost for the student based on per-head cost and participation
-    costs.forEach((cost) => {
-      const costDate = new Date(cost.date).getUTCDate();
-      const formattedDate = `${costDate.toString().padStart(2, "0")}-${month}-${year}`;
+    // Pre-process costs into a map for quick lookup by date
+    const costsMap = costs.reduce((map, cost) => {
+      const dateStr = cost.date.toISOString().split("T")[0]; // Format date as YYYY-MM-DD
+      map[dateStr] = cost.mealBill; // Store mealBill for the date
+      return map;
+    }, {});
 
-      const perHeadBreakfastCost = calculatePerHeadCost(
-        cost.mealBill.breakfast.totalCost,
-        cost.mealBill.breakfast.totalStudent
-      );
-      const perHeadLunchCost = calculatePerHeadCost(
-        cost.mealBill.lunch.totalCost,
-        cost.mealBill.lunch.totalStudent
-      );
-      const perHeadDinnerCost = calculatePerHeadCost(
-        cost.mealBill.dinner.totalCost,
-        cost.mealBill.dinner.totalStudent
-      );
-
+    // Process meals and calculate costs
+    Object.keys(mealStatusByDay).forEach((formattedDate) => {
+      const [day, month, year] = formattedDate.split("-").map(Number);
+      const dateStr = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+      
       const mealStatus = mealStatusByDay[formattedDate];
-      if (mealStatus) {
-        if (
-          mealStatus.breakfast &&
-          !hallFeasts.some((feast) => feast.date.toString() === cost.date.toString())
-        ) {
-          totalMonthlyCost += perHeadBreakfastCost;
-          mealStatus.perHeadCost.breakfast = perHeadBreakfastCost;
-        }
-        if (
-          mealStatus.lunch &&
-          !hallFeasts.some((feast) => feast.date.toString() === cost.date.toString())
-        ) {
-          totalMonthlyCost += perHeadLunchCost;
-          mealStatus.perHeadCost.lunch = perHeadLunchCost;
-        }
-        if (
-          mealStatus.dinner &&
-          !hallFeasts.some((feast) => feast.date.toString() === cost.date.toString())
-        ) {
-          totalMonthlyCost += perHeadDinnerCost;
-          mealStatus.perHeadCost.dinner = perHeadDinnerCost;
-        }
+      const hallFeastForDay = hallFeastsMap[dateStr] || {};
+      const costForDay = costsMap[dateStr];
+
+      if (costForDay) {
+        // Calculate per-head costs
+        const perHeadCosts = {
+          breakfast: calculatePerHeadCost(costForDay.breakfast.totalCost, costForDay.breakfast.totalStudent),
+          lunch: calculatePerHeadCost(costForDay.lunch.totalCost, costForDay.lunch.totalStudent),
+          dinner: calculatePerHeadCost(costForDay.dinner.totalCost, costForDay.dinner.totalStudent),
+        };
+
+        // Calculate meal costs if no feast overrides
+        ["breakfast", "lunch", "dinner"].forEach((mealType) => {
+          const isFeast = hallFeastForDay[mealType];
+          const guestMealCount = mealStatus.guestMeal[mealType];
+
+          if (!isFeast && mealStatus[mealType]) {
+            totalMonthlyCost += perHeadCosts[mealType];
+            mealStatus.perHeadCost[mealType] = perHeadCosts[mealType];
+          }
+
+          // Add guest meal costs
+          totalMonthlyCost += guestMealCount * perHeadCosts[mealType];
+        });
       }
     });
 
