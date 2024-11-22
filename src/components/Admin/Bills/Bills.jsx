@@ -175,26 +175,45 @@ export const Bills = () => {
     const year = format(selectedDate, "yyyy");
 
     const student = selectedStudentDetails.studentDetails;
+    const totalBill = selectedStudentDetails.totalMonthlyCost.toFixed(2);
+
     const data = [
       {
-        "Student ID": student.studentId, // Changed to "Student ID"
+        "Student ID": student.studentId,
         Name: student.name,
         Department: student.department,
-        "Hall ID": student.hallId || "N/A", // Changed to "Hall ID"
-        "Total Monthly Cost (Tk)":
-          selectedStudentDetails.totalMonthlyCost.toFixed(2), // Changed to "Total Monthly Cost (Tk)"
+        "Hall ID": student.hallId || "N/A",
+        "Total Monthly Cost (Tk)": totalBill,
       },
     ];
 
     const mealData = Object.entries(selectedStudentDetails.mealStatusByDay).map(
       ([date, status]) => ({
         Date: date,
-        "Breakfast Status": status.breakfast ? "Yes" : "No", // Changed to "Breakfast Status"
-        "Lunch Status": status.lunch ? "Yes" : "No", // Changed to "Lunch Status"
-        "Dinner Status": status.dinner ? "Yes" : "No", // Changed to "Dinner Status"
-        "Breakfast Cost (Tk)": status.perHeadCost.breakfast.toFixed(2), // Changed to "Breakfast Cost (Tk)"
-        "Lunch Cost (Tk)": status.perHeadCost.lunch.toFixed(2), // Changed to "Lunch Cost (Tk)"
-        "Dinner Cost (Tk)": status.perHeadCost.dinner.toFixed(2), // Changed to "Dinner Cost (Tk)"
+        "Breakfast Status": status.breakfast ? "Yes" : "No",
+        "Lunch Status": status.lunch ? "Yes" : "No",
+        "Dinner Status": status.dinner ? "Yes" : "No",
+        "Breakfast Cost (Tk)":
+          status.guestMeal.breakfast > 0
+            ? `${(
+                (status.guestMeal.breakfast + (status.breakfast ? 1 : 0)) *
+                status.perHeadCost.breakfast
+              ).toFixed(2)}`
+            : status.perHeadCost.breakfast.toFixed(2),
+        "Lunch Cost (Tk)":
+          status.guestMeal.lunch > 0
+            ? `${(
+                (status.guestMeal.lunch + (status.lunch ? 1 : 0)) *
+                status.perHeadCost.lunch
+              ).toFixed(2)}`
+            : status.perHeadCost.lunch.toFixed(2),
+        "Dinner Cost (Tk)":
+          status.guestMeal.dinner > 0
+            ? `${(
+                (status.guestMeal.dinner + (status.dinner ? 1 : 0)) *
+                status.perHeadCost.dinner
+              ).toFixed(2)}`
+            : status.perHeadCost.dinner.toFixed(2),
       })
     );
 
@@ -205,11 +224,11 @@ export const Bills = () => {
     XLSX.utils.sheet_add_aoa(
       worksheet,
       [
-        [`Student Monthly Bill (${month}-${year}) of Wing ${wing}`], // Main heading
+        [`Student Monthly Bill (${month}-${year}) of Wing ${wing}`],
         [], // Empty row for spacing
-        [`Name: ${student.name}`], // Student Name
-        [`Student ID: ${student.studentId}`], // Student ID
-        [`Hall ID: ${student.hallId || "N/A"}`], // Hall ID
+        [`Name: ${student.name}`],
+        [`Student ID: ${student.studentId}`],
+        [`Hall ID: ${student.hallId || "N/A"}`],
         [], // Empty row for spacing before meal data
       ],
       { origin: "A1" }
@@ -222,6 +241,20 @@ export const Bills = () => {
 
     // Add meal data starting from row 7 (after student details)
     XLSX.utils.sheet_add_json(worksheet, mealData, { origin: "A7" });
+
+    // Add total bill after the meal data
+    const lastRowIndex = mealData.length + 7; // Meal data starts at row 7
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [[`Total Monthly Bill: ${totalBill} Tk`]],
+      { origin: `A${lastRowIndex + 1}` } // Add the total bill below the meal data
+    );
+
+    // Merge cells for the total bill row
+    worksheet["!merges"].push({
+      s: { r: lastRowIndex, c: 0 },
+      e: { r: lastRowIndex, c: 5 },
+    });
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, `${student.name}_Bill`);
@@ -380,9 +413,36 @@ export const Bills = () => {
                           <XMarkIcon className="h-5 w-5 text-red-500" />
                         )}
                       </td>
-                      <td>{status.perHeadCost.breakfast.toFixed(2)} Tk</td>
-                      <td>{status.perHeadCost.lunch.toFixed(2)} Tk</td>
-                      <td>{status.perHeadCost.dinner.toFixed(2)} Tk</td>
+                      <td>
+                        {status.guestMeal.breakfast > 0
+                          ? `${
+                              (status.guestMeal.breakfast +
+                                (status.breakfast ? 1 : 0)) *
+                              status.perHeadCost.breakfast.toFixed(2)
+                            }`
+                          : status.perHeadCost.breakfast.toFixed(2)}{" "}
+                        Tk
+                      </td>
+                      <td>
+                        {status.guestMeal.lunch > 0
+                          ? `${
+                              (status.guestMeal.lunch +
+                                (status.lunch ? 1 : 0)) *
+                              status.perHeadCost.lunch.toFixed(2)
+                            }`
+                          : status.perHeadCost.lunch.toFixed(2)}{" "}
+                        Tk
+                      </td>
+                      <td>
+                        {status.guestMeal.dinner > 0
+                          ? `${
+                              (status.guestMeal.dinner +
+                                (status.dinner ? 1 : 0)) *
+                              status.perHeadCost.dinner.toFixed(2)
+                            }`
+                          : status.perHeadCost.dinner.toFixed(2)}{" "}
+                        Tk
+                      </td>
                     </tr>
                   )
                 )}
