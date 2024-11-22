@@ -1,6 +1,7 @@
 import React from "react";
 import { MealRow } from "./MealRow";
 import { MealLocks } from "./MealLocks";
+import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 export const MealTable = ({
   students,
@@ -60,6 +61,17 @@ export const MealTable = ({
                   dinnerFeast={dinnerFeast}
                   handleMealLock={handleMealLock}
                 />
+              </th>
+              <th>
+                <div className="flex flex-col items-center">
+                  <div className="uppercase text-center">Guest Meal</div>
+                  <div className="grid grid-cols-4 gap-1 w-full place-items-center">
+                    <span className="text-center">Breakfast</span>
+                    <span className="text-center">Lunch</span>
+                    <span className="text-center">Dinner</span>
+                    <span className="text-center">Submit</span>
+                  </div>
+                </div>
               </th>
             </tr>
           </thead>
