@@ -53,7 +53,6 @@ export default function BillCount() {
       ) {
         days.push(new Date(day).toISOString().split("T")[0]);
       }
-      console.log(days);
       return days;
     },
     []
@@ -70,7 +69,6 @@ export default function BillCount() {
         <h2 className="text-lg self-center xs:text-3xl font-semibold">
           Mess Bill
         </h2>
-        {console.log(mealBillData)}
         <div className="">
           <DatePicker
             selected={selectedDate}
@@ -86,11 +84,14 @@ export default function BillCount() {
       </div>
       <div className="divider"></div>
       <div className="md:mt-4 overflow-y-scroll min-w-full">
-        <div className="overflow-x-hidden w-full">
+        <div className="overflow-x-auto w-full">
           <table className=" divide-gray-200 shadow-md w-full">
             <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
               <tr className="text-xs font-thin text-gray-500">
                 <th className="text-left">Date</th>
+                <th>Guest Breakfast</th>
+                <th>Guest Lunch</th>
+                <th>Guest Dinner</th>
                 <th>Breakfast</th>
                 <th>Lunch</th>
                 <th>Dinner</th>
@@ -106,6 +107,7 @@ export default function BillCount() {
 
                 // Get bill data for the current day
                 const billData = mealBillData.find((item) => item.date === day);
+                const guestMeal = billData?.guestMeal;
 
                 // Check if there is a hall feast for breakfast, lunch, or dinner
                 const breakfastOn =
@@ -128,9 +130,26 @@ export default function BillCount() {
                 const dinnerCost = dinnerOn
                   ? billData?.mealBill.dinner.perHeadCost || 0
                   : 0;
-
+                let guestBreakfast = 0;
+                let guestLunch = 0;
+                let guestDinner = 0;
+                if (guestMeal) {
+                  guestBreakfast +=
+                    (guestMeal.breakfast ? guestMeal.breakfast : 0) *
+                    breakfastCost;
+                  guestLunch +=
+                    (guestMeal.lunch ? guestMeal.lunch : 0) * lunchCost;
+                  guestDinner +=
+                    (guestMeal.dinner ? guestMeal.dinner : 0) * dinnerCost;
+                }
                 // Total cost for the day
-                const dailyTotal = breakfastCost + lunchCost + dinnerCost;
+                const dailyTotal =
+                  breakfastCost +
+                  lunchCost +
+                  dinnerCost +
+                  guestBreakfast +
+                  guestLunch +
+                  guestDinner;
                 totalBill += dailyTotal;
 
                 return (
@@ -142,12 +161,45 @@ export default function BillCount() {
                       <>
                         <td
                           className={`${
+                            guestMeal?.breakfast > 0
+                              ? "text-green-600 font-bold "
+                              : "text-red-600 font-bold "
+                          }`}
+                        >
+                          {guestMeal?.breakfast ? guestMeal.breakfast : 0.0}
+                        </td>
+                        <td
+                          className={`${
+                            guestMeal?.lunch > 0
+                              ? "text-green-600 font-bold "
+                              : "text-red-600 font-bold "
+                          }`}
+                        >
+                          {guestMeal?.lunch ? guestMeal.lunch : 0}
+                        </td>
+                        <td
+                          className={`${
+                            guestMeal?.dinner > 0
+                              ? "text-green-600 font-bold "
+                              : "text-red-600 font-bold "
+                          }`}
+                        >
+                          {guestMeal?.dinner ? guestMeal.dinner : 0}
+                        </td>
+                        <td
+                          className={`${
                             breakfastOn
                               ? "text-green-600 font-bold "
                               : "text-red-600 font-bold "
                           }`}
                         >
-                          {billData.mealBill.breakfast.perHeadCost.toFixed(2)} ৳
+                          {(
+                            billData.mealBill.breakfast.perHeadCost.toFixed(2) *
+                            (guestMeal?.breakfast
+                              ? guestMeal?.breakfast
+                              : 0 + (breakfastOn ? 1 : 0))
+                          ).toFixed(2)}{" "}
+                          ৳
                         </td>
                         <td
                           className={`${
@@ -156,7 +208,13 @@ export default function BillCount() {
                               : "text-red-600 font-bold "
                           }`}
                         >
-                          {billData.mealBill.lunch.perHeadCost.toFixed(2)} ৳
+                          {(
+                            billData.mealBill.lunch.perHeadCost.toFixed(2) *
+                            (guestMeal?.lunch
+                              ? guestMeal?.lunch
+                              : 0 + (lunchOn ? 1 : 0))
+                          ).toFixed(2)}{" "}
+                          ৳
                         </td>
                         <td
                           className={`${
@@ -165,12 +223,21 @@ export default function BillCount() {
                               : "text-red-600 font-bold "
                           }`}
                         >
-                          {billData.mealBill.dinner.perHeadCost.toFixed(2)} ৳
+                          {(
+                            billData.mealBill.dinner.perHeadCost.toFixed(2) *
+                            (guestMeal?.dinner
+                              ? guestMeal?.dinner
+                              : 0 + (dinnerOn ? 1 : 0))
+                          ).toFixed(2)}{" "}
+                          ৳
                         </td>
                         <td className="">{dailyTotal.toFixed(2)} ৳</td>
                       </>
                     ) : (
                       <>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
                         <td className="">0.00 ৳</td>
                         <td className="">0.00 ৳</td>
                         <td className="">0.00 ৳</td>
@@ -183,6 +250,9 @@ export default function BillCount() {
               {/* Grand Total Row */}
               <tr className="">
                 <td className="font-bold pt-2 text-left">Grand Total</td>
+                <td></td>
+                <td></td>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
