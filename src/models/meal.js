@@ -24,6 +24,20 @@ const mealSchema = new mongoose.Schema(
         default: false,
       },
     },
+    guestMeal: {
+      breakfast: {
+        type: Number,
+        default: 0,
+      },
+      lunch: {
+        type: Number,
+        default: 0,
+      },
+      dinner: {
+        type: Number,
+        default: 0,
+      }
+    },
   },
   {
     timestamps: true,
