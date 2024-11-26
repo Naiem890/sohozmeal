@@ -35,10 +35,9 @@ schedule.scheduleJob({ hour: 21, minute: 55, tz: "Asia/Dhaka" }, async () => {
     const newMeals = studentIds.map((studentId) => {
       if (previousDayMealsMap[studentId]) {
         // If a meal already exists for the student on the previous day, create a new meal based on it
-        const previousMeal = previousDayMealsMap[studentId];
+        const { guestMeal, _id, ...previousMealWithoutGuest } = previousDayMealsMap[studentId].toObject();
         return {
-          ...previousMeal.toObject(),
-          _id: undefined,
+          ...previousMealWithoutGuest,
           date: nextDay,
         };
       } else {
@@ -54,6 +53,7 @@ schedule.scheduleJob({ hour: 21, minute: 55, tz: "Asia/Dhaka" }, async () => {
         };
       }
     });
+    
     // Insert the new meals into the database
     await Meal.insertMany(newMeals);
     if (newMeals.length > 0) {
