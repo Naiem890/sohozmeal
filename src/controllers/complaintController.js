@@ -1,89 +1,191 @@
 const express = require('express');
 const Complaint = require('../models/complaint');
-const Staff = require('../models/staff');
+const { validateToken } = require('../utils/validateToken');
+const { checkAdminRole } = require('../utils/checkAdminRole');
 const router = express.Router();
 
-// Create a new complaint (POST)
-router.post('/complaints', async (req, res) => {
+
+/*
+
+        Student
+
+*/
+
+
+// POST /api/complaints
+router.post("/", validateToken, async (req, res) => {
   try {
-    const { studentId, complaintType, description, images } = req.body;
-    const newComplaint = new Complaint({
-      studentId,
-      complaintType,
-      description,
-      images,
-    });
-    const savedComplaint = await newComplaint.save();
-    res.status(201).json(savedComplaint);
+      const { title, currentRoomNo, complaintType, description, residence, images } = req.body;
+
+      const newComplaint = await Complaint.create({
+          title,
+          complainedBy: req.user.id,
+          currentRoomNo,
+          complaintType,
+          description,
+          residence,
+          images,
+      });
+
+      res.status(201).json(newComplaint);
   } catch (error) {
-    res.status(400).json({ error: 'Error creating complaint', details: error.message });
+      res.status(400).json({ error: error.message });
   }
 });
 
-// Get all complaints (GET)
-router.get('/complaints', async (req, res) => {
+// GET /api/complaints
+router.get("/", validateToken, async (req, res) => {
   try {
-    const complaints = await Complaint.find().populate('studentId').populate('assignedTo');
-    res.status(200).json(complaints);
+      const complaints = await Complaint.find({ complainedBy: req.user.id }).sort({ createdAt: -1 });
+      res.status(200).json(complaints);
   } catch (error) {
-    res.status(500).json({ error: 'Error fetching complaints', details: error.message });
+      res.status(400).json({ error: error.message });
   }
 });
 
-// Get a specific complaint by ID (GET)
-router.get('/complaints/:id', async (req, res) => {
+// GET /api/complaints/:id
+router.get("/:id", validateToken, async (req, res) => {
   try {
-    const complaint = await Complaint.findById(req.params.id).populate('studentId').populate('assignedTo');
-    if (!complaint) return res.status(404).json({ error: 'Complaint not found' });
-    res.status(200).json(complaint);
+      const complaint = await Complaint.findOne({ _id: req.params.id, complainedBy: req.user.id });
+
+      if (!complaint) return res.status(404).json({ error: "Complaint not found" });
+
+      res.status(200).json(complaint);
   } catch (error) {
-    res.status(500).json({ error: 'Error fetching complaint', details: error.message });
+      res.status(400).json({ error: error.message });
   }
 });
 
-// Update complaint status (PUT)
-router.put('/complaints/:id/status', async (req, res) => {
+// PATCH /api/complaints/:id
+router.patch("/:id", validateToken, async (req, res) => {
   try {
-    const { status } = req.body;
-    const updatedComplaint = await Complaint.findByIdAndUpdate(
-      req.params.id,
-      { status, completedAt: status === 'COMPLETED' ? Date.now() : null },
-      { new: true }
-    );
-    if (!updatedComplaint) return res.status(404).json({ error: 'Complaint not found' });
-    res.status(200).json(updatedComplaint);
+      const { title, currentRoomNo, complaintType, description, residence, images } = req.body;
+
+      const complaint = await Complaint.findOneAndUpdate(
+          { _id: req.params.id, complainedBy: req.user.id, status: "PENDING" },
+          { title, currentRoomNo, complaintType, description, residence, images },
+          { new: true, runValidators: true }
+      );
+
+      if (!complaint) return res.status(404).json({ error: "Complaint not found or cannot be edited" });
+
+      res.status(200).json(complaint);
   } catch (error) {
-    res.status(400).json({ error: 'Error updating complaint', details: error.message });
+      res.status(400).json({ error: error.message });
   }
 });
 
-// Assign a staff member to a complaint (PUT)
-router.put('/complaints/:id/assign', async (req, res) => {
+// DELETE /api/complaints/:id
+router.delete("/:id", validateToken, async (req, res) => {
   try {
-    const { staffId } = req.body;
-    const staffMember = await Staff.findById(staffId);
-    if (!staffMember) return res.status(404).json({ error: 'Staff member not found' });
+      const complaint = await Complaint.findOneAndDelete({
+          _id: req.params.id,
+          complainedBy: req.user.id,
+          status: "PENDING",
+      });
 
-    const updatedComplaint = await Complaint.findByIdAndUpdate(
-      req.params.id,
-      { assignedTo: staffId },
-      { new: true }
-    );
-    if (!updatedComplaint) return res.status(404).json({ error: 'Complaint not found' });
-    res.status(200).json(updatedComplaint);
+      if (!complaint) return res.status(404).json({ error: "Complaint not found or cannot be deleted" });
+
+      res.status(200).json({ message: "Complaint deleted successfully" });
   } catch (error) {
-    res.status(400).json({ error: 'Error assigning complaint', details: error.message });
+      res.status(400).json({ error: error.message });
   }
 });
 
-// Delete a complaint (DELETE)
-router.delete('/complaints/:id', async (req, res) => {
+// PATCH /api/complaints/:id/confirm
+router.patch("/:id/confirm", validateToken, async (req, res) => {
   try {
-    const deletedComplaint = await Complaint.findByIdAndDelete(req.params.id);
-    if (!deletedComplaint) return res.status(404).json({ error: 'Complaint not found' });
-    res.status(200).json({ message: 'Complaint deleted successfully' });
+      const complaint = await Complaint.findOneAndUpdate(
+          { _id: req.params.id, complainedBy: req.user.id, status: "COMPLETED" },
+          { studentConfirmed: true },
+          { new: true }
+      );
+
+      if (!complaint) return res.status(404).json({ error: "Complaint not found or cannot be confirmed" });
+
+      res.status(200).json(complaint);
   } catch (error) {
-    res.status(500).json({ error: 'Error deleting complaint', details: error.message });
+      res.status(400).json({ error: error.message });
+  }
+});
+
+
+/*
+
+        Admin
+
+*/
+
+
+// GET /api/admin/complaints
+router.get("/", validateToken, checkAdminRole, async (req, res) => {
+  try {
+      const complaints = await Complaint.find().sort({ createdAt: -1 }).populate("complainedBy", "name email");
+      res.status(200).json(complaints);
+  } catch (error) {
+      res.status(400).json({ error: error.message });
+  }
+});
+
+// GET /api/admin/complaints/:id
+router.get("/:id", validateToken, checkAdminRole, async (req, res) => {
+  try {
+      const complaint = await Complaint.findById(req.params.id).populate("complainedBy", "name email");
+
+      if (!complaint) return res.status(404).json({ error: "Complaint not found" });
+
+      res.status(200).json(complaint);
+  } catch (error) {
+      res.status(400).json({ error: error.message });
+  }
+});
+
+// PATCH /api/admin/complaints/:id
+router.patch("/:id", validateToken, checkAdminRole, async (req, res) => {
+  try {
+      const { adminMessage, status, adminConfirmed } = req.body;
+
+      const complaint = await Complaint.findByIdAndUpdate(
+          req.params.id,
+          { adminMessage, status, adminConfirmed },
+          { new: true, runValidators: true }
+      );
+
+      if (!complaint) return res.status(404).json({ error: "Complaint not found" });
+
+      res.status(200).json(complaint);
+  } catch (error) {
+      res.status(400).json({ error: error.message });
+  }
+});
+
+// PATCH /api/admin/complaints/:id/complete
+router.patch("/:id/complete", validateToken, checkAdminRole, async (req, res) => {
+  try {
+      const complaint = await Complaint.findByIdAndUpdate(
+          req.params.id,
+          { status: "COMPLETED", completedAt: new Date() },
+          { new: true }
+      );
+
+      if (!complaint) return res.status(404).json({ error: "Complaint not found or cannot be completed" });
+
+      res.status(200).json(complaint);
+  } catch (error) {
+      res.status(400).json({ error: error.message });
+  }
+});
+
+// DELETE /api/admin/complaints/:id
+router.delete("/:id", validateToken, checkAdminRole, async (req, res) => {
+  try {
+      const complaint = await Complaint.findByIdAndDelete(req.params.id);
+
+      if (!complaint) return res.status(404).json({ error: "Complaint not found" });
+
+      res.status(200).json({ message: "Complaint deleted successfully" });
+  } catch (error) {
+      res.status(400).json({ error: error.message });
   }
 });
 

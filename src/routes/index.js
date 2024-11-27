@@ -4,6 +4,7 @@ const studentController = require("../controllers/studentController");
 const mealController = require("../controllers/mealController");
 const stockController = require("../controllers/stockController");
 const costController = require("../controllers/costController");
+const complaintController = require("../controllers/complaintController");
 const hallFeastController = require("../controllers/hallFeastController");
 
 router.use("/auth", authController);
@@ -12,6 +13,7 @@ router.use("/meal", mealController);
 router.use("/stock", stockController);
 router.use("/cost", costController);
 router.use("/feast", hallFeastController);
+router.use("/complaint", complaintController);
 
 // write a test route to check the sms functionality
 // router.post("/test-sms", async (req, res) => {
