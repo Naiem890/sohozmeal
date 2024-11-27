@@ -9,7 +9,7 @@ export default function RequiredAdminAuth({ children }) {
   const isAdmin = auth()?.role === "admin";
   const isAdminAuthenticated = auth()?.isAuthenticated && isAdmin;
   if (!isAdminAuthenticated) {
-    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+    return <Navigate to="/admin" state={{ from: location }} replace />;
   }
   return children;
 }
