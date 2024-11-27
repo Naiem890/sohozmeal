@@ -1,0 +1,217 @@
+import React, { useState } from "react";
+
+const AddComplaint = () => {
+  const [formData, setFormData] = useState({
+    title: "",
+    currentRoomNo: "",
+    complaintType: "",
+    description: "",
+    residence: "",
+    images: [],
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const totalImages = formData.images.length + files.length;
+
+    if (totalImages > 4) {
+      alert("You can upload a maximum of 4 images.");
+      return;
+    }
+
+    const imagePreviews = files.map((file) => {
+      const reader = new FileReader();
+      return new Promise((resolve) => {
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(imagePreviews).then((previews) => {
+      setFormData((prevData) => ({
+        ...prevData,
+        images: [...prevData.images, ...previews],
+      }));
+    });
+  };
+
+  const handleImageRemove = (index) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      images: prevData.images.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // Mock API call
+    console.log("Submitted Complaint Data:", formData);
+
+    // Clear the form after submission
+    setFormData({
+      title: "",
+      currentRoomNo: "",
+      complaintType: "",
+      description: "",
+      residence: "",
+      images: [],
+    });
+  };
+
+  return (
+    <div className="container mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">Add New Complaint</h1>
+      <form onSubmit={handleSubmit} className="grid gap-4">
+        {/* Title */}
+        <div>
+          <label className="block mb-1 font-semibold" htmlFor="title">
+            Title
+          </label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            placeholder="Enter the complaint title"
+            className="input input-bordered w-full"
+            required
+          />
+        </div>
+
+        {/* Room Number */}
+        <div>
+          <label className="block mb-1 font-semibold" htmlFor="currentRoomNo">
+            Room Number
+          </label>
+          <input
+            type="text"
+            id="currentRoomNo"
+            name="currentRoomNo"
+            value={formData.currentRoomNo}
+            onChange={handleChange}
+            placeholder="Enter your room number"
+            className="input input-bordered w-full"
+            required
+          />
+        </div>
+
+        {/* Complaint Type */}
+        <div>
+          <label className="block mb-1 font-semibold" htmlFor="complaintType">
+            Complaint Type
+          </label>
+          <select
+            id="complaintType"
+            name="complaintType"
+            value={formData.complaintType}
+            onChange={handleChange}
+            className="select select-bordered w-full"
+            required
+          >
+            <option value="" disabled>
+              Select type
+            </option>
+            <option value="MESS">Mess</option>
+            <option value="WIFI">WiFi</option>
+            <option value="CLEANING">Cleaning</option>
+            <option value="REPAIR">Repair</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+
+        {/* Residence */}
+        <div>
+          <label className="block mb-1 font-semibold" htmlFor="residence">
+            Residence
+          </label>
+          <select
+            id="residence"
+            name="residence"
+            value={formData.residence}
+            onChange={handleChange}
+            className="select select-bordered w-full"
+            required
+          >
+            <option value="" disabled>
+              Select residence
+            </option>
+            <option value="OSMANY_HALL">Osmany Hall</option>
+            <option value="EXT_D">EXT D</option>
+            <option value="FEMALE_WING">Female Wing</option>
+          </select>
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="block mb-1 font-semibold" htmlFor="description">
+            Description
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Describe the issue"
+            className="textarea textarea-bordered w-full"
+            rows="4"
+            required
+          ></textarea>
+        </div>
+
+        {/* Images */}
+        <div>
+          <label className="block mb-1 font-semibold" htmlFor="images">
+            Upload Images (Max 4)
+          </label>
+          <input
+            type="file"
+            id="images"
+            name="images"
+            accept="image/*"
+            multiple
+            onChange={handleImageUpload}
+            className="file-input file-input-bordered w-full"
+          />
+          {/* Preview Images */}
+          <div className="grid grid-cols-4 gap-2 mt-4">
+            {formData.images.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image}
+                  alt={`Preview ${index + 1}`}
+                  className="w-20 h-20 object-cover rounded-lg border"
+                />
+                <button
+                  type="button"
+                  className="absolute top-1 right-1 btn btn-xs btn-error"
+                  onClick={() => handleImageRemove(index)}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <div>
+          <button type="submit" className="btn btn-primary w-full">
+            Submit Complaint
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default AddComplaint;
