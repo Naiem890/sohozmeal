@@ -3,6 +3,7 @@ import React from "react";
 const ComplaintDetails = ({ complaint }) => {
   // Example complaint data for testing
   complaint = complaint || {
+    id: "1",
     title: "Broken Chair in Room",
     complainedBy: { name: "John Doe", id: "ST12345" },
     currentRoomNo: "B205",
@@ -10,7 +11,7 @@ const ComplaintDetails = ({ complaint }) => {
     description: "The chair in my room is broken and needs to be replaced.",
     status: "PENDING",
     adminConfirmed: false,
-    adminMessage: "We will review this shortly.",
+    // adminMessage: "We will review this shortly.",
     studentConfirmed: false,
     residence: "OSMANY_HALL",
     images: [
