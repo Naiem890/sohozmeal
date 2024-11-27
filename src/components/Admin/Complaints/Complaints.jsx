@@ -87,129 +87,105 @@ const Complaints = () => {
   const filteredComplaints = getFilteredComplaints();
 
   return (
-    <div className="container pt-2 mx-auto font-sans">
-      <h2 className="text-2xl font-semibold">Complaints</h2>
+    <div className="container px-4 py-8 mx-auto font-sans max-w-7xl">
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Complaints Management</h2>
 
       {/* Filter Buttons */}
-      <div className="flex justify-center gap-2 sm:gap-4 mb-4">
-        <button
-          onClick={() => setFilter("all")}
-          className={`px-3 py-1 text-sm sm:text-base rounded-full font-medium transition-all duration-200 ${
-            filter === "all"
-              ? "bg-emerald-500 text-white shadow-md hover:bg-emerald-600"
-              : "border border-emerald-500 text-emerald-500 hover:bg-emerald-100"
-          }`}
-        >
-          All
-        </button>
-        <button
-          onClick={() => setFilter("incomplete")}
-          className={`px-3 py-1 text-sm sm:text-base rounded-full font-medium transition-all duration-200 ${
-            filter === "incomplete"
-              ? "bg-emerald-500 text-white shadow-md hover:bg-emerald-600"
-              : "border border-emerald-500 text-emerald-500 hover:bg-emerald-100"
-          }`}
-        >
-          Incomplete
-        </button>
-        <button
-          onClick={() => setFilter("completed")}
-          className={`px-3 py-1 text-sm sm:text-base rounded-full font-medium transition-all duration-200 ${
-            filter === "completed"
-              ? "bg-emerald-500 text-white shadow-md hover:bg-emerald-600"
-              : "border border-emerald-500 text-emerald-500 hover:bg-emerald-100"
-          }`}
-        >
-          Completed
-        </button>
-        <button
-          onClick={() => setFilter("awaitingStudentConfirmation")}
-          className={`px-3 py-1 text-sm sm:text-base rounded-full font-medium transition-all duration-200 ${
-            filter === "awaitingStudentConfirmation"
-              ? "bg-emerald-500 text-white shadow-md hover:bg-emerald-600"
-              : "border border-emerald-500 text-emerald-500 hover:bg-emerald-100"
-          }`}
-        >
-          Pending Student Confirmation
-        </button>
+      <div className="flex flex-wrap justify-start gap-3 mb-8">
+        {[
+          { key: "all", label: "All Complaints" },
+          { key: "incomplete", label: "Incomplete" },
+          { key: "completed", label: "Completed" },
+          { key: "awaitingStudentConfirmation", label: "Awaiting Confirmation" },
+        ].map((filterOption) => (
+          <button
+            key={filterOption.key}
+            onClick={() => setFilter(filterOption.key)}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+              filter === filterOption.key
+                ? "bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 transform hover:-translate-y-0.5"
+                : "bg-white border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+            }`}
+          >
+            {filterOption.label}
+          </button>
+        ))}
       </div>
 
       {/* Complaints Table */}
-      <div className="overflow-x-auto">
-        <table className="table w-full border rounded-lg shadow-md font-sans">
-          <thead className="bg-emerald-500 text-white font-display">
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+        <table className="w-full">
+          <thead className="bg-emerald-500 text-white">
             <tr>
-              <th className="text-center w-[100px] px-2 py-1">Room No</th>
-              <th className="text-center w-[150px] px-2 py-1">
-                Complaint Type
-              </th>
-              <th className="text-center w-[250px] px-2 py-1">Title</th>
-              <th className="text-center w-[200px] px-2 py-1">Name</th>
-              <th className="text-center w-[150px] px-2 py-1">Status</th>
-              <th className="text-center w-[150px] px-2 py-1">Actions</th>
+              <th className="px-6 py-4 text-left font-semibold">Room No</th>
+              <th className="px-6 py-4 text-left font-semibold">Type</th>
+              <th className="px-6 py-4 text-left font-semibold">Title</th>
+              <th className="px-6 py-4 text-left font-semibold">Name</th>
+              <th className="px-6 py-4 text-left font-semibold">Status</th>
+              <th className="px-6 py-4 text-center font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody className="font-sans">
+          <tbody className="divide-y divide-gray-200">
             {filteredComplaints.length > 0 ? (
               filteredComplaints.map((complaint, index) => (
-                <tr key={complaint._id} className="hover">
-                  <td className="text-center px-2 py-1">
-                    {complaint.currentRoomNo}
+                <tr 
+                  key={complaint._id} 
+                  className="hover:bg-gray-50 transition-colors duration-200"
+                >
+                  <td className="px-6 py-4">{complaint.currentRoomNo}</td>
+                  <td className="px-6 py-4">
+                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100">
+                      {complaint.complaintType}
+                    </span>
                   </td>
-                  <td className="text-center px-2 py-1">
-                    {complaint.complaintType}
+                  <td className="px-6 py-4">{truncateText(complaint.title, 30)}</td>
+                  <td className="px-6 py-4">{complaint.studentName || `User ${index + 1}`}</td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-4 py-1 rounded-full text-sm font-medium ${
+                      complaint.staffConfirmed && complaint.studentConfirmed
+                        ? "bg-emerald-100 text-emerald-800"
+                        : complaint.staffConfirmed
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-red-100 text-red-800"
+                    }`}>
+                      {complaint.staffConfirmed && complaint.studentConfirmed
+                        ? "Completed"
+                        : "Pending"}
+                    </span>
                   </td>
-                  <td className="text-center px-2 py-1">
-                    {complaint.title || `Issue with ${complaint.complaintType}`}
-                  </td>
-                  <td className="text-center px-2 py-1">
-                    {complaint.studentName || `Dummy User ${index + 1}`}
-                  </td>
-                  <td className="text-center px-2 py-1">
-                    {complaint.staffConfirmed && complaint.studentConfirmed ? (
-                      <span className="badge h-full rounded-full bg-emerald-500 text-white px-4 py-1 text-sm shadow-md">
-                        Completed
-                      </span>
-                    ) : complaint.staffConfirmed ? (
-                      <span className="badge h-full rounded-full bg-yellow-500 text-white px-4 py-1 text-sm shadow-md">
-                        Pending
-                      </span>
-                    ) : (
-                      <span className="badge h-full rounded-full bg-red-500 text-white px-4 py-1 text-sm shadow-md">
-                        Pending
-                      </span>
-                    )}
-                  </td>
-                  <td className="flex items-center justify-center gap-2 py-2 h-full">
-                    {!complaint.staffConfirmed && (
-                      <button
-                        onClick={() => handleStaffConfirm(complaint._id)}
-                        className="bg-green-500 hover:bg-green-600 text-white shadow-md p-1 rounded-full transition-all duration-200"
-                      >
-                        <CheckIcon className="h-5 w-5" />
-                      </button>
-                    )}
-                    {complaint.studentConfirmed && (
-                      <span className="flex items-center justify-center">
-                        <CheckIcon className="h-5 w-5 text-blue-500" />
-                      </span>
-                    )}
-                    {complaint.staffConfirmed && complaint.studentConfirmed && (
-                      <span className="text-emerald-500 font-bold">
-                        Completed
-                      </span>
-                    )}
-                    {!complaint.staffConfirmed &&
-                      !complaint.studentConfirmed && (
-                        <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-3">
+                      {!complaint.staffConfirmed && (
+                        <button
+                          onClick={() => handleStaffConfirm(complaint._id)}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md"
+                          title="Confirm"
+                        >
+                          <CheckIcon className="h-5 w-5" />
+                        </button>
                       )}
+                      {complaint.studentConfirmed && (
+                        <span className="flex items-center justify-center">
+                          <CheckIcon className="h-5 w-5 text-blue-500" />
+                        </span>
+                      )}
+                      {complaint.staffConfirmed && complaint.studentConfirmed && (
+                        <span className="text-emerald-500 font-bold">
+                          Completed
+                        </span>
+                      )}
+                      {!complaint.staffConfirmed &&
+                        !complaint.studentConfirmed && (
+                          <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
+                        )}
+                    </div>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="text-center py-4 text-gray-500">
-                  No complaints found.
+                <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  No complaints found for the selected filter.
                 </td>
               </tr>
             )}

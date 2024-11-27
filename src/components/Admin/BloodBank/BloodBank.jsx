@@ -10,14 +10,14 @@ const bloodGroupStats = [
 ];
 
 const gradients = [
-  "from-blue-900 via-purple-800 to-pink-700", 
-  "from-indigo-900 via-blue-700 to-teal-600",
-  "from-purple-900 via-violet-800 to-blue-600",
-  "from-teal-800 via-green-700 to-emerald-600",
-  "from-blue-800 via-indigo-700 to-fuchsia-700",
-  "from-gray-900 via-blue-800 to-purple-700",
-  "from-cyan-900 via-teal-800 to-blue-700",
-  "from-fuchsia-900 via-purple-800 to-indigo-700",
+  "from-blue-500 to-blue-600",
+  "from-emerald-500 to-emerald-600",
+  "from-violet-500 to-violet-600",
+  "from-rose-500 to-rose-600",
+  "from-cyan-500 to-cyan-600",
+  "from-amber-500 to-amber-600",
+  "from-indigo-500 to-indigo-600",
+  "from-teal-500 to-teal-600",
 ];
 
 const BloodBank = () => {
