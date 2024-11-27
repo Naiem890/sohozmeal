@@ -9,6 +9,8 @@ import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
   DocumentTextIcon,
+  ExclamationCircleIcon,
+  HeartIcon,
 } from "@heroicons/react/24/outline";
 import { useAuthUser, useSignOut } from "react-auth-kit";
 import { toast } from "react-hot-toast";
@@ -89,6 +91,16 @@ export default function AdminAside({
       path: "/admin/dashboard/bills",
       icon: <DocumentTextIcon className="h-6 w-6" />,
     },
+    {
+      link: "Complaints",
+      path: "/admin/dashboard/complaints",
+      icon: <ExclamationCircleIcon className="h-6 w-6" />,
+    },
+    {
+      link: "Blood Bank",
+      path: "/admin/dashboard/blood-bank",
+      icon: <HeartIcon className="h-6 w-6" />,
+    },
   ];
 
   return (
@@ -133,7 +145,7 @@ export default function AdminAside({
               <Link
                 to={link.path}
                 onClick={toggleDrawer}
-                className={`py-4 rounded-lg flex items-center transition-all duration-200 ${
+                className={`py-[12px] rounded-lg flex items-center transition-all duration-200 ${
                   isActive
                     ? "bg-gray-300 shadow-md"
                     : "text-gray-600 hover:bg-white hover:shadow-md"
@@ -151,7 +163,7 @@ export default function AdminAside({
         <li className="px-4 text-base">
           <button
             onClick={handleSignOut}
-            className="py-4 rounded-lg text-red-600 hover:text-white hover:bg-red-600 flex items-center transition-all duration-200"
+            className="py-[12px] rounded-lg text-red-600 hover:text-white hover:bg-red-600 flex items-center transition-all duration-200"
           >
             <ArrowRightOnRectangleIcon className="h-6 w-6" />
             {!isCollapsed && <span className="ml-2">Logout</span>}

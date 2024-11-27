@@ -10,6 +10,7 @@ import {
   UserCircleIcon,
   UserIcon,
   CalculatorIcon,
+  ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { MealIcon } from "../../assets/Icons";
 import Logo from "../Common/Logo";
@@ -71,6 +72,11 @@ export default function Aside({ toggleDrawer }) {
       link: "Profile",
       path: "/dashboard/profile",
       icon: <UserCircleIcon className="h-6 w-6" />,
+    },
+    {
+      link: "Complaints",
+      path: "/dashboard/complaints",
+      icon: <ExclamationCircleIcon className="h-6 w-6" />,
     },
   ];
 
