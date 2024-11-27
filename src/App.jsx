@@ -22,8 +22,12 @@ import { Meal } from "./components/Admin/MealSheet/Meal";
 import StaffLogin from "./components/Staff/StaffLogin";
 import RequiredStaffAuth from "./components/Auth/RequireStaffAuth";
 import StaffDashboard from "./components/Staff/StaffDashboard";
-import Complaints from "./components/Staff/Complaints";
 import { Bills } from "./components/Admin/Bills/Bills";
+import Complaints from "./components/Admin/Complaints/Complaints";
+import StudentComplaints from "./components/Student/Complaints/Complaints";
+import BloodBank from "./components/Admin/BloodBank/BloodBank";
+import AddComplaint from "./components/Student/Complaints/AddComplaint";
+import ComplaintDetails from "./components/Student/Complaints/ComplaintDetails";
 
 function App() {
   return (
@@ -56,6 +60,8 @@ function App() {
           <Route path="stock" element={<Stock />} />
           <Route path="expenses" element={<Expenses />} />
           <Route path="bills" element={<Bills />} />
+          <Route path="complaints" element={<Complaints />} />
+          <Route path="blood-bank" element={<BloodBank />} />
           <Route path="totalBill" element={<TotalBill />} />
           <Route path="meal-routine" element={<MealRoutineAdmin />} />
           <Route path="transaction-history" element={<TransactionHistory />} />
@@ -74,6 +80,12 @@ function App() {
           <Route path="bill-payment" element={<BillPayment />} />
           <Route path="cost-count" element={<BillCount />} />
           <Route path="meal-routine" element={<MealRoutine />} />
+          <Route path="complaints" element={<StudentComplaints />} />
+          <Route path="add-complaint" element={<AddComplaint />} />
+          <Route
+            path="complaints/complaint-details/*"
+            element={<ComplaintDetails />}
+          />
         </Route>
 
         <Route
