@@ -30,6 +30,7 @@ import AddComplaint from "./components/Student/Complaints/AddComplaint";
 import ComplaintDetails from "./components/Student/Complaints/ComplaintDetails";
 import NoticeBoard from "./components/Admin/NoticeBoard";
 import Tution from "./components/Student/Tution";
+import BloodDonate from "./components/Student/BloodDonate";
 
 function App() {
   return (
@@ -80,6 +81,7 @@ function App() {
           <Route index element={<MealPlan />} />
           <Route path="profile" element={<Profile />} />
           <Route path="tution" element={<Tution />} />
+          <Route path="blood-donate" element={<BloodDonate />} />
           <Route path="change-password" element={<ChangePassword />} />
           <Route path="bill-payment" element={<BillPayment />} />
           <Route path="cost-count" element={<BillCount />} />
