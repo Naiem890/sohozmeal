@@ -139,7 +139,12 @@ router.put(
       batch,
       status,
       roomNo,
-      residence, // Added residence field
+      residence,
+      preferredBackground,
+      preferredArea,
+      preferredSubject,
+      isTutor,
+      isTutorAvailable,
     } = req.body;
 
     try {
@@ -148,11 +153,36 @@ router.put(
         return res.status(404).json({ message: "Student not found" });
       }
 
-      student.phoneNumber = phoneNumber;
-      student.department = department;
-      student.batch = batch;
-      student.roomNo = roomNo;
-      student.residence = residence; // Update residence field
+      if (phoneNumber !== undefined) {
+        student.phoneNumber = phoneNumber;
+      }
+      if (department !== undefined) {
+        student.department = department.toUpperCase();
+      }
+      if (batch !== undefined) {
+        student.batch = batch;
+      }
+      if (roomNo !== undefined) {
+        student.roomNo = roomNo;
+      }
+      if (residence !== undefined) {
+        student.residence = residence;
+      }
+      if (preferredBackground !== undefined && preferredBackground.length > 0) {
+        student.preferredBackground = preferredBackground;
+      }
+      if (preferredArea !== undefined && preferredArea.length > 0) {
+        student.preferredArea = preferredArea;
+      }
+      if (preferredSubject !== undefined && preferredSubject.length > 0) {
+        student.preferredSubject = preferredSubject;
+      }
+      if (isTutor !== undefined) {
+        student.isTutor = isTutor;
+      }
+      if (isTutorAvailable !== undefined) {
+        student.isTutorAvailable = isTutorAvailable;
+      }
 
       if (req.file) {
         const compressedImage = await sharp(req.file.path)
@@ -169,11 +199,21 @@ router.put(
       }
 
       if (role === "admin") {
-        student.name = name;
-        student.hallId = hallId;
-        student.studentId = newStudentId ? newStudentId : studentId;
-        student.status = status;
-        student.gender = gender;
+        if (name !== undefined) {
+          student.name = name;
+        }
+        if (hallId !== undefined) {
+          student.hallId = hallId;
+        }
+        if (newStudentId !== undefined) {
+          student.studentId = newStudentId;
+        }
+        if (status !== undefined) {
+          student.status = status;
+        }
+        if (gender !== undefined) {
+          student.gender = gender;
+        }
       }
 
       await student.save();
@@ -193,11 +233,9 @@ router.get("/checkHallId", validateToken, checkAdminRole, async (req, res) => {
 
   // Validate the request parameters
   if (!hallId || !wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
-    return res
-      .status(400)
-      .json({
-        message: "Invalid hallId or wing. Wing must be MALE or FEMALE.",
-      });
+    return res.status(400).json({
+      message: "Invalid hallId or wing. Wing must be MALE or FEMALE.",
+    });
   }
 
   try {
@@ -208,19 +246,15 @@ router.get("/checkHallId", validateToken, checkAdminRole, async (req, res) => {
     });
 
     if (studentExists) {
-      return res
-        .status(200)
-        .json({
-          exists: true,
-          message: `Hall ID ${hallId} already exists for ${wing} wing.`,
-        });
+      return res.status(200).json({
+        exists: true,
+        message: `Hall ID ${hallId} already exists for ${wing} wing.`,
+      });
     } else {
-      return res
-        .status(200)
-        .json({
-          exists: false,
-          message: `Hall ID ${hallId} is available for ${wing} wing.`,
-        });
+      return res.status(200).json({
+        exists: false,
+        message: `Hall ID ${hallId} is available for ${wing} wing.`,
+      });
     }
   } catch (error) {
     console.error("Error checking hall ID:", error);
