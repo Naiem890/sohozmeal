@@ -11,6 +11,7 @@ import {
   UserIcon,
   CalculatorIcon,
   ExclamationCircleIcon,
+  BookOpenIcon,
 } from "@heroicons/react/24/outline";
 import { MealIcon } from "../../assets/Icons";
 import Logo from "../Common/Logo";
@@ -72,6 +73,11 @@ export default function Aside({ toggleDrawer }) {
       link: "Profile",
       path: "/dashboard/profile",
       icon: <UserCircleIcon className="h-6 w-6" />,
+    },
+    {
+      link: "Tution",
+      path: "/dashboard/tution",
+      icon: <BookOpenIcon className="h-6 w-6" />,
     },
     {
       link: "Complaints",
