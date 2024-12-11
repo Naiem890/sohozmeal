@@ -145,6 +145,9 @@ router.put(
       preferredSubject,
       isTutor,
       isTutorAvailable,
+      bloodGroup,
+      isDonor,
+      lastDonationDate,
     } = req.body;
 
     try {
@@ -182,6 +185,15 @@ router.put(
       }
       if (isTutorAvailable !== undefined) {
         student.isTutorAvailable = isTutorAvailable;
+      }
+      if (bloodGroup !== undefined && bloodGroup !== "") {
+        student.bloodGroup = bloodGroup;
+      }
+      if (isDonor !== undefined) {
+        student.isDonor = isDonor;
+      }
+      if (lastDonationDate !== undefined) {
+        student.lastDonationDate = lastDonationDate;
       }
 
       if (req.file) {

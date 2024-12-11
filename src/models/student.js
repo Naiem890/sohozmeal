@@ -218,6 +218,13 @@ const studentSchema = new mongoose.Schema({
       null,
     ],
   },
+  bloodGroup: {
+    type: String,
+    default: null,
+    enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", null],
+  },
+  isDonor: { type: Boolean, default: false },
+  lastDonationDate: { type: Date, default: null },
 });
 
 // Partial index for `phoneNumber` to enforce uniqueness only on non-null values
