@@ -45,57 +45,66 @@ router.get("/", validateToken, async (req, res) => {
 });
 
 // DELETE Student by studentId
-router.delete("/:studentId", validateToken, checkAdminRole, async (req, res) => {
-  const session = await Student.startSession(); // Start a session for transactions
-  session.startTransaction();
+router.delete(
+  "/:studentId",
+  validateToken,
+  checkAdminRole,
+  async (req, res) => {
+    const session = await Student.startSession(); // Start a session for transactions
+    session.startTransaction();
 
-  try {
-    const { studentId } = req.params;
+    try {
+      const { studentId } = req.params;
 
-    // Find the student in the Student collection
-    const student = await Student.findOne({ studentId }).session(session);
+      // Find the student in the Student collection
+      const student = await Student.findOne({ studentId }).session(session);
 
-    if (!student) {
-      return res.status(404).json({ message: "Student not found" });
+      if (!student) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+
+      // Create a new entry in the Alumni collection
+      const alumniData = {
+        studentId: student.studentId,
+        phoneNumber: student.phoneNumber,
+        hallId: student.hallId,
+        name: student.name,
+        department: student.department,
+        gender: student.gender,
+        batch: student.batch,
+        graduationYear: new Date().getFullYear(),
+        profileImage: student.profileImage,
+        roomNo: student.roomNo,
+        residence: student.residence,
+      };
+
+      await Alumni.create([alumniData], { session });
+
+      // Delete the student from the Student collection
+      await Student.findOneAndDelete({ studentId }).session(session);
+
+      // Delete any associated meal data from the Meal collection
+      await Meal.deleteMany({ studentId }).session(session);
+
+      // Commit the transaction
+      await session.commitTransaction();
+      session.endSession();
+
+      res
+        .status(200)
+        .json({ message: "Student moved to alumni and deleted successfully" });
+    } catch (error) {
+      // Rollback the transaction in case of an error
+      await session.abortTransaction();
+      session.endSession();
+
+      console.error("Error deleting student:", error);
+      res
+        .status(500)
+        .json({ message: "An error occurred while deleting the student" });
     }
-
-    // Create a new entry in the Alumni collection
-    const alumniData = {
-      studentId: student.studentId,
-      phoneNumber: student.phoneNumber,
-      hallId: student.hallId,
-      name: student.name,
-      department: student.department,
-      gender: student.gender,
-      batch: student.batch,
-      graduationYear: new Date().getFullYear(),
-      profileImage: student.profileImage,
-      roomNo: student.roomNo,
-      residence: student.residence,
-    };
-
-    await Alumni.create([alumniData], { session });
-
-    // Delete the student from the Student collection
-    await Student.findOneAndDelete({ studentId }).session(session);
-
-    // Delete any associated meal data from the Meal collection
-    await Meal.deleteMany({ studentId }).session(session);
-
-    // Commit the transaction
-    await session.commitTransaction();
-    session.endSession();
-
-    res.status(200).json({ message: "Student moved to alumni and deleted successfully" });
-  } catch (error) {
-    // Rollback the transaction in case of an error
-    await session.abortTransaction();
-    session.endSession();
-
-    console.error("Error deleting student:", error);
-    res.status(500).json({ message: "An error occurred while deleting the student" });
   }
-});
+);
 
 router.get("/all", validateToken, checkAdminRole, async (req, res) => {
   try {
@@ -116,7 +125,7 @@ router.get("/all", validateToken, checkAdminRole, async (req, res) => {
 router.put(
   "/",
   validateToken,
-  upload.single("profileImage"), 
+  upload.single("profileImage"),
   async (req, res) => {
     const { role } = req.user;
     const {
@@ -130,7 +139,7 @@ router.put(
       batch,
       status,
       roomNo,
-      residence,  // Added residence field
+      residence, // Added residence field
     } = req.body;
 
     try {
@@ -143,11 +152,11 @@ router.put(
       student.department = department;
       student.batch = batch;
       student.roomNo = roomNo;
-      student.residence = residence;  // Update residence field
+      student.residence = residence; // Update residence field
 
       if (req.file) {
         const compressedImage = await sharp(req.file.path)
-          .resize({ width: 300 }) 
+          .resize({ width: 300 })
           .jpeg({ quality: 30 })
           .toBuffer();
         student.profileImage = compressedImage;
@@ -186,7 +195,9 @@ router.get("/checkHallId", validateToken, checkAdminRole, async (req, res) => {
   if (!hallId || !wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
     return res
       .status(400)
-      .json({ message: "Invalid hallId or wing. Wing must be MALE or FEMALE." });
+      .json({
+        message: "Invalid hallId or wing. Wing must be MALE or FEMALE.",
+      });
   }
 
   try {
@@ -199,11 +210,17 @@ router.get("/checkHallId", validateToken, checkAdminRole, async (req, res) => {
     if (studentExists) {
       return res
         .status(200)
-        .json({ exists: true, message: `Hall ID ${hallId} already exists for ${wing} wing.` });
+        .json({
+          exists: true,
+          message: `Hall ID ${hallId} already exists for ${wing} wing.`,
+        });
     } else {
       return res
         .status(200)
-        .json({ exists: false, message: `Hall ID ${hallId} is available for ${wing} wing.` });
+        .json({
+          exists: false,
+          message: `Hall ID ${hallId} is available for ${wing} wing.`,
+        });
     }
   } catch (error) {
     console.error("Error checking hall ID:", error);
@@ -219,7 +236,9 @@ router.get("/hallId", validateToken, checkAdminRole, async (req, res) => {
 
   // Validate the wing parameter
   if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
-    return res.status(400).json({ message: "Invalid wing. Must be MALE or FEMALE." });
+    return res
+      .status(400)
+      .json({ message: "Invalid wing. Must be MALE or FEMALE." });
   }
 
   try {
@@ -258,7 +277,7 @@ router.post(
         gender,
         batch,
         roomNo,
-        residence, 
+        residence,
       } = req.body;
       const profileImage = req.file;
       const studentData = {
@@ -274,7 +293,7 @@ router.post(
       };
       if (profileImage) {
         const compressedImage = await sharp(profileImage.path)
-          .resize({ width: 300 }) 
+          .resize({ width: 300 })
           .jpeg({ quality: 30 })
           .toBuffer();
         studentData.profileImage = compressedImage;
@@ -314,6 +333,5 @@ router.post(
     }
   }
 );
-
 
 module.exports = router;
