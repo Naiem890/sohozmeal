@@ -75,7 +75,7 @@ export default function Profile() {
 
   return (
     <div className="mb-10 lg:my-10 px-5 lg:mr-12">
-      <h2 className="text-3xl font-semibold">Update Profile Info</h2>
+      <h2 className="text-3xl font-semibold">Profile Info</h2>
       <div className="divider"></div>
       <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="">

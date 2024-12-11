@@ -322,11 +322,11 @@ export default function Tution() {
         <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
           <div className="flex flex-col md:flex-row gap-6">
             {/* Profile Image */}
-            <div className="md:w-1/4">
+            <div className="md:w-1/4 w-full">
               <h3 className="text-lg font-medium mb-3">Profile Image</h3>
               <div className="relative">
                 <div
-                  className="w-40 h-40 bg-gray-100 rounded-lg overflow-hidden cursor-pointer group relative"
+                  className="w-full h-40 bg-gray-100 rounded-lg overflow-hidden cursor-pointer group relative"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <img
@@ -350,8 +350,8 @@ export default function Tution() {
               </div>
             </div>
 
-            {/* Tutor Status - remains unchanged */}
-            <div className="md:w-3/4 flex items-center">
+            {/* Tutor Status */}
+            <div className="md:w-3/4 w-full flex items-center">
               <div className="w-full bg-gray-50 p-6 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
@@ -382,8 +382,8 @@ export default function Tution() {
           <h3 className="text-lg font-medium mb-4">Teaching Preferences</h3>
           <div className="grid grid-cols-1 gap-6">
             <div className="flex flex-col gap-6">
-              <div className="flex items-center justify-between">
-                <div className="w-full mr-4">
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="w-full">
                   <label className="block text-sm font-medium leading-6 text-gray-600 mb-2">
                     Preferred Background
                   </label>
@@ -403,7 +403,7 @@ export default function Tution() {
                     classNamePrefix="select"
                   />
                 </div>
-                <div className="w-1/3">
+                <div className="w-full md:w-1/3">
                   <label className="block text-sm font-medium leading-6 text-gray-600 mb-2">
                     Phone Number
                   </label>
