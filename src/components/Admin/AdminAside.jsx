@@ -11,6 +11,7 @@ import {
   DocumentTextIcon,
   ExclamationCircleIcon,
   HeartIcon,
+  ClipboardDocumentListIcon,
 } from "@heroicons/react/24/outline";
 import { useAuthUser, useSignOut } from "react-auth-kit";
 import { toast } from "react-hot-toast";
@@ -90,6 +91,11 @@ export default function AdminAside({
       link: "Student Bill",
       path: "/admin/dashboard/bills",
       icon: <DocumentTextIcon className="h-6 w-6" />,
+    },
+    {
+      link: "Notice Board",
+      path: "/admin/dashboard/notice-board",
+      icon: <ClipboardDocumentListIcon className="h-6 w-6" />,
     },
     {
       link: "Complaints",

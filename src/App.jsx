@@ -28,6 +28,7 @@ import StudentComplaints from "./components/Student/Complaints/Complaints";
 import BloodBank from "./components/Admin/BloodBank/BloodBank";
 import AddComplaint from "./components/Student/Complaints/AddComplaint";
 import ComplaintDetails from "./components/Student/Complaints/ComplaintDetails";
+import NoticeBoard from "./components/Admin/NoticeBoard";
 
 function App() {
   return (
@@ -63,6 +64,7 @@ function App() {
           <Route path="complaints" element={<Complaints />} />
           <Route path="blood-bank" element={<BloodBank />} />
           <Route path="totalBill" element={<TotalBill />} />
+          <Route path="notice-board" element={<NoticeBoard />} />
           <Route path="meal-routine" element={<MealRoutineAdmin />} />
           <Route path="transaction-history" element={<TransactionHistory />} />
         </Route>
