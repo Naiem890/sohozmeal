@@ -12,7 +12,6 @@ export default function Tution() {
     preferredArea: [],
     preferredSubject: [],
   });
-  const [isTutor, setIsTutor] = useState(false);
   const [isTutorAvailable, setIsTutorAvailable] = useState(false);
 
   const fetchStudentProfile = async () => {
@@ -38,7 +37,6 @@ export default function Tution() {
             label: subject,
           })) || [],
       });
-      setIsTutor(studentData?.isTutor);
       setIsTutorAvailable(studentData?.isTutorAvailable);
     } catch (err) {
       console.log(err);
@@ -54,6 +52,7 @@ export default function Tution() {
     try {
       const res = await Axios.put("/student", {
         studentId: student.studentId,
+        phoneNumber: student.phoneNumber,
         preferredBackground: (student.preferredBackground || []).map(
           (bg) => bg.value
         ),
@@ -61,7 +60,6 @@ export default function Tution() {
         preferredSubject: (student.preferredSubject || []).map(
           (subject) => subject.value
         ),
-        isTutor: isTutor,
         isTutorAvailable: isTutorAvailable,
       });
       toast.success(res.data.message);
@@ -273,42 +271,24 @@ export default function Tution() {
       <form onSubmit={handleSubmit}>
         {/* Tutor Status Section */}
         <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">Tutor Status</h3>
-                <p className="text-sm text-gray-500">
-                  Are you available for tutoring?
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isTutor}
-                  onChange={() => setIsTutor(!isTutor)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div>
+              <h3 className="font-medium text-gray-900">
+                Tutoring Availability Status
+              </h3>
+              <p className="text-sm text-gray-500">
+                Are you available for tutoring and can take new students?
+              </p>
             </div>
-
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">Availability</h3>
-                <p className="text-sm text-gray-500">
-                  Can you take new students?
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isTutorAvailable}
-                  onChange={() => setIsTutorAvailable(!isTutorAvailable)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isTutorAvailable}
+                onChange={() => setIsTutorAvailable(!isTutorAvailable)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
           </div>
         </div>
 
@@ -317,8 +297,44 @@ export default function Tution() {
           <h3 className="text-lg font-medium mb-4">Teaching Preferences</h3>
           <div className="grid grid-cols-1 gap-6">
             <div className="flex flex-col gap-6">
+              <div className="flex items-center justify-between">
+                <div className="w-full mr-4">
+                  <label className="block text-sm font-medium leading-6 text-gray-600 mb-2">
+                    Preferred Background
+                  </label>
+                  <Select
+                    isMulti
+                    options={backgroundOptions}
+                    value={student.preferredBackground || []}
+                    onChange={(selected) =>
+                      setStudent({
+                        ...student,
+                        preferredBackground: selected || [],
+                      })
+                    }
+                    styles={customStyles}
+                    placeholder="Select backgrounds..."
+                    className="basic-multi-select"
+                    classNamePrefix="select"
+                  />
+                </div>
+                <div className="w-1/3">
+                  <label className="block text-sm font-medium leading-6 text-gray-600 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="text"
+                    value={student.phoneNumber}
+                    onChange={(e) =>
+                      setStudent({ ...student, phoneNumber: e.target.value })
+                    }
+                    className={`${fixedInputClass} mt-2`}
+                    placeholder="Enter phone number..."
+                  />
+                </div>
+              </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium leading-6 text-gray-600 mb-2">
                   Preferred Area
                 </label>
                 <Select
@@ -335,7 +351,7 @@ export default function Tution() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium leading-6 text-gray-600 mb-2">
                   Preferred Subject
                 </label>
                 <Select
@@ -351,26 +367,6 @@ export default function Tution() {
                   classNamePrefix="select"
                 />
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Preferred Background
-              </label>
-              <Select
-                isMulti
-                options={backgroundOptions}
-                value={student.preferredBackground || []}
-                onChange={(selected) =>
-                  setStudent({
-                    ...student,
-                    preferredBackground: selected || [],
-                  })
-                }
-                styles={customStyles}
-                placeholder="Select backgrounds..."
-                className="basic-multi-select"
-                classNamePrefix="select"
-              />
             </div>
           </div>
 
