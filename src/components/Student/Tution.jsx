@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useAuthUser } from "react-auth-kit";
 import { toast } from "react-hot-toast";
 import { Axios } from "../../api/api";
@@ -13,12 +13,52 @@ export default function Tution() {
     preferredSubject: [],
   });
   const [isTutorAvailable, setIsTutorAvailable] = useState(false);
+  const [image, setImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [prevImage, setPrevImage] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const clearFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleImageChange = async (e) => {
+    setPrevImage(image);
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const base64Image = await fileToBase64(file);
+      setImageFile(file);
+      setImage(base64Image);
+    }
+  };
 
   const fetchStudentProfile = async () => {
     try {
       const res = await Axios.get("/student");
-      // Convert string arrays to react-select format
       const studentData = res?.data?.student;
+
+      // Handle profile image
+      if (studentData?.profileImage) {
+        const imageUrl = URL.createObjectURL(
+          new Blob([new Uint8Array(studentData.profileImage.data)], {
+            type: "image/jpeg",
+          })
+        );
+        setImage(imageUrl);
+        setPrevImage(imageUrl);
+      }
+
       setStudent({
         ...studentData,
         preferredBackground:
@@ -49,20 +89,31 @@ export default function Tution() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      const res = await Axios.put("/student", {
+      // First request: Update regular data
+      const regularDataRes = await Axios.put("/student", {
         studentId: student.studentId,
         phoneNumber: student.phoneNumber,
-        preferredBackground: (student.preferredBackground || []).map(
-          (bg) => bg.value
-        ),
-        preferredArea: (student.preferredArea || []).map((area) => area.value),
-        preferredSubject: (student.preferredSubject || []).map(
+        preferredBackground: student.preferredBackground.map((bg) => bg.value),
+        preferredArea: student.preferredArea.map((area) => area.value),
+        preferredSubject: student.preferredSubject.map(
           (subject) => subject.value
         ),
         isTutorAvailable: isTutorAvailable,
       });
-      toast.success(res.data.message);
+
+      // Second request: Update image if there's a new image
+      if (imageFile) {
+        const imageFormData = new FormData();
+        imageFormData.append("profileImage", imageFile);
+        imageFormData.append("studentId", student.studentId);
+
+        const imageRes = await Axios.put("/student", imageFormData);
+        toast.success("Profile image updated successfully");
+      }
+
+      toast.success(regularDataRes.data.message);
     } catch (err) {
       toast.error(err.response?.data?.message || "Something went wrong");
     }
@@ -227,7 +278,6 @@ export default function Tution() {
     "Zigatola",
   ];
 
-  // Convert arrays to options format for react-select
   const backgroundOptions = backgrounds.map((bg) => ({ value: bg, label: bg }));
   const subjectOptions = subjects.map((subject) => ({
     value: subject,
@@ -235,7 +285,6 @@ export default function Tution() {
   }));
   const areaOptions = areas.map((area) => ({ value: area, label: area }));
 
-  // Custom styles for react-select
   const customStyles = {
     control: (base) => ({
       ...base,
@@ -269,26 +318,62 @@ export default function Tution() {
       <div className="divider"></div>
 
       <form onSubmit={handleSubmit}>
-        {/* Tutor Status Section */}
+        {/* Profile Image and Tutor Status Section */}
         <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <h3 className="font-medium text-gray-900">
-                Tutoring Availability Status
-              </h3>
-              <p className="text-sm text-gray-500">
-                Are you available for tutoring and can take new students?
-              </p>
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Profile Image */}
+            <div className="md:w-1/4">
+              <h3 className="text-lg font-medium mb-3">Profile Image</h3>
+              <div className="relative">
+                <div
+                  className="w-40 h-40 bg-gray-100 rounded-lg overflow-hidden cursor-pointer group relative"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <img
+                    src={image}
+                    className="w-full h-full object-cover"
+                    alt=""
+                  />
+                  {/* Overlay with text */}
+                  <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-white text-sm">Change Photo</span>
+                  </div>
+                </div>
+                <input
+                  type="file"
+                  name="profileImage"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isTutorAvailable}
-                onChange={() => setIsTutorAvailable(!isTutorAvailable)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+
+            {/* Tutor Status - remains unchanged */}
+            <div className="md:w-3/4 flex items-center">
+              <div className="w-full bg-gray-50 p-6 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Tutoring Availability Status
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Are you available for tutoring and can take new students?
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isTutorAvailable}
+                      onChange={() => setIsTutorAvailable(!isTutorAvailable)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
