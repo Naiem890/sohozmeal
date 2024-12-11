@@ -46,7 +46,6 @@ const studentSchema = new mongoose.Schema({
     default: null,
     enum: ["OSMANY_HALL", "EXT_D", "NOT_SELECTED", null],
   },
-  isTutor: { type: Boolean, default: false },
   isTutorAvailable: { type: Boolean, default: false },
   preferredBackground: {
     type: [String],

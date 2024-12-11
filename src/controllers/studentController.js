@@ -143,7 +143,6 @@ router.put(
       preferredBackground,
       preferredArea,
       preferredSubject,
-      isTutor,
       isTutorAvailable,
       bloodGroup,
       isDonor,
@@ -180,9 +179,7 @@ router.put(
       if (preferredSubject !== undefined && preferredSubject.length > 0) {
         student.preferredSubject = preferredSubject;
       }
-      if (isTutor !== undefined) {
-        student.isTutor = isTutor;
-      }
+
       if (isTutorAvailable !== undefined) {
         student.isTutorAvailable = isTutorAvailable;
       }
