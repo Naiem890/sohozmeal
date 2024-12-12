@@ -14,6 +14,29 @@ router.get("/", validateToken, async (req, res) => {
       .json({ message: "An error occurred while fetching notices" });
   }
 });
+// Get all notices for selected wing
+router.get("/:noticeFor", validateToken, async (req, res) => {
+  try {
+    const { noticeFor } = req.params;
+
+    let filter;
+    if (noticeFor === "ALL") {
+      filter = { noticeFor: { $in: ["MALE", "FEMALE", "ALL"] } };
+    } else {
+      filter = { noticeFor: { $in: [noticeFor, "ALL"] } };
+    }
+
+    const notices = await Notice.find(filter);
+
+    res.status(200).json(notices);
+  } catch (error) {
+    console.error("Error fetching notices:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while fetching notices" });
+  }
+});
+
 
 // Create a new notice
 router.post("/", validateToken, async (req, res) => {

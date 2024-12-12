@@ -377,4 +377,50 @@ router.post(
   }
 );
 
+// Blood Group Information of specific wing
+router.get("/blood-bank/:gender", validateToken, async (req, res) => {
+  try {
+    const { gender } = req.params;
+
+    const matchFilter = { isDonor: true };
+    if (gender.toUpperCase() !== "ALL") {
+      matchFilter.gender = gender.toUpperCase();
+    }
+
+    const donorData = await Student.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: "$bloodGroup",
+          count: { $sum: 1 },
+          donorInfo: {
+            $push: {
+              name: "$name",
+              phoneNumber: "$phoneNumber",
+              lastDonationDate: "$lastDonationDate",
+              residence: "$residence",
+              roomNo: "$roomNo",
+              gender: "$gender",
+            },
+          },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const dashboard = donorData.reduce((acc, item) => {
+      acc[item._id] = {
+        count: item.count,
+        donors: item.donorInfo,
+      };
+      return acc;
+    }, {});
+
+    res.status(200).json(dashboard);
+  } catch (error) {
+    console.error("Error retrieving donor dashboard:", error);
+    res.status(500).json({ message: "Error retrieving donor dashboard", error });
+  }
+});
+
 module.exports = router;
