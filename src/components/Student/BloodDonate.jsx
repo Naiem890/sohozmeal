@@ -3,25 +3,27 @@ import { useAuthUser } from "react-auth-kit";
 import { toast } from "react-hot-toast";
 import { Axios } from "../../api/api";
 import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
-import Select from "react-select";
+import TableComponent from "../Common/BloodBank/TableComponent";
 
 export default function BloodDonate() {
-  const auth = useAuthUser();
+  const auth = useAuthUser()();
+  console.log(auth, "shohan");
   const [student, setStudent] = useState({
     bloodGroup: "",
     isDonor: false,
     lastDonationDate: "",
   });
+  const [bloodBankData, setBloodBankData] = useState([]);
 
   const fetchStudentProfile = async () => {
     try {
       const res = await Axios.get("/student");
       const studentData = res?.data?.student;
-      
+
       // Format the date to YYYY-MM-DD for input type="date"
-      const formattedDate = studentData?.lastDonationDate 
-        ? new Date(studentData.lastDonationDate).toISOString().split('T')[0]
-        : '';
+      const formattedDate = studentData?.lastDonationDate
+        ? new Date(studentData.lastDonationDate).toISOString().split("T")[0]
+        : "";
 
       setStudent({
         studentId: studentData?.studentId || "",
@@ -36,7 +38,18 @@ export default function BloodDonate() {
 
   useEffect(() => {
     fetchStudentProfile();
-  }, []);
+    const getBloodBankData = async () => {
+      try {
+        const response = await Axios(`/student/blood-bank/${auth.wing}`);
+        const data = response.data;
+        console.log(response.data);
+        setBloodBankData(data);
+      } catch (error) {
+        console.error("Error fetching blood bank data:", error);
+      }
+    };
+    getBloodBankData();
+  }, [auth.wing]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,7 +108,9 @@ export default function BloodDonate() {
               <input
                 type="checkbox"
                 checked={student.isDonor}
-                onChange={() => setStudent({ ...student, isDonor: !student.isDonor })}
+                onChange={() =>
+                  setStudent({ ...student, isDonor: !student.isDonor })
+                }
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -113,9 +128,11 @@ export default function BloodDonate() {
               </label>
               <select
                 value={student.bloodGroup}
-                onChange={(e) => setStudent({ ...student, bloodGroup: e.target.value })}
+                onChange={(e) =>
+                  setStudent({ ...student, bloodGroup: e.target.value })
+                }
                 className={`${fixedInputClass} ${
-                  student.isDonor && !student.bloodGroup ? 'border-red-300' : ''
+                  student.isDonor && !student.bloodGroup ? "border-red-300" : ""
                 }`}
               >
                 <option value="">Select Blood Group</option>
@@ -126,7 +143,9 @@ export default function BloodDonate() {
                 ))}
               </select>
               {student.isDonor && !student.bloodGroup && (
-                <p className="text-red-500 text-sm mt-1">Blood group is required for donors</p>
+                <p className="text-red-500 text-sm mt-1">
+                  Blood group is required for donors
+                </p>
               )}
             </div>
 
@@ -138,13 +157,16 @@ export default function BloodDonate() {
               <input
                 type="date"
                 value={student.lastDonationDate}
-                onChange={(e) => setStudent({ ...student, lastDonationDate: e.target.value })}
+                onChange={(e) =>
+                  setStudent({ ...student, lastDonationDate: e.target.value })
+                }
                 className={fixedInputClass}
-                max={new Date().toISOString().split('T')[0]} // Prevent future dates
+                max={new Date().toISOString().split("T")[0]} // Prevent future dates
               />
-              {student.lastDonationDate && !isWithinThreeMonths(student.lastDonationDate) && (
-                <WarningMessage message="Note: You should wait at least 3 months between blood donations" />
-              )}
+              {student.lastDonationDate &&
+                !isWithinThreeMonths(student.lastDonationDate) && (
+                  <WarningMessage message="Note: You should wait at least 3 months between blood donations" />
+                )}
             </div>
           </div>
 
@@ -158,6 +180,10 @@ export default function BloodDonate() {
           </div>
         </div>
       </form>
+
+      <div className="py-2">
+        <TableComponent donorData={bloodBankData} />
+      </div>
     </div>
   );
 }

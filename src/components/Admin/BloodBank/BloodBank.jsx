@@ -1,12 +1,17 @@
+import { useEffect, useState } from "react";
+import TableComponent from "../../Common/BloodBank/TableComponent";
+import { Axios } from "../../../api/api";
+import { useAuthUser } from "react-auth-kit";
+
 const bloodGroupStats = [
-  { group: "A+", count: 12 },
-  { group: "A-", count: 8 },
-  { group: "B+", count: 15 },
-  { group: "B-", count: 7 },
-  { group: "O+", count: 20 },
-  { group: "O-", count: 5 },
-  { group: "AB+", count: 10 },
-  { group: "AB-", count: 3 },
+  { group: "A+" },
+  { group: "A-" },
+  { group: "B+" },
+  { group: "B-" },
+  { group: "O+" },
+  { group: "O-" },
+  { group: "AB+" },
+  { group: "AB-" },
 ];
 
 const gradients = [
@@ -21,6 +26,24 @@ const gradients = [
 ];
 
 const BloodBank = () => {
+  const auth = useAuthUser()();
+
+  const [bloodBankData, setBloodBankData] = useState([]);
+
+  useEffect(() => {
+    const getBloodBankData = async () => {
+      try {
+        const response = await Axios(`/student/blood-bank/${auth.wing}`);
+        const data = response.data;
+        console.log(response.data);
+        setBloodBankData(data);
+      } catch (error) {
+        console.error("Error fetching blood bank data:", error);
+      }
+    };
+    getBloodBankData();
+  }, [auth.wing]);
+
   return (
     <div className="container pt-2 mx-auto font-sans">
       <h2 className="text-2xl font-semibold">Blood Bank</h2>
@@ -53,12 +76,15 @@ const BloodBank = () => {
                       d="M12 3.5v17m6-8.5H6"
                     />
                   </svg>
-                  {stat.count} Available
+                  {bloodBankData[stat.group]?.count || 0} Available
                 </p>
               </div>
             </div>
           ))}
         </div>
+
+        {/* Blood Bank Table */}
+        <TableComponent donorData={bloodBankData} />
       </div>
     </div>
   );
