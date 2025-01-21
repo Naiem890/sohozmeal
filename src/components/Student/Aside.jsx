@@ -81,21 +81,21 @@ export default function Aside({ toggleDrawer }) {
       path: "/dashboard/notice",
       icon: <BellIcon className="h-6 w-6" />,
     },
-    {
-      link: "Tution",
-      path: "/dashboard/tution",
-      icon: <BookOpenIcon className="h-6 w-6" />,
-    },
-    {
-      link: "Blood Donate",
-      path: "/dashboard/blood-donate",
-      icon: <HeartIcon className="h-6 w-6" />,
-    },
-    {
-      link: "Complaints",
-      path: "/dashboard/complaints",
-      icon: <ExclamationCircleIcon className="h-6 w-6" />,
-    },
+    // {
+    //   link: "Tution",
+    //   path: "/dashboard/tution",
+    //   icon: <BookOpenIcon className="h-6 w-6" />,
+    // },
+    // {
+    //   link: "Blood Donate",
+    //   path: "/dashboard/blood-donate",
+    //   icon: <HeartIcon className="h-6 w-6" />,
+    // },
+    // {
+    //   link: "Complaints",
+    //   path: "/dashboard/complaints",
+    //   icon: <ExclamationCircleIcon className="h-6 w-6" />,
+    // },
   ];
 
   return (

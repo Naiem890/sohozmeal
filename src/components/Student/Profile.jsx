@@ -82,12 +82,12 @@ export default function Profile() {
           <div className="w-32 h-32 bg-slate-600 rounded-md justify-center">
             <img src={image} className="w-full h-full object-contain"></img>
           </div>
-          {/* <input
+          <input
             type="file"
             name="profileImage"
             accept="image/*"
             onChange={handleImageChange}
-          /> */}
+          />
         </div>
         <div className="self-center">
           <label className="block text-sm font-medium leading-6 text-gray-600">
@@ -96,7 +96,7 @@ export default function Profile() {
           <input
             type="text"
             value={student?.name}
-            disabled
+            // disabled
             placeholder="Type here"
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
@@ -111,7 +111,7 @@ export default function Profile() {
             onChange={(e) =>
               setStudent({ ...student, phoneNumber: e.target.value })
             }
-            disabled
+            // disabled
             placeholder="eg: 01712345678"
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
@@ -124,7 +124,7 @@ export default function Profile() {
             type="text"
             name="studentId"
             value={student?.studentId}
-            disabled
+            // disabled
             placeholder="Type here"
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
@@ -137,7 +137,7 @@ export default function Profile() {
             type="text"
             name="hallId"
             value={student?.hallId}
-            disabled
+            // disabled
             placeholder="Type here"
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
@@ -153,7 +153,7 @@ export default function Profile() {
               setStudent({ ...student, department: e.target.value })
             }
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
-            disabled
+            // disabled
           >
             <option disabled selected>
               Select Department
@@ -176,7 +176,7 @@ export default function Profile() {
             onChange={(e) => setStudent({ ...student, batch: +e.target.value })}
             placeholder="Type here"
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
-            disabled
+            // disabled
           />
         </div>
 
@@ -187,7 +187,7 @@ export default function Profile() {
           <input
             type="text"
             value={student?.roomNo || null}
-            disabled
+            // disabled
             placeholder="Room Number"
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
@@ -200,7 +200,7 @@ export default function Profile() {
           <input
             type="text"
             value={student?.residence || "NOT_SELECTED"}
-            disabled
+            // disabled
             placeholder="Residence"
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
@@ -213,7 +213,7 @@ export default function Profile() {
           <input
             type="text"
             value={student?.gender}
-            disabled
+            // disabled
             placeholder="Gender"
             className={`${fixedInputClass} disabled:bg-gray-200 mt-2`}
           />
