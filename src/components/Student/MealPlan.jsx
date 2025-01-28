@@ -104,10 +104,10 @@ export default function MealPlan() {
       if (result.status === 200) {
         setMeals((prevMeals) =>
           prevMeals.map((prevMeal) =>
-            prevMeal.date === validDate() ? result.data.meal : prevMeal
+            prevMeal?.date === validDate() ? result?.data?.meal : prevMeal
           )
         );
-        setGuestMeal(result.data.meal.guestMeal);
+        setGuestMeal(result?.data?.meal?.guestMeal);
         document.getElementById("my_modal_3").close();
       }
     } catch (error) {
