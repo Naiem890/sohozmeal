@@ -23,15 +23,13 @@ jobs:
 
       - name: Copy files to target directory
         run: |
-          sudo rm -rf /home/mist/osmany_hall_backend/*
-          sudo cp -r . /home/mist/osmany_hall_backend/
-          sudo chown -R $USER:$USER /home/mist/osmany_hall_backend
-
-      - name: Change directory
-        run: cd /home/mist/osmany_hall_backend
+          sudo rm -rf /home/mist/osmany_hall_backend/* # Remove existing files
+          sudo cp -r . /home/mist/osmany_hall_backend/ # Copy new files
+          sudo chown -R $USER:$USER /home/mist/osmany_hall_backend # Adjust permissions
 
       - name: Install dependencies
         run: npm ci
+        working-directory: /home/mist/osmany_hall_backend
 
       - name: Restart PM2 process
         run: pm2 restart sohozmeal -a
