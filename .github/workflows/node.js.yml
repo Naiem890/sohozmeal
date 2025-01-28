@@ -12,6 +12,7 @@ env:
   DB_URI_CLOUD: ${{secrets.DB_URI_CLOUD}}
   API_KEY: ${{secrets.API_KEY}}
   SENDER_ID: ${{secrets.SENDER_ID}}
+  DB_URI_LOCAL: ${{secrets.DB_URI_LOCAL}}
 
 jobs:
   build:
@@ -37,6 +38,7 @@ jobs:
           echo "SALT_ROUNDS=${{secrets.SALT_ROUNDS}}" >> /home/mist/osmany_hall_backend/.env
           echo "JWT_SECRET=${{secrets.JWT_SECRET}}" >> /home/mist/osmany_hall_backend/.env
           echo "DB_URI_CLOUD=${{secrets.DB_URI_CLOUD}}" >> /home/mist/osmany_hall_backend/.env
+          echo "DB_URI_LOCAL=${{secrets.DB_URI_LOCAL}}" >> /home/mist/osmany_hall_backend/.env
           echo "API_KEY=${{secrets.API_KEY}}" >> /home/mist/osmany_hall_backend/.env
           echo "SENDER_ID=${{secrets.SENDER_ID}}" >> /home/mist/osmany_hall_backend/.env
           sudo chown $USER:$USER /home/mist/osmany_hall_backend/.env # Adjust permissions
