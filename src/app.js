@@ -32,8 +32,6 @@ app.get("/", (req, res) => {
 // Api routes
 app.use("/api", apiRoutes);
 
-//test
-
 // Test route to check the sms functionality
 app.get("/test-sms", async (req, res) => {
   console.log("test-sms route");
