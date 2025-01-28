@@ -26,5 +26,5 @@ jobs:
       - name: Deploy to /var/www/hall
         run: |
           sudo rm -rf /var/www/hall/*
-          sudo cp -r build/* /var/www/hall/
+          sudo cp -r dist/* /var/www/hall/
           sudo chown -R $USER:$USER /var/www/hall
