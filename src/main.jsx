@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "react-auth-kit";
 import { Toaster } from "react-hot-toast";
 
+//test
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AuthProvider authType={"localstorage"} authName={"_auth"}>
