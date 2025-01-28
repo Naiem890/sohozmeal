@@ -18,18 +18,34 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      # Step 1: Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Step 2: Copy files to target directory
       - name: Copy files to target directory
         run: |
           sudo rm -rf /home/mist/osmany_hall_backend/* # Remove existing files
           sudo cp -r . /home/mist/osmany_hall_backend/ # Copy new files
           sudo chown -R $USER:$USER /home/mist/osmany_hall_backend # Adjust permissions
 
+      # Step 3: Create .env file and populate it with secrets
+      - name: Create .env file
+        run: |
+          echo "PORT=${{secrets.PORT}}" > /home/mist/osmany_hall_backend/.env
+          echo "NODE_ENV=${{secrets.NODE_ENV}}" >> /home/mist/osmany_hall_backend/.env
+          echo "SALT_ROUNDS=${{secrets.SALT_ROUNDS}}" >> /home/mist/osmany_hall_backend/.env
+          echo "JWT_SECRET=${{secrets.JWT_SECRET}}" >> /home/mist/osmany_hall_backend/.env
+          echo "DB_URI_CLOUD=${{secrets.DB_URI_CLOUD}}" >> /home/mist/osmany_hall_backend/.env
+          echo "API_KEY=${{secrets.API_KEY}}" >> /home/mist/osmany_hall_backend/.env
+          echo "SENDER_ID=${{secrets.SENDER_ID}}" >> /home/mist/osmany_hall_backend/.env
+          sudo chown $USER:$USER /home/mist/osmany_hall_backend/.env # Adjust permissions
+
+      # Step 4: Install dependencies
       - name: Install dependencies
         run: npm ci
         working-directory: /home/mist/osmany_hall_backend
 
+      # Step 5: Restart PM2 process
       - name: Restart PM2 process
         run: pm2 restart sohozmeal -a
