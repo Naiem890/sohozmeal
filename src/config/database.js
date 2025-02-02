@@ -4,7 +4,12 @@ mongoose.set("strictQuery", true);
 async function dbConnect () {
   // eslint-disable-next-line no-undef
   const { DB_URI_CLOUD, DB_URI_LOCAL, NODE_ENV } = process.env;
-  const dbUrl = DB_URI_LOCAL;
+  let dbUrl = null;
+  if(NODE_ENV === 'development'){
+    dbUrl = DB_URI_CLOUD;
+  } else if(NODE_ENV === 'production'){
+    dbUrl = DB_URI_LOCAL;
+  }
 
   try {
     await mongoose.connect(dbUrl, {
