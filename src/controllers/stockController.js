@@ -1213,9 +1213,6 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
     return res.status(400).json({ error: "Transactions are missing or invalid" });
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const inTransactions = [];
     const outTransactions = [];
@@ -1241,21 +1238,21 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
       const { item, quantity, price, date, name } = transaction;
 
       // Find or create the stock item in StockItem collection
-      let stockItem = await StockItem.findOne({ name, wing }).session(session);
+      let stockItem = await StockItem.findOne({ name, wing });
       if (!stockItem) {
         stockItem = new StockItem({ name, wing, unit: 'KG', category: 'STORED' });
-        await stockItem.save({ session });
+        await stockItem.save();
       }
 
       // Find or create stock
-      let stock = await Stock.findOne({ item: stockItem._id, wing }).session(session);
+      let stock = await Stock.findOne({ item: stockItem._id, wing });
       if (!stock) {
         stock = new Stock({ item: stockItem._id, quantity: parseFloat(quantity), wing });
-        await stock.save({ session });
+        await stock.save();
       } else {
         const newQuantity = stock.quantity + parseFloat(quantity);
         stock.quantity = newQuantity;
-        await stock.save({ session });
+        await stock.save();
       }
 
       // Create the stock transaction for IN
@@ -1268,7 +1265,7 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
         meal: "-",
         wing,
       });
-      await stockTransaction.save({ session });
+      await stockTransaction.save();
     }
 
     // Step 3: Process OUT transactions
@@ -1276,20 +1273,20 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
       const { item, quantity, date, meal, name } = transaction;
 
       // Find the stock item by name
-      let stockItem = await StockItem.findOne({ name, wing }).session(session);
+      let stockItem = await StockItem.findOne({ name, wing });
       if (!stockItem) {
         throw new Error(`Stock item not found: ${name}`);
       }
 
       // Find the stock record
-      let stock = await Stock.findOne({ item: stockItem._id, wing }).session(session);
+      let stock = await Stock.findOne({ item: stockItem._id, wing });
       if (!stock || stock.quantity < parseFloat(quantity)) {
         throw new Error(`Not enough stock for item: ${name}`);
       }
 
       // Update the stock quantity
       stock.quantity -= parseFloat(quantity);
-      await stock.save({ session });
+      await stock.save();
 
       // Create the stock transaction for OUT
       const stockTransaction = new StockTransaction({
@@ -1301,7 +1298,7 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
         meal,
         wing,
       });
-      await stockTransaction.save({ session });
+      await stockTransaction.save();
     }
 
     // Step 4: Process NON_STORED transactions
@@ -1309,10 +1306,10 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
       const { item, quantity, price, date, meal, name } = transaction;
 
       // Find or create the stock item in StockItem collection
-      let stockItem = await StockItem.findOne({ name, wing }).session(session);
+      let stockItem = await StockItem.findOne({ name, wing });
       if (!stockItem) {
         stockItem = new StockItem({ name, wing, unit: 'PCS', category: 'NON_STORED' });
-        await stockItem.save({ session });
+        await stockItem.save();
       }
 
       // Create the stock transaction for NON_STORED
@@ -1326,23 +1323,16 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
         meal,
         wing,
       });
-      await stockTransaction.save({ session });
+      await stockTransaction.save();
     }
 
     // Step 5: After processing transactions, trigger the bill service to update the bill for the day
     await createOrUpdateBill(transactionDate, wing);
 
-    // If everything is successful, commit the transaction
-    await session.commitTransaction();
-    session.endSession();
-
     res.json({
       message: "All transactions processed successfully",
     });
   } catch (error) {
-    // If any error occurs, abort the transaction
-    await session.abortTransaction();
-    session.endSession();
     console.error("Error processing transactions:", error);
     res.status(500).json({ error: "Error processing transactions" });
   }
