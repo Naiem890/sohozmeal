@@ -1247,12 +1247,23 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
       // Find or create stock
       let stock = await Stock.findOne({ item: stockItem._id, wing });
       if (!stock) {
-        stock = new Stock({ item: stockItem._id, quantity: parseFloat(quantity), wing });
+        stock = new Stock({ item: stockItem._id, quantity: parseFloat(quantity), wing, price: parseFloat(price) });
         await stock.save();
       } else {
+        const prevPrice = stock.price;
+        const prevQuantity = stock.quantity;
+
+        const newPrice = (
+          (prevPrice * prevQuantity + parseFloat(price) * parseFloat(quantity)) / 
+          (prevQuantity + parseFloat(quantity))
+        ).toFixed(2);
+
         const newQuantity = stock.quantity + parseFloat(quantity);
         stock.quantity = newQuantity;
+        stock.price = parseFloat(newPrice);
+
         await stock.save();
+
       }
 
       // Create the stock transaction for IN
