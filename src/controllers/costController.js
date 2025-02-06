@@ -249,7 +249,7 @@ router.post("/sync", validateToken, async (req, res) => {
             update: {
               $set: {
                 quantityChange: nextMonthLeftoverQuantity,
-                transactionAmount: averagePrice * nextMonthLeftoverQuantity
+                transactionAmount: parseFloat(averagePrice * nextMonthLeftoverQuantity).toFixed(2)
               }
             }
           }
@@ -263,7 +263,7 @@ router.post("/sync", validateToken, async (req, res) => {
           date: nextMonthStartDate,
           wing: wing,
           quantityChange: nextMonthLeftoverQuantity,
-          transactionAmount: averagePrice * nextMonthLeftoverQuantity,
+          transactionAmount: parseFloat(averagePrice * nextMonthLeftoverQuantity).toFixed(2),
         });
       }
     }

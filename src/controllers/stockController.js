@@ -1247,7 +1247,7 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
       // Find or create stock
       let stock = await Stock.findOne({ item: stockItem._id, wing });
       if (!stock) {
-        stock = new Stock({ item: stockItem._id, quantity: parseFloat(quantity), wing, price: parseFloat(price) });
+        stock = new Stock({ item: stockItem._id, quantity: parseFloat(quantity).toFixed(2), wing, price: parseFloat(price).toFixed(2) });
         await stock.save();
       } else {
         const prevPrice = stock.price;
@@ -1272,7 +1272,7 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
         quantityChange: parseFloat(quantity),
         type: "IN",
         date: new Date(date),
-        transactionAmount: parseFloat(quantity) * parseFloat(price),
+        transactionAmount: (parseFloat(quantity) * parseFloat(price)).toFixed(2),
         meal: "-",
         wing,
       });
@@ -1305,7 +1305,7 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
         quantityChange: parseFloat(quantity),
         type: "OUT",
         date: new Date(date),
-        transactionAmount: parseFloat(quantity) * stock.price,
+        transactionAmount: (parseFloat(quantity) * stock.price).toFixed(2),
         meal,
         wing,
       });
@@ -1329,7 +1329,7 @@ router.post("/transaction/batch", validateToken, async (req, res) => {
         quantityChange: parseFloat(quantity),
         type: "OUT",
         date: new Date(date),
-        transactionAmount: parseFloat(quantity) * parseFloat(price),
+        transactionAmount: (parseFloat(quantity) * parseFloat(price)).toFixed(2),
         category: "NON_STORED",
         meal,
         wing,
