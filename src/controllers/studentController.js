@@ -50,14 +50,11 @@ router.delete(
   validateToken,
   checkAdminRole,
   async (req, res) => {
-    const session = await Student.startSession(); // Start a session for transactions
-    session.startTransaction();
-
     try {
       const { studentId } = req.params;
 
       // Find the student in the Student collection
-      const student = await Student.findOne({ studentId }).session(session);
+      const student = await Student.findOne({ studentId });
 
       if (!student) {
         return res.status(404).json({ message: "Student not found" });
@@ -78,26 +75,22 @@ router.delete(
         residence: student.residence,
       };
 
-      await Alumni.create([alumniData], { session });
-
+      
       // Delete the student from the Student collection
-      await Student.findOneAndDelete({ studentId }).session(session);
-
+      await Student.findOneAndDelete({ studentId });
+      
       // Delete any associated meal data from the Meal collection
-      await Meal.deleteMany({ studentId }).session(session);
-
-      // Commit the transaction
-      await session.commitTransaction();
-      session.endSession();
-
+      await Meal.deleteMany({ studentId });
+      
+      const alumniWithStudentId = Alumni.find({ studentId: student.studentId });
+      if (!alumniWithStudentId) {
+        await Alumni.create([alumniData]);
+      }
+      
       res
         .status(200)
         .json({ message: "Student moved to alumni and deleted successfully" });
     } catch (error) {
-      // Rollback the transaction in case of an error
-      await session.abortTransaction();
-      session.endSession();
-
       console.error("Error deleting student:", error);
       res
         .status(500)
