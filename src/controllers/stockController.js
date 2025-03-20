@@ -875,11 +875,14 @@ router.delete("/transaction/:id", validateToken, async (req, res) => {
     // Allow deletion only if:
     // - It is from the current month, OR
     // - It is from the previous month and the current date is on or before the 15th
-    if (!isCurrentMonth && (!isPreviousMonth || currentDate.getDate() > 15)) {
-      return res.status(400).json({
-        error: "Current & Previous month's transaction can be deleted."
-      });
-    }
+
+    // TODO: Implement this logic for deleting previous month's transactions and current month only
+    
+    // if (!isCurrentMonth && (!isPreviousMonth || currentDate.getDate() > 15)) {
+    //   return res.status(400).json({
+    //     error: "Current & Previous month's transaction can be deleted."
+    //   });
+    // }
 
     const prevTransactionAmount = stockTransaction.transactionAmount;
     const prevQuantityChange = stockTransaction.quantityChange;
