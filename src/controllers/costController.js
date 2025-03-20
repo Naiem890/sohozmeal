@@ -131,9 +131,24 @@ router.post("/sync", validateToken, async (req, res) => {
     let outItems = {};
     let avgItemPrice = {};
 
-    // Define the start and end dates for the given month and year
-    const startDate = new Date(year, month - 1, 1); // Start of the month
-    const endDate = new Date(year, month, 0, 23, 59, 59); // Last day of the month
+    // Calculate previous month and year
+    const previousMonth = month === 1 ? 12 : month - 1;
+    const previousYear = month === 1 ? year - 1 : year;
+
+    // Previous month start and end dates
+    const previousMonthStartDate = new Date(previousYear, previousMonth - 1, 1);
+    const previousMonthEndDate = new Date(previousYear, previousMonth, 0, 23, 59, 59);
+
+    // Current month start and end dates
+    const currentMonthStartDate = new Date(year, month - 1, 1);
+    const currentMonthEndDate = new Date(year, month, 0, 23, 59, 59);
+
+    // Calculation period
+    const startDate = previousMonthStartDate;   // start from previous month start
+    const endDate = currentMonthEndDate;        // end at current month end
+    
+    console.log("startDate: ", startDate);
+    console.log("endDate: ", endDate);
 
     // Define next month's dates
     const nextMonth = (month % 12) + 1;

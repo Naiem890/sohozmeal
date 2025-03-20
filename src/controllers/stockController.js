@@ -665,18 +665,19 @@ router.put("/transaction/:transactionId", validateToken, async (req, res) => {
     const firstOfTransactionMonth = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), 2);
     let fifteenthOfNextMonth;
 
-    // Handle the case where the transaction is in December (year transition)
-    if (transactionDate.getMonth() === 11) { // December
-      fifteenthOfNextMonth = new Date(transactionDate.getFullYear() + 1, 0, 15); // January 15th of next year
-    } else {
-      fifteenthOfNextMonth = new Date(transactionDate.getFullYear(), transactionDate.getMonth() + 1, 16); // 15th of next month
-    }
-    // Check if the current date falls within the editable range (1st of transaction month to 15th of next month)
-    if (currentDate < firstOfTransactionMonth || currentDate > fifteenthOfNextMonth) {
-      return res.status(400).json({
-        error: "You can only modify transactions from the month they occurred to the 15th of the following month.",
-      });
-    }
+    //TODO: update available only if the transaction is in the current month or previous month 15th
+    // // Handle the case where the transaction is in December (year transition)
+    // if (transactionDate.getMonth() === 11) { // December
+    //   fifteenthOfNextMonth = new Date(transactionDate.getFullYear() + 1, 0, 15); // January 15th of next year
+    // } else {
+    //   fifteenthOfNextMonth = new Date(transactionDate.getFullYear(), transactionDate.getMonth() + 1, 16); // 15th of next month
+    // }
+    // // Check if the current date falls within the editable range (1st of transaction month to 15th of next month)
+    // if (currentDate < firstOfTransactionMonth || currentDate > fifteenthOfNextMonth) {
+    //   return res.status(400).json({
+    //     error: "You can only modify transactions from the month they occurred to the 15th of the following month.",
+    //   });
+    // }
 
     // Save the current transactionAmount as prevTransactionAmount
     const prevTransactionAmount = stockTransaction.transactionAmount;
@@ -877,7 +878,7 @@ router.delete("/transaction/:id", validateToken, async (req, res) => {
     // - It is from the previous month and the current date is on or before the 15th
 
     // TODO: Implement this logic for deleting previous month's transactions and current month only
-    
+
     // if (!isCurrentMonth && (!isPreviousMonth || currentDate.getDate() > 15)) {
     //   return res.status(400).json({
     //     error: "Current & Previous month's transaction can be deleted."
