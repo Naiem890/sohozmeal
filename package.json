@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/app.js",
-    "start": "node src/app.js"
+    "start": "node src/app.js",
+    "generateJson:male": "node src/data/generateJson.js male",
+    "generateJson:female": "node src/data/generateJson.js female",
+    "dbUpload:male": "node src/data/dbUpload.js male",
+    "dbUpload:female": "node src/data/dbUpload.js female"
   },
   "repository": {
     "type": "git",
