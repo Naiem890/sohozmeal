@@ -64,8 +64,8 @@ const TransactionHistory = () => {
   // Function to sort transactions by date
   const sortTransactionsByDate = (transactions, order) => {
     return [...transactions].sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime(); // Convert to timestamp
-      const dateB = new Date(b.createdAt).getTime(); // Convert to timestamp
+      const dateA = new Date(a.date).getTime(); // Convert to timestamp
+      const dateB = new Date(b.date).getTime(); // Convert to timestamp
       return order === "ASC" ? dateA - dateB : dateB - dateA;
     });
   };
@@ -73,7 +73,7 @@ const TransactionHistory = () => {
   // Memoize filtered transactions
   const filteredData = useMemo(() => {
     const filtered = transactions.filter((transaction) => {
-      const transactionDate = new Date(transaction.createdAt);
+      const transactionDate = new Date(transaction.date);
       const withinDateRange =
         transactionDate >= fromDate && transactionDate <= toDate;
       const typeMatch =
