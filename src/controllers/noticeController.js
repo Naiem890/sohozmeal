@@ -2,38 +2,52 @@ const router = require("express").Router();
 const { validateToken } = require("../utils/validateToken");
 const Notice = require("../models/notice");
 
-// Get all notices
+// Get all notices (paginated)
 router.get("/", validateToken, async (req, res) => {
   try {
-    const notices = await Notice.find({});
-    res.status(200).json(notices);
+    const { page = 1, limit = 10 } = req.query;
+    const pageNum  = Math.max(1, parseInt(page)  || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
+
+    const [notices, total] = await Promise.all([
+      Notice.find({}).sort({ createdAt: -1 }).skip((pageNum - 1) * limitNum).limit(limitNum),
+      Notice.countDocuments({}),
+    ]);
+
+    res.status(200).json({
+      notices,
+      pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) },
+    });
   } catch (error) {
     console.error("Error fetching notices:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while fetching notices" });
+    res.status(500).json({ message: "An error occurred while fetching notices" });
   }
 });
-// Get all notices for selected wing
+
+// Get notices for a selected wing (paginated)
 router.get("/:noticeFor", validateToken, async (req, res) => {
   try {
     const { noticeFor } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const pageNum  = Math.max(1, parseInt(page)  || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
 
-    let filter;
-    if (noticeFor === "ALL") {
-      filter = { noticeFor: { $in: ["MALE", "FEMALE", "ALL"] } };
-    } else {
-      filter = { noticeFor: { $in: [noticeFor, "ALL"] } };
-    }
+    const filter = noticeFor === "ALL"
+      ? { noticeFor: { $in: ["MALE", "FEMALE", "ALL"] } }
+      : { noticeFor: { $in: [noticeFor, "ALL"] } };
 
-    const notices = await Notice.find(filter);
+    const [notices, total] = await Promise.all([
+      Notice.find(filter).sort({ createdAt: -1 }).skip((pageNum - 1) * limitNum).limit(limitNum),
+      Notice.countDocuments(filter),
+    ]);
 
-    res.status(200).json(notices);
+    res.status(200).json({
+      notices,
+      pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) },
+    });
   } catch (error) {
     console.error("Error fetching notices:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while fetching notices" });
+    res.status(500).json({ message: "An error occurred while fetching notices" });
   }
 });
 

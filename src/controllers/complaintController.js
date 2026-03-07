@@ -33,11 +33,23 @@ router.post("/", validateToken, async (req, res) => {
   }
 });
 
-// GET /api/complaints
+// GET /api/complaints (paginated)
 router.get("/", validateToken, async (req, res) => {
   try {
-      const complaints = await Complaint.find({ complainedBy: req.user.id }).sort({ createdAt: -1 });
-      res.status(200).json(complaints);
+      const { page = 1, limit = 10 } = req.query;
+      const pageNum  = Math.max(1, parseInt(page)  || 1);
+      const limitNum = Math.min(50, Math.max(1, parseInt(limit) || 10));
+
+      const filter = { complainedBy: req.user.id };
+      const [complaints, total] = await Promise.all([
+        Complaint.find(filter).sort({ createdAt: -1 }).skip((pageNum - 1) * limitNum).limit(limitNum),
+        Complaint.countDocuments(filter),
+      ]);
+
+      res.status(200).json({
+        complaints,
+        pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) },
+      });
   } catch (error) {
       res.status(400).json({ error: error.message });
   }

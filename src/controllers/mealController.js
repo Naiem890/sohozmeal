@@ -2,6 +2,7 @@ const router = require("express").Router();
 const Meal = require("../models/meal");
 const Student = require("../models/student");
 const Routine = require("../models/routine");
+const MealConfig = require("../models/mealConfig");
 const { validateToken } = require("../utils/validateToken");
 const HallFeast = require("../models/hallFeast");
 const { checkAdminRole } = require("../utils/checkAdminRole");
@@ -16,6 +17,15 @@ const weekDays = [
   "FRIDAY",
 ];
 
+// Helper: return tomorrow's date string in Asia/Dhaka timezone
+function getTomorrowDhaka() {
+  const now = new Date();
+  const dhakaToday = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
+  const dhakaTomorrow = new Date(dhakaToday);
+  dhakaTomorrow.setDate(dhakaToday.getDate() + 1);
+  return dhakaDateStr(dhakaTomorrow);
+}
+
 // Get routine by wing
 router.get("/routine", validateToken, async (req, res) => {
   const { wing } = req.query;
@@ -26,9 +36,10 @@ router.get("/routine", validateToken, async (req, res) => {
   try {
     const routines = await Routine.find({ wing: wing.toUpperCase() });
 
-    // Sort the routines in the desired order
+    // Sort the routines in the desired order, filling missing days with empty defaults
     const sortedRoutines = weekDays.map((day) =>
-      routines.find((routine) => routine.day === day)
+      routines.find((routine) => routine.day === day) ||
+      { day, breakfast: "", lunch: "", dinner: "" }
     );
 
     res.json(sortedRoutines);
@@ -92,7 +103,6 @@ router.put("/routine", async (req, res) => {
         routine.dinner = dinner;
       } else {
         // If the routine doesn't exist, create a new one
-        // console.log(breakfast,lunch,dinner,day,wing, "jjs");
         routine = new Routine({
           day: day.toUpperCase(),
           breakfast,
@@ -116,16 +126,51 @@ router.put("/routine", async (req, res) => {
   }
 });
 
+// GET /config — return cutoff config for a wing (any authenticated user)
+router.get("/config", validateToken, async (req, res) => {
+  const { wing } = req.query;
+  if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+    return res.status(400).json({ error: "Invalid or missing wing parameter" });
+  }
+  try {
+    const config = await MealConfig.findOne({ wing: wing.toUpperCase() });
+    if (!config) {
+      return res.status(200).json({ wing: wing.toUpperCase(), cutoffHour: 22, cutoffMinute: 0 });
+    }
+    res.status(200).json(config);
+  } catch (err) {
+    console.error("Error fetching meal config:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /config — upsert cutoff config for a wing (admin only)
+router.put("/config", validateToken, checkAdminRole, async (req, res) => {
+  const { wing, cutoffHour, cutoffMinute } = req.body;
+  if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+    return res.status(400).json({ error: "Invalid or missing wing" });
+  }
+  if (cutoffHour === undefined || cutoffMinute === undefined) {
+    return res.status(400).json({ error: "cutoffHour and cutoffMinute are required" });
+  }
+  try {
+    const config = await MealConfig.findOneAndUpdate(
+      { wing: wing.toUpperCase() },
+      { wing: wing.toUpperCase(), cutoffHour: Number(cutoffHour), cutoffMinute: Number(cutoffMinute) },
+      { upsert: true, new: true }
+    );
+    res.status(200).json({ message: "Meal config updated", config });
+  } catch (err) {
+    console.error("Error updating meal config:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // Plan meals for students based on wing
 router.get("/plan", validateToken, async (req, res) => {
   const { studentId } = req.user;
   const { year, month } = req.query;
   console.log(studentId, year, month, "jjs");
-
-  // if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
-  //   return res.status(400).json({ error: "Invalid or missing wing parameter" });
-  // }
 
   try {
     let filter = { studentId: studentId };
@@ -247,6 +292,37 @@ router.put("/plan/:mealId", validateToken, async (req, res) => {
     const mealDate = mealToUpdate.date;
     const mealType = Object.keys(newMeal)[0]; // Extract meal type (e.g., "breakfast", "lunch", or "dinner")
 
+    // Get student's wing for cutoff config
+    const student = await Student.findOne({ studentId }, { gender: 1 });
+    const wing = student?.gender || "MALE";
+    const config = await MealConfig.findOne({ wing });
+    const cutoffHour = config?.cutoffHour ?? 22;
+    const cutoffMinute = config?.cutoffMinute ?? 0;
+
+    // Compute the currently editable date (mirrors frontend validDate logic):
+    // before cutoff → day+1 (tomorrow), after cutoff → day+2 (cron has already run)
+    const now = new Date();
+    const dhakaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
+    const currentHour = dhakaTime.getHours();
+    const currentMinute = dhakaTime.getMinutes();
+    const afterCutoff =
+      currentHour > cutoffHour ||
+      (currentHour === cutoffHour && currentMinute >= cutoffMinute);
+    const editableDate = new Date(dhakaTime);
+    editableDate.setDate(dhakaTime.getDate() + (afterCutoff ? 2 : 1));
+    const editableDateStr = `${editableDate.getFullYear()}-${String(editableDate.getMonth() + 1).padStart(2, "0")}-${String(editableDate.getDate()).padStart(2, "0")}`;
+
+    if (mealDate !== editableDateStr) {
+      const hh = String(cutoffHour).padStart(2, "0");
+      const mm = String(cutoffMinute).padStart(2, "0");
+      if (afterCutoff) {
+        return res.status(403).json({
+          message: `Cutoff passed for ${wing} wing. Locked at ${hh}:${mm}.`,
+        });
+      }
+      return res.status(403).json({ message: "Can only edit tomorrow's meal" });
+    }
+
     // Check if a hall feast exists for the same date and meal type
     const hallFeastExists = await HallFeast.findOne({
       date: mealDate,
@@ -286,6 +362,7 @@ router.put("/plan/:mealId", validateToken, async (req, res) => {
     res.status(500).json({ message: "An error occurred while updating meal" });
   }
 });
+
 //generate meal for all or specific student
 router.post("/generate-meal", async (req, res) => {
   const { date } = req.body;
@@ -368,7 +445,6 @@ router.post("/generate-meal", async (req, res) => {
 
 // add route to delete all meal by date
 router.delete("/plan", async (req, res) => {
-  // const date = "2023-09-22";
   const date = req.body.date;
 
   try {
@@ -397,7 +473,7 @@ const formatDate = (dateString) => {
 
 
 router.get("/students", async (req, res) => {
-  const { date, gender } = req.query;
+  const { date, gender, search, residence } = req.query;
   if (!date) {
     return res.status(400).json({ error: "Date parameter is required" });
   }
@@ -407,37 +483,51 @@ router.get("/students", async (req, res) => {
   }
 
   try {
-    // Find students filtered by gender
-    const students = await Student.find({ gender }, { studentId: 1, hallId: 1, name: 1, gender: 1, residence: 1, roomNo: 1 });
+    const studentFilter = { gender };
 
-    if (students.length === 0) {
-      return res.status(404).json({ error: "No students found" });
+    if (residence) {
+      studentFilter.residence = residence;
     }
 
-    // Find the meals for the provided date
+    if (search) {
+      // Escape regex special chars to prevent ReDoS
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escaped, "i");
+      studentFilter.$or = [
+        { studentId: regex },
+        { hallId: regex },
+        { name: regex },
+      ];
+    }
+
+    const students = await Student.find(studentFilter, {
+      studentId: 1, hallId: 1, name: 1, gender: 1, residence: 1, roomNo: 1,
+    });
+
+    // Return empty array (not 404) when filters yield no results
+    if (students.length === 0) {
+      return res.status(200).json([]);
+    }
+
     const meals = await Meal.find({ date });
 
-    // Create a map of meal status by studentId
     const mealMap = meals.reduce((acc, meal) => {
       acc[meal.studentId] = meal.meal;
       acc[meal.studentId].guestMeal = meal.guestMeal;
       return acc;
     }, {});
 
-    // Map through students and include their meal status
-    const studentMealData = students.map(student => {
-      return {
-        studentId: student.studentId,
-        batch: student.batch,
-        hallId: student.hallId,
-        name: student.name,
-        gender: student.gender,
-        residence: student.residence,
-        roomNo: student.roomNo,
-        meal: mealMap[student.studentId] || { breakfast: false, lunch: false, dinner: false }, // Default to false if no meal found
-        guestMeal: mealMap[student.studentId].guestMeal || { breakfast: 0, lunch: 0, dinner: 0 }
-      };
-    });
+    const studentMealData = students.map(student => ({
+      studentId: student.studentId,
+      batch: student.batch,
+      hallId: student.hallId,
+      name: student.name,
+      gender: student.gender,
+      residence: student.residence,
+      roomNo: student.roomNo,
+      meal: mealMap[student.studentId] || { breakfast: false, lunch: false, dinner: false },
+      guestMeal: mealMap[student.studentId]?.guestMeal || { breakfast: 0, lunch: 0, dinner: 0 },
+    }));
 
     res.status(200).json(studentMealData);
   } catch (error) {

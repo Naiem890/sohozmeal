@@ -9,7 +9,8 @@
     "generateJson:male": "node src/data/generateJson.js male",
     "generateJson:female": "node src/data/generateJson.js female",
     "dbUpload:male": "node src/data/dbUpload.js male",
-    "dbUpload:female": "node src/data/dbUpload.js female"
+    "dbUpload:female": "node src/data/dbUpload.js female",
+    "seed": "node src/data/seed.js"
   },
   "repository": {
     "type": "git",
