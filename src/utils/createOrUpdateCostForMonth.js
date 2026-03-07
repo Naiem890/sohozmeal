@@ -1,4 +1,5 @@
 const Cost = require("../models/cost");
+const r2 = (v) => Math.round(v * 100) / 100;
 const { StockTransaction } = require("../models/stock");
 const HallFeast = require("../models/hallFeast");
 const Student = require("../models/student");
@@ -108,9 +109,9 @@ async function createOrUpdateCostForMonth(year, month, wing) {
       const dinnerCount = dinnerFeastExists ? totalStudents : totalDinnerCount;
 
       // Extract meal costs
-      const breakfastCost = mealCosts[0]?.breakfastCost || 0;
-      const lunchCost = mealCosts[0]?.lunchCost || 0;
-      const dinnerCost = mealCosts[0]?.dinnerCost || 0;
+      const breakfastCost = r2(mealCosts[0]?.breakfastCost || 0);
+      const lunchCost     = r2(mealCosts[0]?.lunchCost     || 0);
+      const dinnerCost    = r2(mealCosts[0]?.dinnerCost    || 0);
 
       // Update the existing bill or create a new one if it doesn't exist
       await Cost.findOneAndUpdate(

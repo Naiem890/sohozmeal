@@ -88,6 +88,14 @@ const stockTransactionSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    // Per-unit price:
+    //   IN        → price per unit as entered by admin
+    //   OUT       → weighted average price at the moment this OUT was recorded
+    //   LEFT_OVER → weighted average price at end of the closed period
+    unitPrice: {
+      type: Number,
+      default: 0,
+    },
     date: {
       type: Date,
       required: true,
@@ -96,7 +104,7 @@ const stockTransactionSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["IN", "OUT", "LEFT_OVER"],
+      enum: ["IN", "OUT"],
     },
     category: {
       type: String,
@@ -106,7 +114,7 @@ const stockTransactionSchema = new mongoose.Schema(
     meal: {
       type: String,
       required: true,
-      enum: ["BREAKFAST", "LUNCH", "DINNER", "-"], 
+      enum: ["BREAKFAST", "LUNCH", "DINNER", "-"],
     },
     wing: {
       type: String,
