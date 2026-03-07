@@ -1,11 +1,14 @@
 const router = require("express").Router();
+const r2 = (v) => Math.round(v * 100) / 100;
+const r4 = (v) => Math.round(v * 10000) / 10000;
 const Cost = require("../models/cost");
 const HallFeast = require("../models/hallFeast");
 const Meal = require("../models/meal");
-const { StockItem, StockTransaction, Stock } = require("../models/stock");
+const { StockItem } = require("../models/stock");
 const Student = require("../models/student");
 const { createOrUpdateBill } = require("../utils/billService");
 const { createOrUpdateCostForMonth } = require("../utils/createOrUpdateCostForMonth");
+const { recomputeStockHistory } = require("../utils/stockRecompute");
 const { validateToken } = require("../utils/validateToken");
 
 // Generate bills for all students from date x to date y
@@ -100,7 +103,7 @@ router.post("/generate-bills", validateToken, async (req, res) => {
       const { studentId } = student;
       return {
         ...student.toObject(),
-        totalCost: studentInfo[studentId] ? studentInfo[studentId].totalCost : 0
+        totalCost: studentInfo[studentId] ? r2(studentInfo[studentId].totalCost) : 0
       };
     });
 
@@ -117,189 +120,44 @@ router.post("/generate-bills", validateToken, async (req, res) => {
 
 // Helper function to calculate per head cost
 function calculatePerHeadCost(mealBill) {
-  return mealBill.totalStudent > 0 ? mealBill.totalCost / mealBill.totalStudent : 0;
+  return mealBill.totalStudent > 0 ? r4(mealBill.totalCost / mealBill.totalStudent) : 0;
 }
 
 router.post("/sync", validateToken, async (req, res) => {
   try {
     const { month, year, wing } = req.query;
-    const stockItems = await StockItem.find({category: "STORED"});
 
-    // Initialize objects to store the leftover items, IN items, OUT items, and average prices
-    let leftOverItems = {};
-    let inItems = {};
-    let outItems = {};
-    let avgItemPrice = {};
+    if (!month || !year || isNaN(month) || isNaN(year)) {
+      return res.status(400).json({ error: "Invalid month or year" });
+    }
+    if (!wing || !["MALE", "FEMALE"].includes(wing.toUpperCase())) {
+      return res.status(400).json({ error: "Invalid or missing wing parameter" });
+    }
 
-    // Calculate previous month and year
-    const previousMonth = month === 1 ? 12 : month - 1;
-    const previousYear = month === 1 ? year - 1 : year;
+    const outWing = wing.toUpperCase();
 
-    // Previous month start and end dates
-    const previousMonthStartDate = new Date(previousYear, previousMonth - 1, 1);
-    const previousMonthEndDate = new Date(previousYear, previousMonth, 0, 23, 59, 59);
+    const stockItems = await StockItem.find({ category: "STORED", wing: outWing });
+    const allAffectedDates = new Set();
 
-    // Current month start and end dates
-    const currentMonthStartDate = new Date(year, month - 1, 1);
-    const currentMonthEndDate = new Date(year, month, 0, 23, 59, 59);
-
-    // Calculation period
-    const startDate = previousMonthStartDate;   // start from previous month start
-    const endDate = currentMonthEndDate;        // end at current month end
-    
-    console.log("startDate: ", startDate);
-    console.log("endDate: ", endDate);
-
-    // Define next month's dates
-    const nextMonth = (month % 12) + 1;
-    const nextYear = Number(month) === 12 ? Number(year) + 1 : year;
-    const nextMonthStartDate = new Date(nextYear, nextMonth - 1, 2);
-    const nextMonthEndDate = new Date(nextYear, nextMonth, 0, 23, 59, 59);
-
-    const bulkStockUpdates = [];
-    const bulkTransactionUpdates = [];
-    const newLeftOverTransactions = [];
-
-    // Use for...of to handle async operations
     for (const item of stockItems) {
-      // Fetch all transactions in parallel
-      const [leftOverTransactions, inTransactions, outTransactions] = await Promise.all([
-        StockTransaction.find({
-          item: item._id,
-          type: "LEFT_OVER",
-          date: { $gte: startDate, $lte: endDate },
-          wing: wing,
-        }),
-        StockTransaction.find({
-          item: item._id,
-          type: "IN",
-          date: { $gte: startDate, $lte: endDate },
-          wing: wing,
-        }),
-        StockTransaction.find({
-          item: item._id,
-          type: "OUT",
-          date: { $gte: startDate, $lte: endDate },
-          wing: wing,
-        })
-      ]);
-
-      // Map item._id to its corresponding transactions
-      leftOverItems[item._id] = leftOverTransactions[0] || null; // First LEFT_OVER transaction
-      inItems[item._id] = inTransactions;
-      outItems[item._id] = outTransactions;
-
-      let previousLeftOver = 0;
-      let stockIn = 0;
-      let stockOut = 0;
-      let totalAmount = 0;
-      let averagePrice = 0;
-
-      // Calculate the previous leftover quantity and total amount
-      if (leftOverTransactions.length > 0) {
-        previousLeftOver = leftOverTransactions[0].quantityChange;
-        totalAmount += leftOverTransactions[0].transactionAmount;
-      }
-
-      // Calculate stockIn (IN transactions) and total amount
-      inTransactions.forEach((transaction) => {
-        stockIn += transaction.quantityChange;
-        totalAmount += transaction.transactionAmount;
-      });
-
-      // Calculate stockOut (OUT transactions)
-      outTransactions.forEach((transaction) => {
-        stockOut += transaction.quantityChange;
-      });
-      // Calculate total quantity as previousLeftOver + stockIn - stockOut
-      const totalQuantity = previousLeftOver + stockIn - stockOut;
-
-      // Calculate average price if totalQuantity is not zero
-      averagePrice = (previousLeftOver + stockIn) > 0 ? totalAmount / (previousLeftOver + stockIn) : 0;
-      avgItemPrice[item._id] = averagePrice;
-
-      // Update OUT transaction amounts based on the average price
-      if (outTransactions.length > 0) {
-        outTransactions.forEach((transaction) => {
-          const newTransactionAmount = averagePrice * transaction.quantityChange;
-          bulkTransactionUpdates.push({
-            updateOne: {
-              filter: { _id: transaction._id },
-              update: { $set: { transactionAmount: newTransactionAmount } },
-            },
-          });
-        });
-      }
-
-      // Check if the stock already exists for the item
-      const stock = await Stock.findOne({ item: item._id, wing: wing });
-      if (stock) {
-        // Update the stock with the calculated total quantity and price
-        bulkStockUpdates.push({
-          updateOne: {
-            filter: { _id: stock._id },
-            update: { $set: { quantity: totalQuantity, price: averagePrice } },
-          },
-        });
-      } else if (inTransactions.length > 0 || outTransactions.length > 0 || leftOverTransactions.length > 0) {
-        return res.status(500).json({ message: "Stock not found but transaction found!" });
-      }
-
-      // Calculate the overall quantity for the next month
-      const nextMonthLeftoverQuantity = stockIn + previousLeftOver - stockOut;
-
-      // Check if a leftover transaction exists for the next month
-      const nextMonthLeftOver = await StockTransaction.findOne({
-        item: item._id,
-        type: "LEFT_OVER",
-        date: { $gte: nextMonthStartDate, $lte: nextMonthEndDate },
-        wing: wing,
-      });
-
-      if (nextMonthLeftOver) {
-        // If the leftover transaction exists, update it with the new quantity and price
-        bulkTransactionUpdates.push({
-          updateOne: {
-            filter: { _id: nextMonthLeftOver._id },
-            update: {
-              $set: {
-                quantityChange: nextMonthLeftoverQuantity,
-                transactionAmount: parseFloat(averagePrice * nextMonthLeftoverQuantity).toFixed(2)
-              }
-            }
-          }
-        });
-      } else if (nextMonthLeftoverQuantity > 0) {
-        // Create a new LEFT_OVER transaction for the next month if it doesn't exist
-        newLeftOverTransactions.push({
-          item: item._id,
-          type: "LEFT_OVER",
-          meal: "-",
-          date: nextMonthStartDate,
-          wing: wing,
-          quantityChange: nextMonthLeftoverQuantity,
-          transactionAmount: parseFloat(averagePrice * nextMonthLeftoverQuantity).toFixed(2),
-        });
-      }
+      // Replay all IN/OUT transactions from the beginning, correcting every STORED
+      // OUT amount and syncing Stock.quantity/price.
+      const affectedDates = await recomputeStockHistory(item._id, outWing);
+      affectedDates.forEach((d) => allAffectedDates.add(d));
     }
 
-    // Perform bulk updates for stocks and transactions
-    if (bulkStockUpdates.length > 0) {
-      await Stock.bulkWrite(bulkStockUpdates);
-    }
-    if (bulkTransactionUpdates.length > 0) {
-      await StockTransaction.bulkWrite(bulkTransactionUpdates);
-    }
+    // Regenerate Cost documents for every date where OUT amounts changed
+    await Promise.all(
+      Array.from(allAffectedDates).map((dateStr) => createOrUpdateBill(dateStr, outWing))
+    );
 
-    // Insert new leftover transactions if any
-    if (newLeftOverTransactions.length > 0) {
-      await StockTransaction.insertMany(newLeftOverTransactions);
-    }
-
-    res.status(200).json({ message: "done", leftOverItems, inItems, outItems, avgItemPrice });
+    res.status(200).json({
+      message: "Sync complete",
+      affectedDates: Array.from(allAffectedDates).sort(),
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "An error occurred", error });
+    res.status(500).json({ message: "An error occurred during sync", error });
   }
 });
 
@@ -379,10 +237,7 @@ router.get("/student", validateToken, async (req, res) => {
             $cond: [
               { $ne: ["$mealBill.breakfast.totalStudent", 0] },
               {
-                $divide: [
-                  "$mealBill.breakfast.totalCost",
-                  "$mealBill.breakfast.totalStudent",
-                ],
+                $round: [{ $divide: ["$mealBill.breakfast.totalCost", "$mealBill.breakfast.totalStudent"] }, 4],
               },
               0,
             ],
@@ -391,10 +246,7 @@ router.get("/student", validateToken, async (req, res) => {
             $cond: [
               { $ne: ["$mealBill.lunch.totalStudent", 0] },
               {
-                $divide: [
-                  "$mealBill.lunch.totalCost",
-                  "$mealBill.lunch.totalStudent",
-                ],
+                $round: [{ $divide: ["$mealBill.lunch.totalCost", "$mealBill.lunch.totalStudent"] }, 4],
               },
               0,
             ],
@@ -403,10 +255,7 @@ router.get("/student", validateToken, async (req, res) => {
             $cond: [
               { $ne: ["$mealBill.dinner.totalStudent", 0] },
               {
-                $divide: [
-                  "$mealBill.dinner.totalCost",
-                  "$mealBill.dinner.totalStudent",
-                ],
+                $round: [{ $divide: ["$mealBill.dinner.totalCost", "$mealBill.dinner.totalStudent"] }, 4],
               },
               0,
             ],
@@ -537,7 +386,7 @@ router.post("/monthly", validateToken, async (req, res) => {
 
 router.get("/monthly/all", validateToken, async (req, res) => {
   try {
-    const { month, year, wing } = req.query;
+    const { month, year, wing, search } = req.query;
 
     // Validate month and year
     if (!month || !year || isNaN(month) || isNaN(year)) {
@@ -549,9 +398,20 @@ router.get("/monthly/all", validateToken, async (req, res) => {
       return res.status(400).json({ error: "Invalid or missing wing parameter" });
     }
 
-    // Fetch all students of the specified wing (gender) and include the required fields
+    // Build student filter
+    const studentFilter = { gender: wing.toUpperCase() };
+    if (search) {
+      studentFilter.$or = [
+        { name:      { $regex: search, $options: "i" } },
+        { studentId: { $regex: search, $options: "i" } },
+        { hallId:    { $regex: search, $options: "i" } },
+        { department:{ $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Fetch students matching filter and include the required fields
     const students = await Student.find(
-      { gender: wing.toUpperCase() },
+      studentFilter,
       {
         studentId: 1,
         name: 1,
@@ -636,7 +496,7 @@ router.get("/monthly/all", validateToken, async (req, res) => {
 
     // Helper function to calculate per-head cost
     const calculatePerHeadCost = (totalCost, totalStudent) => {
-      return totalStudent > 0 ? totalCost / totalStudent : 0;
+      return totalStudent > 0 ? r4(totalCost / totalStudent) : 0;
     };
 
     // Populate meal status based on the fetched meals and calculate monthly cost
@@ -715,6 +575,11 @@ router.get("/monthly/all", validateToken, async (req, res) => {
           }
         }
       });
+    });
+
+    // Round final monthly totals per student
+    Object.keys(studentMonthlyCosts).forEach((id) => {
+      studentMonthlyCosts[id] = r2(studentMonthlyCosts[id]);
     });
 
     // Return the meal status, total monthly cost, and student details for each student
@@ -806,7 +671,7 @@ router.get("/monthly/student", validateToken, async (req, res) => {
 
     // Helper function to calculate per-head cost
     const calculatePerHeadCost = (totalCost, totalStudent) => {
-      return totalStudent > 0 ? totalCost / totalStudent : 0;
+      return totalStudent > 0 ? r4(totalCost / totalStudent) : 0;
     };
 
     // Populate meal status based on the fetched meals
@@ -888,7 +753,7 @@ router.get("/monthly/student", validateToken, async (req, res) => {
       message: `Meal status and monthly cost for student ${studentId} for the month of ${month}-${year}`,
       studentDetails: student,
       mealStatusByDay,
-      totalMonthlyCost,
+      totalMonthlyCost: r2(totalMonthlyCost),
     });
   } catch (error) {
     console.error("Error fetching meal status and monthly cost for student:", error);

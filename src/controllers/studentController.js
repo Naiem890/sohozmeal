@@ -101,16 +101,56 @@ router.delete(
 
 router.get("/all", validateToken, checkAdminRole, async (req, res) => {
   try {
-    // Fetch all students from the database
-    const students = await Student.find({}, { password: 0 });
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      department,
+      gender,
+      sortBy,
+      sortOrder,
+    } = req.query;
 
-    // Respond with the list of students as JSON
-    res.json(students);
+    const pageNum  = Math.max(1, parseInt(page)  || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+
+    // Build filter
+    const query = {};
+    if (search) {
+      query.$or = [
+        { studentId:  { $regex: search, $options: "i" } },
+        { hallId:     { $regex: search, $options: "i" } },
+        { name:       { $regex: search, $options: "i" } },
+      ];
+    }
+    if (department && department !== "all") query.department = department;
+    if (gender     && gender     !== "all") query.gender     = gender;
+
+    // Build sort
+    const sort = {};
+    if (sortBy) sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+    else        sort.hallId  = 1;
+
+    const [students, total] = await Promise.all([
+      Student.find(query, { password: 0 })
+        .sort(sort)
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum),
+      Student.countDocuments(query),
+    ]);
+
+    res.json({
+      students,
+      pagination: {
+        page:       pageNum,
+        limit:      limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+      },
+    });
   } catch (error) {
     console.error("Error fetching students:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while fetching students" });
+    res.status(500).json({ message: "An error occurred while fetching students" });
   }
 });
 
