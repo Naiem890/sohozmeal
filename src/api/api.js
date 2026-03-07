@@ -2,8 +2,8 @@ import axios from "axios";
 
 // Define your Axios instance
 export const Axios = axios.create({
-  // baseURL: "http://localhost:4000/api",
-  baseURL: "https://hall.mist.ac.bd/api",
+  baseURL: "http://localhost:5000/api",
+  // baseURL: "https://hall.mist.ac.bd/api",
 });
 
 // Attach the auth token to every request and handle file uploads

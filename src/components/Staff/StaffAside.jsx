@@ -1,41 +1,30 @@
-import {
-  ArrowRightOnRectangleIcon,
-  ShoppingBagIcon,
-  ShoppingCartIcon,
-  TableCellsIcon,
-  UserGroupIcon,
-  CurrencyBangladeshiIcon,
-  PencilIcon,
-} from "@heroicons/react/24/outline";
+import { LogOut, Users } from "lucide-react";
 import { useSignOut } from "react-auth-kit";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import Swal from "sweetalert2";
+import { useConfirm } from "../Common/ConfirmDialog";
 import { Axios } from "../../api/api";
 import MISTImage from "../../assets/MIST.png";
 import Logo from "../Common/Logo";
+import { cn } from "@/lib/utils";
 
-export default function StaffAside({ toggleDrawer }) {
+export default function StaffAside({ isOpen, onClose }) {
   const signOut = useSignOut();
   const navigate = useNavigate();
-  const location = useLocation(); // Get the current path
+  const location = useLocation();
+  const confirm = useConfirm();
 
   const handleSignOut = async () => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "You want to logout from Sohoz Meal?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-
-      confirmButtonText: "Yes, Logout!",
+    const ok = await confirm({
+      title: "Logout?",
+      description: "You will be logged out of Sohoz Meal.",
+      confirmText: "Logout",
+      cancelText: "Cancel",
     });
 
-    if (result.isConfirmed) {
+    if (ok) {
       try {
-        const logout = await Axios.post("/auth/logout", {});
-        console.log(logout);
+        await Axios.post("/auth/logout", {});
         localStorage.clear();
         signOut();
         navigate("/");
@@ -47,52 +36,57 @@ export default function StaffAside({ toggleDrawer }) {
   };
 
   const asideLinks = [
-    {
-      link: "Complaints",
-      path: "/staff/dashboard/",
-      icon: <UserGroupIcon className="h-6 w-6" />,
-    },
+    { link: "Complaints", path: "/staff/dashboard/", icon: <Users className="h-5 w-5" /> },
   ];
 
   return (
-    <div className="drawer-side z-[200]">
-      <label htmlFor="my-drawer-2" className="drawer-overlay"></label>
-      <ul className="menu  flex flex-col p-0 w-72 sm:w-80 min-h-full bg-[#f6f6f6] text-base-content font-medium">
-        <div className="menu-title py-10 px-6">
-          <Logo
-            logo={MISTImage}
-            alt="Osmany Hall"
-            title="Sohoz Meal (MIST)"
-            subTitle="Staff Portal"
-          />
-        </div>
-        {asideLinks.map((link, index) => (
-          <li key={index} className="px-4 text-base">
-            <Link
-              to={link.path}
-              onClick={toggleDrawer}
-              className={`py-4 rounded-lg hover:bg-white hover:shadow-md ${
-                location.pathname === link.path
-                  ? "bg-gray-300 shadow-md"
-                  : "text-gray-600"
-              }`}
-            >
-              {link.icon}
-              <span className="ml-2">{link.link}</span>
-            </Link>
-          </li>
-        ))}
+    <aside
+      className={cn(
+        "fixed inset-y-0 left-0 z-[200] flex flex-col w-72 bg-white shadow-lg transition-transform duration-300",
+        "lg:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}
+    >
+      <div className="py-8 px-6 border-b">
+        <Logo
+          logo={MISTImage}
+          alt="Osmany Hall"
+          title="Sohoz Meal (MIST)"
+          subTitle="Staff Portal"
+        />
+      </div>
 
-        <li className="px-4 text-base">
-          <button
-            onClick={handleSignOut}
-            className="py-4 rounded-lg text-red-600 hover:text-white hover:bg-red-600 active:bg-red-600"
-          >
-            <ArrowRightOnRectangleIcon className="h-6 w-6" />
-            <span className="ml-2">Logout</span>
-          </button>
-        </li>
-      </ul>
-    </div>
+      <nav className="flex-1 overflow-y-auto py-4">
+        <ul className="space-y-1 px-3">
+          {asideLinks.map((link) => (
+            <li key={link.path}>
+              <Link
+                to={link.path}
+                onClick={onClose}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors",
+                  location.pathname === link.path
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                )}
+              >
+                {link.icon}
+                <span>{link.link}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <div className="border-t p-3">
+        <button
+          onClick={handleSignOut}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+        >
+          <LogOut className="h-5 w-5" />
+          <span>Logout</span>
+        </button>
+      </div>
+    </aside>
   );
 }

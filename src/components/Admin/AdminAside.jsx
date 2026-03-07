@@ -1,48 +1,57 @@
 import {
-  ArrowRightOnRectangleIcon,
-  ShoppingBagIcon,
-  ShoppingCartIcon,
-  TableCellsIcon,
-  UserGroupIcon,
-  CurrencyBangladeshiIcon,
-  PencilIcon,
-  ChevronDoubleLeftIcon,
-  ChevronDoubleRightIcon,
-  DocumentTextIcon,
-  ExclamationCircleIcon,
-  HeartIcon,
-  ClipboardDocumentListIcon,
-} from "@heroicons/react/24/outline";
+  Users,
+  UtensilsCrossed,
+  CalendarDays,
+  ShoppingBag,
+  ArrowLeftRight,
+  ShoppingCart,
+  FileText,
+  Bell,
+  MessageSquareWarning,
+  Heart,
+  Settings,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useAuthUser, useSignOut } from "react-auth-kit";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import Swal from "sweetalert2";
+import { useConfirm } from "../Common/ConfirmDialog";
 import { Axios } from "../../api/api";
 import mistlogo from "../../assets/MIST.png";
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-export default function AdminAside({
-  toggleDrawer,
-  isCollapsed,
-  toggleCollapse,
-}) {
+const navLinks = [
+  { link: "Students", path: "/admin/dashboard/", icon: Users },
+  { link: "Meal Sheet", path: "/admin/dashboard/meal", icon: UtensilsCrossed },
+  { link: "Routine", path: "/admin/dashboard/meal-routine", icon: CalendarDays },
+  { link: "Stock", path: "/admin/dashboard/stock", icon: ShoppingBag },
+  { link: "Transactions", path: "/admin/dashboard/transaction-history", icon: ArrowLeftRight },
+  { link: "Expenses", path: "/admin/dashboard/expenses", icon: ShoppingCart },
+  { link: "Student Bill", path: "/admin/dashboard/bills", icon: FileText },
+  { link: "Notice Board", path: "/admin/dashboard/notice-board", icon: Bell },
+  { link: "Complaints", path: "/admin/dashboard/complaints", icon: MessageSquareWarning },
+  { link: "Blood Bank", path: "/admin/dashboard/blood-bank", icon: Heart },
+  { link: "Settings", path: "/admin/dashboard/settings", icon: Settings },
+];
+
+export default function AdminAside({ toggleDrawer, isCollapsed, toggleCollapse }) {
   const auth = useAuthUser()();
   const signOut = useSignOut();
   const navigate = useNavigate();
   const location = useLocation();
+  const confirm = useConfirm();
 
-  // Handle SignOut confirmation and logic
   const handleSignOut = async () => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "You want to logout from Sohoz Meal?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, Logout!",
+    const ok = await confirm({
+      title: "Logout?",
+      description: "You will be logged out of Sohoz Meal.",
+      confirmText: "Logout",
+      cancelText: "Cancel",
     });
-
-    if (result.isConfirmed) {
+    if (ok) {
       try {
         await Axios.post("/auth/logout", {});
         localStorage.clear();
@@ -50,132 +59,95 @@ export default function AdminAside({
         navigate("/");
         toast.success("Logged out successfully!");
       } catch (error) {
-        console.error("Logout error: ", error);
+        console.error("Logout error:", error);
       }
     }
   };
 
-  // Sidebar links
-  const asideLinks = [
-    {
-      link: "Students",
-      path: "/admin/dashboard/",
-      icon: <UserGroupIcon className="h-6 w-6" />,
-    },
-    {
-      link: "Meal",
-      path: "/admin/dashboard/meal",
-      icon: <PencilIcon className="h-6 w-6" />,
-    },
-    {
-      link: "Routine",
-      path: "/admin/dashboard/meal-routine",
-      icon: <TableCellsIcon className="w-6 h-6" />,
-    },
-    {
-      link: "Stock",
-      path: "/admin/dashboard/stock",
-      icon: <ShoppingBagIcon className="h-6 w-6" />,
-    },
-    {
-      link: "Transaction",
-      path: "/admin/dashboard/transaction-history",
-      icon: <CurrencyBangladeshiIcon className="h-6 w-6" />,
-    },
-    {
-      link: "Expenses",
-      path: "/admin/dashboard/expenses",
-      icon: <ShoppingCartIcon className="h-6 w-6" />,
-    },
-    {
-      link: "Student Bill",
-      path: "/admin/dashboard/bills",
-      icon: <DocumentTextIcon className="h-6 w-6" />,
-    },
-    {
-      link: "Notice Board",
-      path: "/admin/dashboard/notice-board",
-      icon: <ClipboardDocumentListIcon className="h-6 w-6" />,
-    },
-    {
-      link: "Complaints",
-      path: "/admin/dashboard/complaints",
-      icon: <ExclamationCircleIcon className="h-6 w-6" />,
-    },
-    {
-      link: "Blood Bank",
-      path: "/admin/dashboard/blood-bank",
-      icon: <HeartIcon className="h-6 w-6" />,
-    },
-  ];
-
   return (
-    <div
-      className={`fixed z-[200] top-0 left-0 ${
-        isCollapsed ? "w-20" : "w-52"
-      } bg-[#f6f6f6] h-screen overflow-y-auto overflow-x-hidden transition-all duration-300`}
-    >
-      {/* Collapse Button */}
-      <div className=" py-4 px-6 flex justify-end items-center">
-        <button onClick={toggleCollapse} className="btn btn-circle btn-sm">
-          {isCollapsed ? (
-            <ChevronDoubleRightIcon className="h-6 w-6" />
-          ) : (
-            <ChevronDoubleLeftIcon className="h-6 w-6" />
+    <TooltipProvider delayDuration={0}>
+      <aside
+        className={cn(
+          "fixed z-[200] top-0 left-0 h-screen flex flex-col bg-white border-r border-border transition-all duration-300 overflow-hidden",
+          isCollapsed ? "w-[60px]" : "w-56"
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-4 border-b border-border min-h-[64px]">
+          {!isCollapsed && (
+            <div className="flex items-center gap-2 overflow-hidden">
+              <img src={mistlogo} className="w-8 h-8 flex-shrink-0" alt="MIST" />
+              <div className="leading-tight overflow-hidden">
+                <p className="text-xs font-bold text-foreground truncate">Sohoz Meal</p>
+                <p className="text-[10px] text-muted-foreground truncate">{auth?.wing} Wing</p>
+              </div>
+            </div>
           )}
-        </button>
-      </div>
-
-      {!isCollapsed && (
-        <div className="flex justify-between items-center mb-4 px-2">
-          <div>
-            <img src={mistlogo} className="w-24" />
-          </div>
-          <div>
-            <h2 className="font-bold text-3xl text-end text-black opacity-50">
-              Admin
-            </h2>
-            <h2 className="font-thin text-end text-black opacity-50">
-              {`${auth.wing}`} Wing
-            </h2>
-          </div>
-        </div>
-      )}
-
-      {/* Links */}
-      <ul className="menu flex flex-col p-0 text-base-content font-medium">
-        {asideLinks.map((link, index) => {
-          const isActive = location.pathname === link.path;
-          return (
-            <li key={index} className="px-4 text-base">
-              <Link
-                to={link.path}
-                onClick={toggleDrawer}
-                className={`py-[12px] rounded-lg flex items-center transition-all duration-200 ${
-                  isActive
-                    ? "bg-gray-300 shadow-md"
-                    : "text-gray-600 hover:bg-white hover:shadow-md"
-                }`}
-              >
-                {link.icon}
-                {/* Show text only when not collapsed */}
-                {!isCollapsed && <span className="ml-2">{link.link}</span>}
-              </Link>
-            </li>
-          );
-        })}
-
-        {/* Sign Out Button */}
-        <li className="px-4 text-base">
           <button
-            onClick={handleSignOut}
-            className="py-[12px] rounded-lg text-red-600 hover:text-white hover:bg-red-600 flex items-center transition-all duration-200"
+            onClick={toggleCollapse}
+            className="ml-auto flex-shrink-0 h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
-            <ArrowRightOnRectangleIcon className="h-6 w-6" />
-            {!isCollapsed && <span className="ml-2">Logout</span>}
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
-        </li>
-      </ul>
-    </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+          {navLinks.map(({ link, path, icon: Icon }) => {
+            const isActive = location.pathname === path;
+            const item = (
+              <Link
+                key={path}
+                to={path}
+                onClick={toggleDrawer}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+                  isCollapsed && "justify-center px-2",
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Icon className={cn("flex-shrink-0", isActive ? "h-4 w-4" : "h-4 w-4")} />
+                {!isCollapsed && <span className="truncate">{link}</span>}
+              </Link>
+            );
+            return isCollapsed ? (
+              <Tooltip key={path}>
+                <TooltipTrigger asChild>{item}</TooltipTrigger>
+                <TooltipContent side="right">{link}</TooltipContent>
+              </Tooltip>
+            ) : (
+              item
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className="border-t border-border px-2 py-3">
+          {isCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex justify-center items-center rounded-lg p-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Logout</TooltipContent>
+            </Tooltip>
+          ) : (
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+            >
+              <LogOut className="h-4 w-4 flex-shrink-0" />
+              <span>Logout</span>
+            </button>
+          )}
+        </div>
+      </aside>
+    </TooltipProvider>
   );
 }

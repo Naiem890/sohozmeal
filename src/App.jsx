@@ -32,6 +32,7 @@ import NoticeBoard from "./components/Admin/NoticeBoard";
 import Tution from "./components/Student/Tution";
 import BloodDonate from "./components/Student/BloodDonate";
 import Notice from "./components/Student/Notice";
+import Settings from "./components/Admin/Settings";
 
 function App() {
   return (
@@ -70,6 +71,7 @@ function App() {
           <Route path="notice-board" element={<NoticeBoard />} />
           <Route path="meal-routine" element={<MealRoutineAdmin />} />
           <Route path="transaction-history" element={<TransactionHistory />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
         <Route
           path="/dashboard/"
