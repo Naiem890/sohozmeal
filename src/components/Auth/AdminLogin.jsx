@@ -1,33 +1,36 @@
+import { useState } from "react";
 import { useSignIn } from "react-auth-kit";
-import { toast } from "react-hot-toast";
-import MISTImage from "../../assets/MIST.png";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { Axios } from "../../api/api";
+import { Eye, EyeOff } from "lucide-react";
+import MISTImage from "../../assets/MIST.png";
 import Logo from "../Common/Logo";
-import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
+import { Axios } from "../../api/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function AdminLogin() {
   const signIn = useSignIn();
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     const email = e.target.email.value;
     const password = e.target.password.value;
-
+    setLoading(true);
     try {
-      const result = await Axios.post("/auth/admin/login", {
-        email,
-        password,
-      }).then((res) => res.data);
-
+      const result = await Axios.post("/auth/admin/login", { email, password }).then(
+        (res) => res.data
+      );
       signIn({
         token: result.token,
         expiresIn: 3600,
         tokenType: "Bearer",
         authState: {
-          email: email,
+          email,
           _id: result._id,
           role: "admin",
           isAuthenticated: true,
@@ -35,67 +38,59 @@ export default function AdminLogin() {
         },
       });
       toast.success("Login successful");
-
       navigate("/admin/dashboard");
     } catch (error) {
-      console.log(error);
-      toast.error(error.response.data.message);
+      toast.error(error?.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f6f6f6] flex-1 flex-col justify-center px-4 py-12 lg:px-8 -mt-16 md:my-0">
-      <div className="shadow-lg bg-white rounded-xl p-6 sm:p-10 sm:mx-auto sm:w-full sm:max-w-md">
-        <Logo
-          logo={MISTImage}
-          alt="Osmany Hall"
-          title="Sohoz Meal (MIST)"
-          subTitle="Admin Portal"
-        />
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
+      <div className="w-full max-w-md bg-card rounded-2xl shadow-md border border-border p-8 space-y-8">
+        <Logo logo={MISTImage} alt="Osmany Hall" title="Sohoz Meal (MIST)" subTitle="Admin Portal" />
 
-        <div className="mt-10 ">
-          <form className="flex flex-col gap-4" onSubmit={handleLogin}>
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium leading-6 text-gray-600"
-              >
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="text"
-                autoComplete="email"
-                placeholder="Email"
-                required
-                className={`${fixedInputClass} mt-2`}
-              />
-            </div>
+        <form className="space-y-5" onSubmit={handleLogin}>
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="admin@mist.ac.bd"
+              autoComplete="email"
+              required
+            />
+          </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium leading-6 text-gray-600"
-              >
-                Password
-              </label>
-              <input
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Input
                 id="password"
                 name="password"
-                type="password"
-                autoComplete="current-password"
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
+                autoComplete="current-password"
                 required
-                className={`${fixedInputClass} mt-2 tracking-widest`}
+                className="pr-10 tracking-widest"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
+          </div>
 
-            <button type="submit" className={`${fixedButtonClass} mt-4`}>
-              Login
-            </button>
-          </form>
-        </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Signing in…" : "Sign In"}
+          </Button>
+        </form>
       </div>
     </div>
   );

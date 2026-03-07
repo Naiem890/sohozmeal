@@ -44,21 +44,21 @@ const ComplaintDetails = ({ complaint }) => {
           </p>
           <p>
             <strong>Residence:</strong>{" "}
-            <span className="badge badge-outline">{complaint.residence}</span>
+            <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border">{complaint.residence}</span>
           </p>
           <p>
             <strong>Type:</strong>{" "}
-            <span className="badge badge-outline">
+            <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border">
               {complaint.complaintType}
             </span>
           </p>
           <p>
             <strong>Status:</strong>{" "}
             <span
-              className={`badge ${
+              className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 complaint.status === "COMPLETED"
-                  ? "badge-success"
-                  : "badge-warning"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-yellow-100 text-yellow-800"
               }`}
             >
               {complaint.status}

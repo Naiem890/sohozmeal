@@ -1,18 +1,12 @@
-import { XCircleIcon } from "@heroicons/react/24/outline";
 import React from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-export default function Modal({ children, setShowModal, className, idName }) {
+export default function Modal({ children, setShowModal, className }) {
   return (
-    <dialog id={idName} className={`modal opacity-100 modal-open ${className}`}>
-      <div className="modal-box max-w-2xl">
-        {/* <button
-          onClick={() => setShowModal((prev) => !prev)}
-          className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-        >
-          <XCircleIcon className="w-8 h-8 text-red-700 hover:bg-red-700 hover:text-white rounded-full transition-all" />
-        </button> */}
+    <Dialog open onOpenChange={(open) => { if (!open && setShowModal) setShowModal(false); }}>
+      <DialogContent className={`max-w-2xl ${className || ""}`}>
         {children}
-      </div>
-    </dialog>
+      </DialogContent>
+    </Dialog>
   );
 }

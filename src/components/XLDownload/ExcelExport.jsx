@@ -1,8 +1,8 @@
 import React from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { fixedButtonClass } from "../../Utils/constant";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { Plus } from "lucide-react";
+const fixedButtonClass = "w-full rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 px-4 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-colors";
 
 const ExcelExport = ({ data, fileName }) => {
   const handleExport = () => {
@@ -56,7 +56,7 @@ const ExcelExport = ({ data, fileName }) => {
     <div className="w-32">
       <button
         onClick={handleExport}
-        className={`${fixedButtonClass} btn-sm h-auto basis-40 py-2 px-2`}
+        className={`${fixedButtonClass} h-auto py-2 px-2`}
       >
         Export Sheet
       </button>

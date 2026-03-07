@@ -1,103 +1,86 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Axios } from "../../api/api";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { useAuthUser } from "react-auth-kit";
+import { Megaphone } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import Pagination from "../Common/Pagination";
+import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 10;
+
+const TYPE_STYLE = {
+  MALE:   "bg-blue-100 text-blue-700 border-blue-200",
+  FEMALE: "bg-pink-100 text-pink-700 border-pink-200",
+  ALL:    "bg-violet-100 text-violet-700 border-violet-200",
+};
 
 export default function Notice() {
-  const [notices, setNotices] = useState([]);
   const user = useAuthUser()();
-  console.log(user, "shovo");
+  const [notices,    setNotices]    = useState([]);
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+  const [page,       setPage]       = useState(1);
 
   useEffect(() => {
-    fetchNotices();
-  }, []);
-
-  const fetchNotices = async () => {
-    const toastId = toast.loading("Loading notices...");
-    try {
-      const res = await Axios.get(`/notice/${user.wing}`);
-      setNotices(res.data);
-      toast.success("Notices loaded", { id: toastId });
-    } catch (error) {
-      toast.error("Error loading notices", { id: toastId });
-    }
-  };
-
-  const getNoticeTypeColor = (type) => {
-    switch (type) {
-      case "MALE":
-        return "bg-blue-100 text-blue-800";
-      case "FEMALE":
-        return "bg-pink-100 text-pink-800";
-      case "ALL":
-        return "bg-purple-100 text-purple-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+    const toastId = toast.loading("Loading notices…");
+    Axios.get(`/notice/${user.wing}?page=${page}&limit=${PAGE_SIZE}`)
+      .then((res) => {
+        setNotices(res.data.notices);
+        setPagination(res.data.pagination);
+        toast.dismiss(toastId);
+      })
+      .catch(() => toast.error("Failed to load notices", { id: toastId }));
+  }, [page]);
 
   return (
-    <div className="container mx-auto p-4 max-w-5xl">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">
-        Student Notice Board
-      </h1>
+    <div className="max-w-3xl space-y-4">
+      <h1 className="text-2xl font-bold tracking-tight">Notice Board</h1>
 
-      {/* Notices Grid */}
-      <div className="flex flex-col gap-1.5 max-w-3xl mx-auto">
-        {notices.map((notice) => (
-          <div
-            key={notice._id}
-            className="bg-white rounded-lg border border-gray-100 hover:border-gray-200 shadow-sm transition-all duration-200"
-          >
-            <div className="p-3 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="flex-shrink-0 bg-blue-50 p-2 rounded-lg">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-5 h-5 text-blue-600"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46"
-                    />
-                  </svg>
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {notices.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+            <Megaphone className="h-10 w-10 opacity-30" />
+            <p className="text-sm">No notices yet. Stay tuned!</p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {notices.map((notice) => (
+              <li
+                key={notice._id}
+                className="flex items-start gap-3 px-4 py-3 hover:bg-muted/30 transition-colors"
+              >
+                <div className="mt-0.5 shrink-0 rounded-lg bg-accent p-2">
+                  <Megaphone className="h-4 w-4 text-accent-foreground" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-medium text-gray-900 truncate">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm text-foreground truncate">
                     {notice.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm line-clamp-1">
+                  </p>
+                  <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
                     {notice.description}
                   </p>
                 </div>
-              </div>
+                <span
+                  className={cn(
+                    "shrink-0 text-xs font-medium px-2 py-0.5 rounded-full border",
+                    TYPE_STYLE[notice.noticeFor] ?? "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {notice.noticeFor}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
 
-              <span
-                className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getNoticeTypeColor(
-                  notice.noticeFor
-                )}`}
-              >
-                {notice.noticeFor}
-              </span>
-            </div>
-          </div>
-        ))}
+        <Pagination
+          page={page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+        />
       </div>
-
-      {notices.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-gray-400 text-6xl mb-4">📝</div>
-          <h3 className="text-xl font-medium text-gray-600 mb-2">
-            No Notices Yet
-          </h3>
-          <p className="text-gray-400">Stay tuned for updates!</p>
-        </div>
-      )}
     </div>
   );
 }

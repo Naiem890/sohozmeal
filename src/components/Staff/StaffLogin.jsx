@@ -1,10 +1,11 @@
 import { useSignIn } from "react-auth-kit";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import MISTImage from "../../assets/MIST.png";
 import { useNavigate } from "react-router-dom";
 import { Axios } from "../../api/api";
 import Logo from "../Common/Logo";
-import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
+const fixedInputClass = "w-full rounded-lg h-12 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6";
+const fixedButtonClass = "w-full rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 px-4 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-colors";
 
 export default function StaffLogin() {
   const signIn = useSignIn();

@@ -1,19 +1,49 @@
-import React, { useState } from "react";
-import { toast } from "react-hot-toast";
-import { Axios } from "../../api/api";
-import Swal from "sweetalert2";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthUser } from "react-auth-kit";
+import { Eye, EyeOff, Lock } from "lucide-react";
 import MISTImage from "../../assets/MIST.png";
 import Logo from "../Common/Logo";
-import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
-import { LockClosedIcon } from "@heroicons/react/24/outline";
+import { Axios } from "../../api/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+function PasswordField({ id, name, label, autoComplete }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="relative">
+        <Input
+          id={id}
+          name={name}
+          type={show ? "text" : "password"}
+          placeholder="••••••••"
+          autoComplete={autoComplete}
+          required
+          className="pr-10 tracking-widest"
+        />
+        <button
+          type="button"
+          onClick={() => setShow((v) => !v)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          tabIndex={-1}
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function ChangePassword() {
   const auth = useAuthUser();
   const navigate = useNavigate();
   const location = useLocation();
   const firstTimeLogin = location?.state;
+  const [loading, setLoading] = useState(false);
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -23,17 +53,13 @@ export default function ChangePassword() {
 
     if (password !== confirmPassword) {
       e.target.password.focus();
-      toast.error("New password doesn't match");
+      toast.error("New passwords don't match");
       return;
     }
 
+    setLoading(true);
     try {
-      const result = await Axios.post("/auth/change-password", {
-        oldPassword,
-        password,
-      });
-
-      console.log(result);
+      const result = await Axios.post("/auth/change-password", { oldPassword, password });
       if (result.status === 200) {
         toast.success(result.data.message);
         navigate("/dashboard");
@@ -41,94 +67,53 @@ export default function ChangePassword() {
         toast.error(result.data.message);
       }
     } catch (error) {
-      console.error("Error changing password:", error);
-      toast.error(error?.response?.data?.message);
+      toast.error(error?.response?.data?.message || "Failed to change password");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f6f6f6] flex-1 flex-col justify-center px-4 py-12 lg:px-8 -mt-16 md:my-0">
-      <div className="shadow-lg bg-white rounded-xl p-6 sm:p-10 sm:mx-auto sm:w-full sm:max-w-md">
-        <Logo
-          logo={MISTImage}
-          alt="Osmany Hall"
-          title="Sohoz Meal (MIST)"
-          subTitle="Student Portal"
-        />
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
+      <div className="w-full max-w-md bg-card rounded-2xl shadow-md border border-border p-8 space-y-8">
+        <Logo logo={MISTImage} alt="Osmany Hall" title="Sohoz Meal (MIST)" subTitle="Student Portal" />
 
         {firstTimeLogin && (
-          <div className="mt-10">
-            <h2 className="text-2xl font-semibold text-gray-800">
-              Welcome, <br /> {auth().name}!
-            </h2>
-            <div className="mt-2 -mb-5 text-blue-500 text-sm">
-              Password change is required. Change it now! Unless you want your
-              friend to play with your meals. 😄🍔
-            </div>
+          <div className="rounded-lg bg-accent border border-accent-foreground/10 px-4 py-3">
+            <p className="text-sm font-semibold text-accent-foreground">
+              Welcome, {auth().name}!
+            </p>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Please change your password before continuing.
+            </p>
           </div>
         )}
 
-        <div className="mt-10">
-          <form className="flex flex-col gap-4" onSubmit={handlePasswordChange}>
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium leading-6 text-gray-600"
-              >
-                Old Password
-              </label>
-              <input
-                id="oldPassword"
-                name="oldPassword"
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                required
-                className={`${fixedInputClass} mt-2 tracking-widest`}
-              />
-            </div>
+        <form className="space-y-5" onSubmit={handlePasswordChange}>
+          <PasswordField
+            id="oldPassword"
+            name="oldPassword"
+            label="Current Password"
+            autoComplete="current-password"
+          />
+          <PasswordField
+            id="password"
+            name="password"
+            label="New Password"
+            autoComplete="new-password"
+          />
+          <PasswordField
+            id="confirmedPassword"
+            name="confirmedPassword"
+            label="Confirm New Password"
+            autoComplete="new-password"
+          />
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium leading-6 text-gray-600"
-              >
-                New Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                required
-                className={`${fixedInputClass} mt-2 tracking-widest`}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="confirmedPassword"
-                className="block text-sm font-medium leading-6 text-gray-600"
-              >
-                Confirm Password
-              </label>
-              <input
-                id="confirmedPassword"
-                name="confirmedPassword"
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                required
-                className={`${fixedInputClass} mt-2 tracking-widest`}
-              />
-            </div>
-
-            <button type="submit" className={`${fixedButtonClass} mt-4`}>
-              <LockClosedIcon className="h-5 w-5" />
-              Change Password
-            </button>
-          </form>
-        </div>
+          <Button type="submit" className="w-full gap-2" disabled={loading}>
+            <Lock className="h-4 w-4" />
+            {loading ? "Changing…" : "Change Password"}
+          </Button>
+        </form>
       </div>
     </div>
   );

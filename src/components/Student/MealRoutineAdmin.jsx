@@ -1,15 +1,17 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Axios } from "../../api/api";
 import { format, isToday } from "date-fns";
-import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
-import toast from "react-hot-toast";
+const fixedInputClass = "w-full rounded-lg h-12 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6";
+const fixedButtonClass = "w-full rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 px-4 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-colors";
+import { toast } from "sonner";
 import { useReactToPrint } from "react-to-print";
-import Swal from "sweetalert2";
+import { useConfirm } from "../Common/ConfirmDialog";
 import * as XLSX from "xlsx"; // Import xlsx for Excel file generation
 import { useAuthUser } from "react-auth-kit";
 
 const MealRoutineAdmin = () => {
   const auth = useAuthUser()();
+  const confirm = useConfirm();
   const [mealData, setMealData] = useState([]);
   const [selectedWing, setSelectedWing] = useState(
     auth.wing === "ALL" ? "MALE" : auth.wing
@@ -90,14 +92,14 @@ const MealRoutineAdmin = () => {
   };
 
   const handleSubmit = async () => {
-    const result = await Swal.fire({
-      title: "Do you want to save the changes?",
-      showDenyButton: true,
-      confirmButtonText: "Save",
-      denyButtonText: `Don't save`,
+    const ok = await confirm({
+      title: "Save changes?",
+      description: "Do you want to save the meal routine changes?",
+      confirmText: "Save",
+      cancelText: "Don't save",
     });
 
-    if (result.isConfirmed) {
+    if (ok) {
       try {
         // Include the selectedWing in the query parameters
         const { data: response } = await Axios.put(

@@ -1,13 +1,11 @@
-import React from "react";
-
-export default function HeadingLogo(props) {
+export default function HeadingLogo({ title, subTitle }) {
   return (
     <div>
-      <h2 className="uppercase text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-        {props.title}
+      <h2 className="uppercase text-center text-xl font-bold tracking-tight text-foreground">
+        {title}
       </h2>
-      <p className="uppercase tracking-[0.2em] font-light text-gray-500">
-        {props.subTitle}
+      <p className="uppercase tracking-[0.2em] text-xs font-light text-muted-foreground text-center mt-0.5">
+        {subTitle}
       </p>
     </div>
   );

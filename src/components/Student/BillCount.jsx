@@ -1,267 +1,196 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Axios } from "../../api/api";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import convertToDDMMYYYY from "../../Utils/YYYYMMDDtoDDMMYYYY";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const fmt = (n) => Number(n).toFixed(2);
 
 export default function BillCount() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const now = new Date();
+  const [year,  setYear]  = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1); // 1-based
   const [mealBillData, setMealBillData] = useState([]);
-  const [hallFeasts, setHallFeasts] = useState([]);
-  const [wing] = useState("MALE"); // Hardcoded wing state
+  const [hallFeasts,   setHallFeasts]   = useState([]);
+  const [wing] = useState("MALE");
 
-  let totalBill = 0;
+  const years = useMemo(() => {
+    const y = [];
+    for (let i = now.getFullYear(); i >= now.getFullYear() - 3; i--) y.push(i);
+    return y;
+  }, []);
 
   useEffect(() => {
     const fetchBill = async () => {
       try {
-        const year = selectedDate.getFullYear();
-        const month = selectedDate.getMonth() + 1; // 1-based month for the API
-
-        // Fetch the meal bill data
-        const res = await Axios.get(
-          `/cost/student?year=${year}&month=${month}&wing=${wing}`
-        );
-        setMealBillData(res.data.mealBillData);
-
-        // Fetch the hall feast data for the selected month and wing
-        const feastRes = await Axios.get(
-          `/feast/month/${year}/${month}/wing/${wing}`
-        );
+        const [billRes, feastRes] = await Promise.all([
+          Axios.get(`/cost/student?year=${year}&month=${month}&wing=${wing}`),
+          Axios.get(`/feast/month/${year}/${month}/wing/${wing}`),
+        ]);
+        setMealBillData(billRes.data.mealBillData);
         setHallFeasts(feastRes.data);
       } catch (err) {
-        console.log("Error fetching bill data:", err);
+        console.error("Error fetching bill data:", err);
       }
     };
     fetchBill();
-  }, [selectedDate, wing]); // Use wing in the dependency array to refetch when wing changes
+  }, [year, month, wing]);
 
-  const handleDateChange = useCallback((date) => {
-    setSelectedDate(date);
-  }, []);
+  const daysOfMonth = useMemo(() => {
+    const days = [];
+    const last = new Date(year, month, 0).getDate();
+    for (let d = 1; d <= last; d++) {
+      const dd = String(d).padStart(2, "0");
+      const mm = String(month).padStart(2, "0");
+      days.push(`${year}-${mm}-${dd}`);
+    }
+    return days;
+  }, [year, month]);
 
-  // Correctly calculate the days of the selected month
-  const getDaysArray = useMemo(
-    () => (year, month) => {
-      const firstDayOfMonth = new Date(year, month - 1, 2);
-      const lastDayOfMonth = new Date(year, month, 1);
-      const days = [];
-      for (
-        let day = firstDayOfMonth;
-        day <= lastDayOfMonth;
-        day.setDate(day.getDate() + 1)
-      ) {
-        days.push(new Date(day).toISOString().split("T")[0]);
-      }
-      return days;
-    },
-    []
-  );
-
-  const daysOfMonth = getDaysArray(
-    selectedDate.getFullYear(),
-    selectedDate.getMonth() + 1 // Pass the 1-based month value
-  );
+  let grandTotal = 0;
 
   return (
-    <div className="lg:py-10 xs:text-base pb-10 px-5 text-xs lg:mr-12 max-h-screen flex flex-col">
-      <div className="flex justify-between gap-2 h-auto">
-        <h2 className="text-lg self-center xs:text-3xl font-semibold">
-          Mess Bill
-        </h2>
-        <div className="">
-          <DatePicker
-            selected={selectedDate}
-            onChange={handleDateChange}
-            dateFormat="MM/yyyy"
-            showMonthYearPicker
-            maxDate={new Date()}
-            className="rounded-md border-2 border-gray-300 focus:outline-none focus:border-blue-500 transition-all duration-300 ease-in-out text-xs p-2 md:p-3 max-w-full"
-            wrapperClassName="w-full"
-            calendarClassName="mt-2 rounded-md border-2 border-gray-300 shadow-lg bg-white text-gray-800"
-          />
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">Mess Bill</h1>
+        <div className="flex gap-2">
+          <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
+            <SelectTrigger className="w-36 h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map((m, i) => (
+                <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+            <SelectTrigger className="w-24 h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map((y) => (
+                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
-      <div className="divider"></div>
-      <div className="md:mt-4 overflow-y-scroll min-w-full">
-        <div className="overflow-x-auto w-full">
-          <table className=" divide-gray-200 shadow-md w-full">
-            <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
-              <tr className="text-xs font-thin text-gray-500">
-                <th className="text-left">Date</th>
-                <th>Guest Breakfast</th>
-                <th>Guest Lunch</th>
-                <th>Guest Dinner</th>
-                <th>Breakfast</th>
-                <th>Lunch</th>
-                <th>Dinner</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody className="text-center">
+
+      {/* Table */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="whitespace-nowrap">Date</TableHead>
+                <TableHead className="text-center whitespace-nowrap">G.Breakfast</TableHead>
+                <TableHead className="text-center whitespace-nowrap">G.Lunch</TableHead>
+                <TableHead className="text-center whitespace-nowrap">G.Dinner</TableHead>
+                <TableHead className="text-center">Breakfast</TableHead>
+                <TableHead className="text-center">Lunch</TableHead>
+                <TableHead className="text-center">Dinner</TableHead>
+                <TableHead className="text-center font-semibold">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {daysOfMonth.map((day) => {
-                // Find if there is any hall feast on this day
-                const onDay = hallFeasts.filter(
-                  (item) => item.date.split("T")[0] === day
-                );
+                const feasts   = hallFeasts.filter((f) => f.date.split("T")[0] === day);
+                const billData = mealBillData.find((b) => b.date === day);
+                const gm       = billData?.guestMeal;
 
-                // Get bill data for the current day
-                const billData = mealBillData.find((item) => item.date === day);
-                const guestMeal = billData?.guestMeal;
+                const bOn = billData?.mealBill.breakfast.status || feasts.some((f) => f.meal === "breakfast");
+                const lOn = billData?.mealBill.lunch.status     || feasts.some((f) => f.meal === "lunch");
+                const dOn = billData?.mealBill.dinner.status    || feasts.some((f) => f.meal === "dinner");
 
-                // Check if there is a hall feast for breakfast, lunch, or dinner
-                const breakfastOn =
-                  billData?.mealBill.breakfast.status ||
-                  onDay.some((feast) => feast.meal === "breakfast");
-                const lunchOn =
-                  billData?.mealBill.lunch.status ||
-                  onDay.some((feast) => feast.meal === "lunch");
-                const dinnerOn =
-                  billData?.mealBill.dinner.status ||
-                  onDay.some((feast) => feast.meal === "dinner");
+                const bCost = bOn ? (billData?.mealBill.breakfast.perHeadCost || 0) : 0;
+                const lCost = lOn ? (billData?.mealBill.lunch.perHeadCost     || 0) : 0;
+                const dCost = dOn ? (billData?.mealBill.dinner.perHeadCost    || 0) : 0;
 
-                // Calculate the costs
-                const breakfastCost = breakfastOn
-                  ? billData?.mealBill.breakfast.perHeadCost || 0
-                  : 0;
-                const lunchCost = lunchOn
-                  ? billData?.mealBill.lunch.perHeadCost || 0
-                  : 0;
-                const dinnerCost = dinnerOn
-                  ? billData?.mealBill.dinner.perHeadCost || 0
-                  : 0;
-                let guestBreakfast = 0;
-                let guestLunch = 0;
-                let guestDinner = 0;
-                if (guestMeal) {
-                  guestBreakfast +=
-                    (guestMeal.breakfast ? guestMeal.breakfast : 0) *
-                    breakfastCost;
-                  guestLunch +=
-                    (guestMeal.lunch ? guestMeal.lunch : 0) * lunchCost;
-                  guestDinner +=
-                    (guestMeal.dinner ? guestMeal.dinner : 0) * dinnerCost;
-                }
-                // Total cost for the day
-                const dailyTotal =
-                  breakfastCost +
-                  lunchCost +
-                  dinnerCost +
-                  guestBreakfast +
-                  guestLunch +
-                  guestDinner;
-                totalBill += dailyTotal;
+                const gBCost = (gm?.breakfast || 0) * bCost;
+                const gLCost = (gm?.lunch     || 0) * lCost;
+                const gDCost = (gm?.dinner    || 0) * dCost;
+
+                const daily = bCost + lCost + dCost + gBCost + gLCost + gDCost;
+                grandTotal += daily;
+
+                const on  = "text-primary font-medium";
+                const off = "text-muted-foreground";
 
                 return (
-                  <tr key={day} className="hover:bg-gray-100">
-                    <td className="py-1  text-left">
+                  <TableRow key={day} className="text-sm">
+                    <TableCell className="whitespace-nowrap font-medium">
                       {convertToDDMMYYYY(day)}
-                    </td>
+                    </TableCell>
                     {billData ? (
                       <>
-                        <td
-                          className={`${
-                            guestMeal?.breakfast > 0
-                              ? "text-green-600 font-bold "
-                              : "text-red-600 font-bold "
-                          }`}
-                        >
-                          {guestMeal?.breakfast ? guestMeal.breakfast : 0.0}
-                        </td>
-                        <td
-                          className={`${
-                            guestMeal?.lunch > 0
-                              ? "text-green-600 font-bold "
-                              : "text-red-600 font-bold "
-                          }`}
-                        >
-                          {guestMeal?.lunch ? guestMeal.lunch : 0}
-                        </td>
-                        <td
-                          className={`${
-                            guestMeal?.dinner > 0
-                              ? "text-green-600 font-bold "
-                              : "text-red-600 font-bold "
-                          }`}
-                        >
-                          {guestMeal?.dinner ? guestMeal.dinner : 0}
-                        </td>
-                        <td
-                          className={`${
-                            breakfastOn
-                              ? "text-green-600 font-bold "
-                              : "text-red-600 font-bold "
-                          }`}
-                        >
-                          {(
-                            billData.mealBill.breakfast.perHeadCost.toFixed(2) *
-                            (guestMeal?.breakfast
-                              ? guestMeal?.breakfast
-                              : 0 + (breakfastOn ? 1 : 0))
-                          ).toFixed(2)}{" "}
-                          ৳
-                        </td>
-                        <td
-                          className={`${
-                            lunchOn
-                              ? "text-green-600 font-bold "
-                              : "text-red-600 font-bold "
-                          }`}
-                        >
-                          {(
-                            billData.mealBill.lunch.perHeadCost.toFixed(2) *
-                            (guestMeal?.lunch
-                              ? guestMeal?.lunch
-                              : 0 + (lunchOn ? 1 : 0))
-                          ).toFixed(2)}{" "}
-                          ৳
-                        </td>
-                        <td
-                          className={`${
-                            dinnerOn
-                              ? "text-green-600 font-bold "
-                              : "text-red-600 font-bold "
-                          }`}
-                        >
-                          {(
-                            billData.mealBill.dinner.perHeadCost.toFixed(2) *
-                            (guestMeal?.dinner
-                              ? guestMeal?.dinner
-                              : 0 + (dinnerOn ? 1 : 0))
-                          ).toFixed(2)}{" "}
-                          ৳
-                        </td>
-                        <td className="">{dailyTotal.toFixed(2)} ৳</td>
+                        <TableCell className={`text-center ${(gm?.breakfast || 0) > 0 ? on : off}`}>
+                          {gm?.breakfast || 0}
+                        </TableCell>
+                        <TableCell className={`text-center ${(gm?.lunch || 0) > 0 ? on : off}`}>
+                          {gm?.lunch || 0}
+                        </TableCell>
+                        <TableCell className={`text-center ${(gm?.dinner || 0) > 0 ? on : off}`}>
+                          {gm?.dinner || 0}
+                        </TableCell>
+                        <TableCell className={`text-center ${bOn ? on : off}`}>
+                          {fmt(bCost + gBCost)} ৳
+                        </TableCell>
+                        <TableCell className={`text-center ${lOn ? on : off}`}>
+                          {fmt(lCost + gLCost)} ৳
+                        </TableCell>
+                        <TableCell className={`text-center ${dOn ? on : off}`}>
+                          {fmt(dCost + gDCost)} ৳
+                        </TableCell>
+                        <TableCell className="text-center font-semibold tabular-nums">
+                          {fmt(daily)} ৳
+                        </TableCell>
                       </>
                     ) : (
                       <>
-                        <td>0</td>
-                        <td>0</td>
-                        <td>0</td>
-                        <td className="">0.00 ৳</td>
-                        <td className="">0.00 ৳</td>
-                        <td className="">0.00 ৳</td>
-                        <td className="">0.00 ৳</td>
+                        <TableCell className="text-center text-muted-foreground">0</TableCell>
+                        <TableCell className="text-center text-muted-foreground">0</TableCell>
+                        <TableCell className="text-center text-muted-foreground">0</TableCell>
+                        <TableCell className="text-center text-muted-foreground">0.00 ৳</TableCell>
+                        <TableCell className="text-center text-muted-foreground">0.00 ৳</TableCell>
+                        <TableCell className="text-center text-muted-foreground">0.00 ৳</TableCell>
+                        <TableCell className="text-center text-muted-foreground">0.00 ৳</TableCell>
                       </>
                     )}
-                  </tr>
+                  </TableRow>
                 );
               })}
-              {/* Grand Total Row */}
-              <tr className="">
-                <td className="font-bold pt-2 text-left">Grand Total</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td>
-                  <span className="font-bold">{totalBill.toFixed(2)} ৳</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+              {/* Grand Total */}
+              <TableRow className="bg-muted/40 border-t-2 border-border font-bold">
+                <TableCell colSpan={7} className="text-right pr-4">
+                  Grand Total
+                </TableCell>
+                <TableCell className="text-center text-primary tabular-nums">
+                  {fmt(grandTotal)} ৳
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>

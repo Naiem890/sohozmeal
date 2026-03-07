@@ -83,7 +83,7 @@ const AddComplaint = () => {
             value={formData.title}
             onChange={handleChange}
             placeholder="Enter the complaint title"
-            className="input input-bordered w-full"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             required
           />
         </div>
@@ -100,7 +100,7 @@ const AddComplaint = () => {
             value={formData.currentRoomNo}
             onChange={handleChange}
             placeholder="Enter your room number"
-            className="input input-bordered w-full"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             required
           />
         </div>
@@ -115,7 +115,7 @@ const AddComplaint = () => {
             name="complaintType"
             value={formData.complaintType}
             onChange={handleChange}
-            className="select select-bordered w-full"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             required
           >
             <option value="" disabled>
@@ -139,7 +139,7 @@ const AddComplaint = () => {
             name="residence"
             value={formData.residence}
             onChange={handleChange}
-            className="select select-bordered w-full"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             required
           >
             <option value="" disabled>
@@ -162,7 +162,7 @@ const AddComplaint = () => {
             value={formData.description}
             onChange={handleChange}
             placeholder="Describe the issue"
-            className="textarea textarea-bordered w-full"
+            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             rows="4"
             required
           ></textarea>
@@ -180,7 +180,7 @@ const AddComplaint = () => {
             accept="image/*"
             multiple
             onChange={handleImageUpload}
-            className="file-input file-input-bordered w-full"
+            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm file:border-0 file:bg-transparent file:text-sm file:font-medium cursor-pointer"
           />
           {/* Preview Images */}
           <div className="grid grid-cols-4 gap-2 mt-4">
@@ -193,7 +193,7 @@ const AddComplaint = () => {
                 />
                 <button
                   type="button"
-                  className="absolute top-1 right-1 btn btn-xs btn-error"
+                  className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white text-xs px-1.5 py-0.5 rounded"
                   onClick={() => handleImageRemove(index)}
                 >
                   ✕
@@ -205,7 +205,7 @@ const AddComplaint = () => {
 
         {/* Submit Button */}
         <div>
-          <button type="submit" className="btn btn-primary w-full">
+          <button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-medium text-sm transition-colors">
             Submit Complaint
           </button>
         </div>
