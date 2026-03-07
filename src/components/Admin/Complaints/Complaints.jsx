@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { CheckIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline"; // Heroicons for tick icon
+import { Check, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
+import Pagination from "../../Common/Pagination";
+
+const PAGE_SIZE = 10;
 
 const dummyComplaints = [
   {
@@ -8,8 +15,7 @@ const dummyComplaints = [
     complainedBy: "64f1a76a9e5e4d9f7a0aefc1",
     currentRoomNo: "101",
     complaintType: "WIFI",
-    description:
-      "Wi-Fi is not working in Room 101 skjadfkjshdfk ksdfhkas jdhfkjasdh kjhsadkjhf ksjadhfkh.",
+    description: "Wi-Fi is not working in Room 101 skjadfkjshdfk ksdfhkas jdhfkjasdh kjhsadkjhf ksjadhfkh.",
     status: "PENDING",
     adminConfirmed: false,
     studentConfirmed: false,
@@ -47,151 +53,134 @@ const dummyComplaints = [
   },
 ];
 
+const FILTERS = [
+  { key: "all", label: "All" },
+  { key: "incomplete", label: "Incomplete" },
+  { key: "completed", label: "Completed" },
+  { key: "awaitingStudentConfirmation", label: "Awaiting Confirmation" },
+];
+
 const Complaints = () => {
   const [complaints, setComplaints] = useState(dummyComplaints);
-  const [filter, setFilter] = useState("all");
+  const [filter,     setFilter]     = useState("all");
+  const [page,       setPage]       = useState(1);
 
-  // Function to handle staff confirmation
   const handleStaffConfirm = (id) => {
     setComplaints((prev) =>
-      prev.map((complaint) =>
-        complaint._id === id
-          ? { ...complaint, staffConfirmed: true }
-          : complaint
-      )
+      prev.map((c) => c._id === id ? { ...c, staffConfirmed: true } : c)
     );
   };
 
-  // Function to filter the complaints based on the selected filter
   const getFilteredComplaints = () => {
-    if (filter === "completed") {
-      return complaints.filter(
-        (complaint) => complaint.staffConfirmed && complaint.studentConfirmed
-      );
-    } else if (filter === "incomplete") {
-      return complaints.filter(
-        (complaint) => !complaint.staffConfirmed && !complaint.studentConfirmed
-      );
-    } else if (filter === "awaitingStudentConfirmation") {
-      return complaints.filter(
-        (complaint) => complaint.staffConfirmed && !complaint.studentConfirmed
-      );
-    }
-    return complaints; // Return all if no specific filter is applied
+    if (filter === "completed") return complaints.filter((c) => c.staffConfirmed && c.studentConfirmed);
+    if (filter === "incomplete") return complaints.filter((c) => !c.staffConfirmed && !c.studentConfirmed);
+    if (filter === "awaitingStudentConfirmation") return complaints.filter((c) => c.staffConfirmed && !c.studentConfirmed);
+    return complaints;
   };
-  const truncateText = (text, maxLength) => {
-    return text.length > maxLength
-      ? `${text.substring(0, maxLength)}...`
-      : text;
-  };
+
+  const truncateText = (text, maxLength) =>
+    text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+
   const filteredComplaints = getFilteredComplaints();
+  const pagedComplaints   = filteredComplaints.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
-    <div className="container px-4 py-8 mx-auto font-sans max-w-7xl">
-      <h2 className="text-3xl font-bold text-gray-800 mb-6">Complaints Management</h2>
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold tracking-tight">Complaints Management</h1>
 
-      {/* Filter Buttons */}
-      <div className="flex flex-wrap justify-start gap-3 mb-8">
-        {[
-          { key: "all", label: "All Complaints" },
-          { key: "incomplete", label: "Incomplete" },
-          { key: "completed", label: "Completed" },
-          { key: "awaitingStudentConfirmation", label: "Awaiting Confirmation" },
-        ].map((filterOption) => (
-          <button
-            key={filterOption.key}
-            onClick={() => setFilter(filterOption.key)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              filter === filterOption.key
-                ? "bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 transform hover:-translate-y-0.5"
-                : "bg-white border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50"
-            }`}
+      <div className="flex flex-wrap gap-2">
+        {FILTERS.map(({ key, label }) => (
+          <Button
+            key={key}
+            size="sm"
+            variant={filter === key ? "default" : "outline"}
+            onClick={() => { setFilter(key); setPage(1); }}
           >
-            {filterOption.label}
-          </button>
+            {label}
+          </Button>
         ))}
       </div>
 
-      {/* Complaints Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-        <table className="w-full">
-          <thead className="bg-emerald-500 text-white">
-            <tr>
-              <th className="px-6 py-4 text-left font-semibold">Room No</th>
-              <th className="px-6 py-4 text-left font-semibold">Type</th>
-              <th className="px-6 py-4 text-left font-semibold">Title</th>
-              <th className="px-6 py-4 text-left font-semibold">Name</th>
-              <th className="px-6 py-4 text-left font-semibold">Status</th>
-              <th className="px-6 py-4 text-center font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredComplaints.length > 0 ? (
-              filteredComplaints.map((complaint, index) => (
-                <tr 
-                  key={complaint._id} 
-                  className="hover:bg-gray-50 transition-colors duration-200"
-                >
-                  <td className="px-6 py-4">{complaint.currentRoomNo}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100">
-                      {complaint.complaintType}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">{truncateText(complaint.title, 30)}</td>
-                  <td className="px-6 py-4">{complaint.studentName || `User ${index + 1}`}</td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-4 py-1 rounded-full text-sm font-medium ${
-                      complaint.staffConfirmed && complaint.studentConfirmed
-                        ? "bg-emerald-100 text-emerald-800"
-                        : complaint.staffConfirmed
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-red-100 text-red-800"
-                    }`}>
-                      {complaint.staffConfirmed && complaint.studentConfirmed
-                        ? "Completed"
-                        : "Pending"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-3">
-                      {!complaint.staffConfirmed && (
-                        <button
-                          onClick={() => handleStaffConfirm(complaint._id)}
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md"
-                          title="Confirm"
-                        >
-                          <CheckIcon className="h-5 w-5" />
-                        </button>
-                      )}
-                      {complaint.studentConfirmed && (
-                        <span className="flex items-center justify-center">
-                          <CheckIcon className="h-5 w-5 text-blue-500" />
-                        </span>
-                      )}
-                      {complaint.staffConfirmed && complaint.studentConfirmed && (
-                        <span className="text-emerald-500 font-bold">
-                          Completed
-                        </span>
-                      )}
-                      {!complaint.staffConfirmed &&
-                        !complaint.studentConfirmed && (
-                          <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Room No</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pagedComplaints.length > 0 ? (
+                pagedComplaints.map((complaint, index) => (
+                  <TableRow key={complaint._id}>
+                    <TableCell>{complaint.currentRoomNo}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{complaint.complaintType}</Badge>
+                    </TableCell>
+                    <TableCell>{truncateText(complaint.title, 30)}</TableCell>
+                    <TableCell>{complaint.studentName || `User ${index + 1}`}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          complaint.staffConfirmed && complaint.studentConfirmed
+                            ? "success"
+                            : complaint.staffConfirmed
+                            ? "warning"
+                            : "destructive"
+                        }
+                      >
+                        {complaint.staffConfirmed && complaint.studentConfirmed
+                          ? "Completed"
+                          : "Pending"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        {!complaint.staffConfirmed && (
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8 text-green-600 hover:text-green-700 border-green-200"
+                            onClick={() => handleStaffConfirm(complaint._id)}
+                            title="Confirm"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
                         )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                  No complaints found for the selected filter.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                        {!complaint.staffConfirmed && !complaint.studentConfirmed && (
+                          <AlertCircle className="h-4 w-4 text-destructive" />
+                        )}
+                        {complaint.staffConfirmed && complaint.studentConfirmed && (
+                          <span className="text-xs text-green-600 font-medium">Done</span>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    No complaints found for the selected filter.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+
+          <Pagination
+            page={page}
+            totalPages={Math.max(1, Math.ceil(filteredComplaints.length / PAGE_SIZE))}
+            total={filteredComplaints.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };

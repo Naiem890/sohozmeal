@@ -1,95 +1,147 @@
-import React from "react";
+import { useEffect, useRef, useState } from "react";
 import { MealRow } from "./MealRow";
 import { MealLocks } from "./MealLocks";
-import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { ArrowUpDown } from "lucide-react";
+
+const ITEM_HEIGHT = 44;
+const BUFFER = 8;
 
 export const MealTable = ({
   students,
-  setStudents,
   sortBy,
   setSortBy,
   sortAsc,
   setSortAsc,
-  breakfastFeast,
-  lunchFeast,
-  dinnerFeast,
-  breakfastLock,
-  lunchLock,
-  dinnerLock,
+  feasts,
+  locks,
   handleMealLock,
   date,
+  updateStudent,
+  updateGuestMeal,
 }) => {
-  const toggleSort = (column) => {
-    if (sortBy === column) {
-      setSortAsc(!sortAsc);
-    } else {
-      setSortBy(column);
+  const scrollRef = useRef(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(600);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setContainerHeight(el.clientHeight);
+    const onScroll = () => setScrollTop(el.scrollTop);
+    const ro = new ResizeObserver(() => setContainerHeight(el.clientHeight));
+    el.addEventListener("scroll", onScroll, { passive: true });
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      ro.disconnect();
+    };
+  }, []);
+
+  // Reset scroll on list change
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    setScrollTop(0);
+  }, [students]);
+
+  const startIdx = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - BUFFER);
+  const endIdx = Math.min(
+    students.length,
+    Math.ceil((scrollTop + containerHeight) / ITEM_HEIGHT) + BUFFER
+  );
+  const paddingTop = startIdx * ITEM_HEIGHT;
+  const paddingBottom = Math.max(0, (students.length - endIdx) * ITEM_HEIGHT);
+
+  const toggleSort = (col) => {
+    if (sortBy === col) setSortAsc((p) => !p);
+    else {
+      setSortBy(col);
       setSortAsc(true);
     }
   };
 
+  const SortTh = ({ col, label, className = "" }) => (
+    <th
+      onClick={() => toggleSort(col)}
+      className={`cursor-pointer select-none whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors ${className}`}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        <ArrowUpDown
+          className={`h-3 w-3 shrink-0 transition-opacity ${
+            sortBy === col ? "opacity-100 text-primary" : "opacity-25"
+          }`}
+        />
+      </div>
+    </th>
+  );
+
   return (
-    <div className="flex-grow overflow-auto px-1 pb-4 mb-2">
-      {/* Scrollable Table */}
-      <div className="flex-grow overflow-auto">
-        <table className="table table-sm table-hover w-full">
-          <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
-            <tr>
-              <th onClick={() => toggleSort("hallId")} className="uppercase">
-                Hall Id {sortBy === "hallId" && (sortAsc ? "↑" : "↓")}
+    <div className="flex-1 rounded-xl border bg-card shadow-sm overflow-hidden min-h-0">
+      <div ref={scrollRef} className="overflow-auto h-full">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-muted/60 sticky top-0 z-10 border-b border-border/60 backdrop-blur-sm">
+              <SortTh col="hallId" label="Hall ID" />
+              <SortTh col="studentId" label="Student ID" />
+              <SortTh col="name" label="Name" />
+              <SortTh col="roomNo" label="Room" />
+              <SortTh col="residence" label="Residence" />
+              <th className="px-3 py-2 text-center">
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Meal
+                  </span>
+                  <MealLocks
+                    feasts={feasts}
+                    locks={locks}
+                    handleMealLock={handleMealLock}
+                  />
+                </div>
               </th>
-              <th onClick={() => toggleSort("studentId")} className="uppercase">
-                Student Id {sortBy === "studentId" && (sortAsc ? "↑" : "↓")}
-              </th>
-              <th onClick={() => toggleSort("name")} className="uppercase">
-                Name {sortBy === "name" && (sortAsc ? "↑" : "↓")}
-              </th>
-              <th onClick={() => toggleSort("roomNo")} className="uppercase">
-                Room No {sortBy === "roomNo" && (sortAsc ? "↑" : "↓")}
-              </th>
-              <th onClick={() => toggleSort("residence")} className="uppercase">
-                Residence {sortBy === "residence" && (sortAsc ? "↑" : "↓")}
-              </th>
-              <th className="uppercase text-center">
-                Meal
-                <MealLocks
-                  breakfastLock={breakfastLock}
-                  lunchLock={lunchLock}
-                  dinnerLock={dinnerLock}
-                  breakfastFeast={breakfastFeast}
-                  lunchFeast={lunchFeast}
-                  dinnerFeast={dinnerFeast}
-                  handleMealLock={handleMealLock}
-                />
-              </th>
-              <th>
-                <div className="flex flex-col items-center">
-                  <div className="uppercase text-center">Guest Meal</div>
-                  <div className="grid grid-cols-4 gap-1 w-full place-items-center">
-                    <span className="text-center">Breakfast</span>
-                    <span className="text-center">Lunch</span>
-                    <span className="text-center">Dinner</span>
-                    <span className="text-center">Submit</span>
+              <th className="px-3 py-2 text-left">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Guest Meal
+                  </span>
+                  <div className="flex gap-1 text-[10px] text-muted-foreground/50">
+                    <span className="w-12 text-center">B</span>
+                    <span className="w-12 text-center">L</span>
+                    <span className="w-12 text-center">D</span>
                   </div>
                 </div>
               </th>
             </tr>
           </thead>
-
           <tbody>
-            {students.map((student) => (
+            {paddingTop > 0 && (
+              <tr style={{ height: paddingTop }} aria-hidden="true">
+                <td />
+              </tr>
+            )}
+            {students.slice(startIdx, endIdx).map((student) => (
               <MealRow
-                key={student._id}
+                key={student.studentId}
                 student={student}
-                setStudents={setStudents}
-                breakfastFeast={breakfastFeast}
-                lunchFeast={lunchFeast}
-                dinnerFeast={dinnerFeast}
+                breakfastFeast={feasts.breakfast}
+                lunchFeast={feasts.lunch}
+                dinnerFeast={feasts.dinner}
                 date={date}
+                updateStudent={updateStudent}
+                updateGuestMeal={updateGuestMeal}
               />
             ))}
+            {paddingBottom > 0 && (
+              <tr style={{ height: paddingBottom }} aria-hidden="true">
+                <td />
+              </tr>
+            )}
           </tbody>
         </table>
+        {students.length === 0 && (
+          <div className="flex items-center justify-center py-20 text-muted-foreground text-sm">
+            No students found
+          </div>
+        )}
       </div>
     </div>
   );

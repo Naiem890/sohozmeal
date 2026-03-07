@@ -1,325 +1,322 @@
-import {
-  ArrowPathIcon,
-  PencilIcon,
-  PlusIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
-import React, { useEffect, useState } from "react";
-import { toast } from "react-hot-toast";
-import Swal from "sweetalert2";
-import {
-  DEPARTMENTS,
-  fixedButtonClass,
-  fixedInputClass,
-} from "../../Utils/constant";
+import { useEffect, useRef, useState } from "react";
+import { useDebounce } from "../../Utils/useDebounce";
+import { Pencil, RotateCcw, Trash2, Plus, ArrowUpDown, Search } from "lucide-react";
+import { toast } from "sonner";
+import { useConfirm } from "../Common/ConfirmDialog";
+import { useAuthUser } from "react-auth-kit";
 import { Axios } from "../../api/api";
 import { EditStudentModal } from "./EditStudentModal";
 import { AddStudentModal } from "./AddStudentModal";
-import { set } from "date-fns";
-import { useAuthUser } from "react-auth-kit";
+import { DEPARTMENTS } from "../../Utils/constant";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import Pagination from "../Common/Pagination";
+
 export const StudentList = () => {
   const auth = useAuthUser()();
-  const [sortBy, setSortBy] = useState(null);
-  const [sortAsc, setSortAsc] = useState(true);
-  const [students, setStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]);
-  const [department, setDepartment] = useState("");
-  const [gender, setGender] = useState(
-    auth.wing === "ALL" ? "MALE" : auth.wing
-  );
-  const [showModal, setShowModal] = useState(false);
-  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
-  const [search, setSearch] = useState("");
-  const [student, setStudent] = useState(null);
-  const [refetch, setRefetch] = useState(false);
-  const [refetchHallIdHandler, setRefetchHallIdHandler] = useState(false);
 
+  // Filters / sort
+  const [search,     setSearch]     = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+  const [department, setDepartment] = useState("all");
+  const [gender,     setGender]     = useState(auth.wing === "ALL" ? "all" : auth.wing);
+  const [sortBy,     setSortBy]     = useState("hallId");
+  const [sortAsc,    setSortAsc]    = useState(true);
+
+  // Pagination
+  const [page,       setPage]       = useState(1);
+  const [pageSize,   setPageSize]   = useState(20);
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+
+  // Data
+  const [students,   setStudents]   = useState([]);
+  const [refetch,    setRefetch]    = useState(false);
+
+  // Modals
+  const [showEditModal,           setShowEditModal]           = useState(false);
+  const [showAddModal,            setShowAddModal]            = useState(false);
+  const [student,                 setStudent]                 = useState(null);
+  const [refetchHallIdHandler,    setRefetchHallIdHandler]    = useState(false);
+
+  // Single fetch effect — all deps listed directly, no stale closures
   useEffect(() => {
-    fetchStudents();
+    let cancelled = false;
+    const params = new URLSearchParams({
+      page,
+      limit:     pageSize,
+      sortBy,
+      sortOrder: sortAsc ? "asc" : "desc",
+    });
+    if (debouncedSearch)      params.set("search",     debouncedSearch);
+    if (department !== "all") params.set("department", department);
+    if (gender     !== "all") params.set("gender",     gender);
 
-    async function fetchStudents() {
-      const result = await Axios.get("/student/all");
-      setStudents(result.data);
-    }
-  }, [refetch]);
+    Axios.get(`/student/all?${params}`)
+      .then((res) => {
+        if (!cancelled) {
+          setStudents(res.data.students);
+          setPagination(res.data.pagination);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) toast.error("Failed to load students");
+      });
+
+    return () => { cancelled = true; };
+  }, [page, pageSize, debouncedSearch, department, gender, sortBy, sortAsc, refetch]);
+
+  // Reset to page 1 when filters change (skip on mount)
+  const isMounted = useRef(false);
+  useEffect(() => {
+    if (!isMounted.current) { isMounted.current = true; return; }
+    setPage(1);
+  }, [debouncedSearch, department, gender, sortBy, sortAsc, pageSize]);
+
+  const handlePageSizeChange = (size) => setPageSize(size);
+  const handlePageChange     = (p)    => setPage(p);
 
   const toggleSort = (column) => {
-    if (sortBy === column) {
-      setSortAsc(!sortAsc);
-    } else {
-      setSortBy(column);
-      setSortAsc(true);
-    }
+    if (sortBy === column) setSortAsc((p) => !p);
+    else { setSortBy(column); setSortAsc(true); }
   };
 
-  const refetchHandler = () => {
-    setRefetch((prev) => !prev);
-  };
+  const confirm = useConfirm();
 
-  useEffect(() => {
-    const filterSearch = (student) => {
-      if (search === "") {
-        return student;
-      } else if (
-        student.studentId.toLowerCase().includes(search.toLowerCase()) ||
-        student.hallId.toLowerCase().includes(search.toLowerCase()) ||
-        student.name.toLowerCase().includes(search.toLowerCase())
-      ) {
-        return student;
-      }
-    };
-
-    const filterDepartment = (student) => {
-      if (department === "") {
-        return student;
-      } else if (student.department === department) {
-        return student;
-      }
-    };
-
-    const filterGender = (student) => {
-      if (gender === "") {
-        return student;
-      } else if (student.gender === gender) {
-        return student;
-      }
-    };
-
-    const filteredResult = students
-      .filter(filterSearch)
-      .filter(filterDepartment)
-      .filter(filterGender);
-
-    if (sortBy) {
-      filteredResult.sort((a, b) => {
-        if (a[sortBy] < b[sortBy]) {
-          return sortAsc ? -1 : 1;
-        }
-        if (a[sortBy] > b[sortBy]) {
-          return sortAsc ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-    console.log(filteredResult);
-
-    setFilteredStudents(filteredResult);
-  }, [sortBy, sortAsc, search, department, students, gender]);
-
-  const handleEditAccount = (student) => {
-    setShowModal(true);
-    setStudent(student);
-  };
-  const handleAddAccount = () => {
-    setShowAddStudentModal(true);
-  };
-
-  const handleResetPassword = async (student) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      html: `<div>
-        You want to reset password for
-        <p style="color:#f27474;">
-          <br /> 
-          Name: ${student.name} 
-          <br /> 
-          Roll: ${student.studentId}
-          <br /> 
-          Hall Id: ${student.hallId}
-        </p>
-      </div>`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, Reset!",
+  const handleResetPassword = async (s) => {
+    const ok = await confirm({
+      title: "Reset password?",
+      description: <>Reset password for <strong>{s.name}</strong> ({s.studentId})?</>,
+      confirmText: "Reset",
+      cancelText: "Cancel",
     });
-
-    if (result.isConfirmed) {
+    if (ok) {
       try {
-        const result = await Axios.post("/auth/password-reset", student);
-        toast.success(result.data.message);
-      } catch (error) {
-        console.log(error);
-        toast.error(error.response.data.message);
+        const res = await Axios.post("/auth/password-reset", s);
+        toast.success(res.data.message);
+      } catch (err) {
+        toast.error(err.response.data.message);
       }
     }
   };
 
-  const handleDeleteAccount = async (student) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      html: `<div>
-        You want to delete account for
-        <p style="color:#f27474;">
-          <br /> 
-          Name: ${student.name} 
-          <br /> 
-          Roll: ${student.studentId}
-          <br /> 
-          Hall Id: ${student.hallId}
-        </p>
-      </div>`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, Delete!",
+  const handleDeleteAccount = async (s) => {
+    const ok = await confirm({
+      title: "Delete account?",
+      description: <>This will permanently delete <strong>{s.name}</strong> ({s.studentId}).</>,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "destructive",
     });
-
-    if (result.isConfirmed) {
+    if (ok) {
       try {
-        const result = await Axios.delete(`/student/${student.studentId}`);
-        toast.success(result.data.message);
-        setRefetchHallIdHandler((prev) => !prev);
-        setStudents(students.filter((s) => s._id !== student._id));
-      } catch (error) {
-        console.log(error);
-        toast.error(error.response.data.message);
+        const res = await Axios.delete(`/student/${s.studentId}`);
+        toast.success(res.data.message);
+        setRefetchHallIdHandler((p) => !p);
+        setRefetch((p) => !p);
+      } catch (err) {
+        toast.error(err.response.data.message);
       }
     }
   };
+
+  const SortableHead = ({ column, label }) => (
+    <TableHead
+      className="cursor-pointer select-none whitespace-nowrap"
+      onClick={() => toggleSort(column)}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        <ArrowUpDown
+          className={`h-3 w-3 ${sortBy === column ? "text-primary" : "text-muted-foreground/40"}`}
+        />
+      </div>
+    </TableHead>
+  );
 
   return (
-    <div className="mt-2 flex flex-col h-screen">
-      <h2 className="text-2xl font-semibold mb-2">All Students</h2>
-      {/* <div className="divider"></div> */}
-      <div className="flex justify-between items-center mb-2 gap-12">
-        <div className="">
-          <h3 className="text-xl font-semibold mr-4 basis-1/3">
-            Total Students: {filteredStudents.length}
-          </h3>
+    <TooltipProvider delayDuration={0}>
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Students</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {pagination.total} student{pagination.total !== 1 ? "s" : ""} found
+            </p>
+          </div>
+          <Button onClick={() => setShowAddModal(true)}>
+            <Plus className="h-4 w-4" />
+            Add Student
+          </Button>
         </div>
-        <div className="flex gap-2 basis-2/3">
-          {auth.wing === "ALL" && (
-            <select
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-              className={`${fixedInputClass} h-auto basis-1/4`}
-            >
-              <option selected value="">
-                Gender
-              </option>
-              <option value="MALE">MALE</option>
-              <option value="FEMALE">FEMALE</option>
-            </select>
-          )}
-          <select
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-            className={`${fixedInputClass} h-auto basis-1/4`}
-          >
-            <option selected value="">
-              Departments
-            </option>
-            {DEPARTMENTS.map((department) => (
-              <option key={department} value={department}>
-                {department}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search Name, Roll, Hall ID"
-            className={`${fixedInputClass} h-auto basis-2/4`}
-          />
-          <button
-            onClick={() => {
-              handleAddAccount();
-            }}
-            className={`${fixedButtonClass} btn-sm h-auto basis-40 ml-2`}
-          >
-            <PlusIcon className="w-4 h-4" /> Add Student
-          </button>
-        </div>
-      </div>
 
-      {/* Flex container for dynamic sizing and scroll */}
-      <div className="flex-grow overflow-auto px-1 pb-4 mb-2">
-        <table className="table table-sm table-hover w-full">
-          <thead className="bg-white shadow-sm sticky top-0 border-0 h-12">
-            <tr>
-              <th onClick={() => toggleSort("hallId")} className="uppercase">
-                Hall Id {sortBy === "hallId" && (sortAsc ? "↑" : "↓")}
-              </th>
-              <th onClick={() => toggleSort("studentId")} className="uppercase">
-                Student Id {sortBy === "studentId" && (sortAsc ? "↑" : "↓")}
-              </th>
-              <th onClick={() => toggleSort("gender")} className="uppercase">
-                Gender {sortBy === "gender" && (sortAsc ? "↑" : "↓")}
-              </th>
-              <th onClick={() => toggleSort("name")} className="uppercase">
-                Name {sortBy === "name" && (sortAsc ? "↑" : "↓")}
-              </th>
-              <th
-                onClick={() => toggleSort("department")}
-                className="uppercase"
-              >
-                Department {sortBy === "department" && (sortAsc ? "↑" : "↓")}
-              </th>
-              <th onClick={() => toggleSort("batch")} className="uppercase">
-                Batch {sortBy === "batch" && (sortAsc ? "↑" : "↓")}
-              </th>
-              <th className="uppercase text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredStudents.map((student) => (
-              <tr
-                className="hover:shadow-sm rounded-lg hover:bg-emerald-50 transition-all border-b-0"
-                key={student._id}
-              >
-                <td>{student.hallId}</td>
-                <td>{student.studentId}</td>
-                <td>{student.gender}</td>
-                <td>{student.name}</td>
-                <td>{student.department}</td>
-                <td>{student.batch || ""}</td>
-                <td className="flex gap-4 justify-center">
-                  <button
-                    onClick={() => handleEditAccount(student)}
-                    title="Edit Account"
-                    className="text-sky-500 bg-sky-100 rounded-full p-3"
-                  >
-                    <PencilIcon className="w-4 h-4" />
-                  </button>
-                  <button
-                    title="Reset Password"
-                    onClick={() => handleResetPassword(student)}
-                    className="text-indigo-800 bg-violet-200 rounded-full p-3"
-                  >
-                    <ArrowPathIcon className="w-4 h-4" />
-                  </button>
-                  <button
-                    title="Delete Account"
-                    onClick={() => handleDeleteAccount(student)}
-                    className="text-red-700 bg-red-200 rounded-full p-3"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Card>
+          {/* Filters */}
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap gap-3">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search name, roll, hall ID…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <Select value={department} onValueChange={setDepartment}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="Department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {DEPARTMENTS.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {auth.wing === "ALL" && (
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="MALE">Male</SelectItem>
+                    <SelectItem value="FEMALE">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <SortableHead column="hallId"    label="Hall ID" />
+                  <SortableHead column="studentId" label="Student ID" />
+                  <SortableHead column="name"       label="Name" />
+                  <SortableHead column="department" label="Department" />
+                  <SortableHead column="batch"      label="Batch" />
+                  <TableHead>Gender</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {students.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                      No students found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  students.map((s) => (
+                    <TableRow key={s._id} className="group">
+                      <TableCell className="font-medium">{s.hallId}</TableCell>
+                      <TableCell className="text-muted-foreground">{s.studentId}</TableCell>
+                      <TableCell className="font-medium">{s.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{s.department}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{s.batch || "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant={s.gender === "MALE" ? "outline" : "success"}>
+                          {s.gender}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-sky-600 hover:text-sky-700 hover:bg-sky-50"
+                                onClick={() => { setStudent(s); setShowEditModal(true); }}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+                                onClick={() => handleResetPassword(s)}
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Reset Password</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => handleDeleteAccount(s)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+
+            <Pagination
+              page={page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              pageSize={pageSize}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </CardContent>
+        </Card>
       </div>
 
       <AddStudentModal
-        showAddStudentModal={showAddStudentModal}
-        setShowAddStudentModal={setShowAddStudentModal}
-        refetchHandler={refetchHandler}
+        showAddStudentModal={showAddModal}
+        setShowAddStudentModal={setShowAddModal}
+        refetchHandler={() => setRefetch((p) => !p)}
         setRefetchHallIdHandler={setRefetchHallIdHandler}
         refetchHallIdHandler={refetchHallIdHandler}
       />
       <EditStudentModal
-        showModal={showModal}
-        setShowModal={setShowModal}
+        showModal={showEditModal}
+        setShowModal={setShowEditModal}
         student={student}
         setStudents={setStudents}
         setStudent={setStudent}
       />
-    </div>
+    </TooltipProvider>
   );
 };

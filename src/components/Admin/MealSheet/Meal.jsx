@@ -1,305 +1,230 @@
-import React, { useEffect, useState } from "react";
-import { toast } from "react-hot-toast";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { MealTable } from "./MealTable";
 import { MealStats } from "./MealStats";
 import { Axios } from "../../../api/api";
 import { MealControls } from "./MealControls";
-import Swal from "sweetalert2";
+import { useConfirm } from "../../Common/ConfirmDialog";
 import { useAuthUser } from "react-auth-kit";
+import { Loader2 } from "lucide-react";
+
+export const formatMealDate = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+const EMPTY_FEASTS = { breakfast: false, lunch: false, dinner: false };
 
 export const Meal = () => {
   const auth = useAuthUser()();
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("roomNo");
   const [sortAsc, setSortAsc] = useState(true);
   const [students, setStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]);
-  const [gender, setGender] = useState(
-    auth.wing === "ALL" ? "MALE" : auth.wing
-  );
+  const [gender, setGender] = useState(auth.wing === "ALL" ? "MALE" : auth.wing);
   const [residence, setResidence] = useState("");
   const [search, setSearch] = useState("");
-  const [refetch, setRefetch] = useState(false);
-
-  const [breakfastCount, setBreakfastCount] = useState(0);
-  const [lunchCount, setLunchCount] = useState(0);
-  const [dinnerCount, setDinnerCount] = useState(0);
-
-  const [breakfastLock, setBreakfastLock] = useState(false);
-  const [lunchLock, setLunchLock] = useState(false);
-  const [dinnerLock, setDinnerLock] = useState(false);
-
-  const [breakfastFeast, setBreakfastFeast] = useState(false);
-  const [lunchFeast, setLunchFeast] = useState(false);
-  const [dinnerFeast, setDinnerFeast] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [feasts, setFeasts] = useState(EMPTY_FEASTS);
+  const [locks, setLocks] = useState(EMPTY_FEASTS);
 
   const [fromDate, setFromDate] = useState(() => {
-    const today = new Date();
-    const nextDay = new Date(today);
-    nextDay.setDate(today.getDate() + 1);
-    return nextDay;
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d;
   });
 
-  const formatDate = (date) => {
-    const adjustedDate = new Date(date);
-    adjustedDate.setHours(0, 0, 0, 0);
+  const formattedDate = useMemo(() => formatMealDate(fromDate), [fromDate]);
 
-    const year = adjustedDate.getFullYear();
-    const month = String(adjustedDate.getMonth() + 1).padStart(2, "0");
-    const day = String(adjustedDate.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-  };
-
+  // Debounce search input — only fire API after 400ms idle
   useEffect(() => {
-    Swal.fire({
-      title: "Loading...",
-      text: "Please wait while we load the data.",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
-    // Fetch feast locks and students, and set loading to false when done
-    Promise.all([fetchFeastLocks(), fetchStudents()])
-      .then(() => {
-        setLoading(false); // Set loading to false after data is loaded
-        Swal.close(); // Close SweetAlert loading screen
-      })
-      .catch((error) => {
-        console.error(error);
-        setLoading(false);
-        Swal.fire({
-          icon: "error",
-          title: "Failed to load data",
-          text: "An error occurred while loading the data.",
-        });
-      });
-
-    async function fetchFeastLocks() {
-      try {
-        const formattedDate = formatDate(fromDate);
-        const result = await Axios.get(
-          `/feast/date/${formattedDate}/wing/${gender}`
-        );
-        if (result.data.length > 0) {
-          setBreakfastLock(result.data[0].meal.includes("breakfast"));
-          setLunchLock(result.data[0].meal.includes("lunch"));
-          setDinnerLock(result.data[0].meal.includes("dinner"));
-
-          setBreakfastFeast(result.data[0].meal.includes("breakfast"));
-          setLunchFeast(result.data[0].meal.includes("lunch"));
-          setDinnerFeast(result.data[0].meal.includes("dinner"));
+  // Fetch feasts separately — only needs date + gender
+  useEffect(() => {
+    let cancelled = false;
+    Axios.get(`/feast/date/${formattedDate}/wing/${gender}`)
+      .then((res) => {
+        if (cancelled) return;
+        if (res.data.length > 0) {
+          const meals = res.data[0].meal;
+          const f = {
+            breakfast: meals.includes("breakfast"),
+            lunch: meals.includes("lunch"),
+            dinner: meals.includes("dinner"),
+          };
+          setFeasts(f);
+          setLocks(f);
         } else {
-          resetFeastLocks();
+          setFeasts(EMPTY_FEASTS);
+          setLocks(EMPTY_FEASTS);
         }
-      } catch (error) {
-        resetFeastLocks();
-        console.error("Error fetching feast locks:", error);
-      }
-    }
-
-    function resetFeastLocks() {
-      setBreakfastLock(false);
-      setLunchLock(false);
-      setDinnerLock(false);
-
-      setBreakfastFeast(false);
-      setLunchFeast(false);
-      setDinnerFeast(false);
-    }
-
-    async function fetchStudents() {
-      const formattedDate = formatDate(fromDate);
-      const result = await Axios.get("/meal/students", {
-        params: { date: formattedDate, gender: gender }, // gender is used as wing
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFeasts(EMPTY_FEASTS);
+          setLocks(EMPTY_FEASTS);
+        }
       });
-      setStudents(result.data);
-    }
-  }, [fromDate, gender]);
+    return () => { cancelled = true; };
+  }, [formattedDate, gender]);
 
+  // Fetch students from backend with all active filters
+  const isFirstLoad = useRef(true);
   useEffect(() => {
-    let breakfast = 0;
-    let lunch = 0;
-    let dinner = 0;
+    let cancelled = false;
+    setLoading(true);
 
-    students.forEach((student) => {
-      if (student?.meal?.breakfast || breakfastFeast) breakfast++;
-      if (student?.meal?.lunch || lunchFeast) lunch++;
-      if (student?.meal?.dinner || dinnerFeast) dinner++;
+    const params = { date: formattedDate, gender };
+    if (debouncedSearch) params.search = debouncedSearch;
+    if (residence) params.residence = residence;
+
+    Axios.get("/meal/students", { params })
+      .then((res) => {
+        if (!cancelled) {
+          setStudents(res.data);
+          setLoading(false);
+          isFirstLoad.current = false;
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoading(false);
+          toast.error("Failed to load students");
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [formattedDate, gender, debouncedSearch, residence]);
+
+  // Sort client-side — instant, no API round-trip needed
+  const displayStudents = useMemo(() => {
+    if (!sortBy) return students;
+    return [...students].sort((a, b) => {
+      if (a[sortBy] < b[sortBy]) return sortAsc ? -1 : 1;
+      if (a[sortBy] > b[sortBy]) return sortAsc ? 1 : -1;
+      return 0;
     });
+  }, [students, sortBy, sortAsc]);
 
-    setBreakfastCount(breakfast);
-    setLunchCount(lunch);
-    setDinnerCount(dinner);
-  }, [students, breakfastFeast, lunchFeast, dinnerFeast]);
+  const counts = useMemo(
+    () => ({
+      b: students.filter((s) => feasts.breakfast || s?.meal?.breakfast).length,
+      l: students.filter((s) => feasts.lunch || s?.meal?.lunch).length,
+      d: students.filter((s) => feasts.dinner || s?.meal?.dinner).length,
+    }),
+    [students, feasts]
+  );
 
-  useEffect(() => {
-    const filteredResult = students
-      .filter(
-        (student) =>
-          search === "" ||
-          student.studentId.toLowerCase().includes(search.toLowerCase()) ||
-          student.hallId.toLowerCase().includes(search.toLowerCase()) ||
-          student.name.toLowerCase().includes(search.toLowerCase())
-      )
-      .filter((student) => gender === "" || student.gender === gender)
-      .filter((student) => residence === "" || student.residence === residence);
+  const updateStudent = useCallback((studentId, meal) => {
+    setStudents((prev) =>
+      prev.map((s) => (s.studentId === studentId ? { ...s, meal } : s))
+    );
+  }, []);
 
-    if (sortBy) {
-      filteredResult.sort((a, b) => {
-        if (a[sortBy] < b[sortBy]) return sortAsc ? -1 : 1;
-        if (a[sortBy] > b[sortBy]) return sortAsc ? 1 : -1;
-        return 0;
-      });
-    }
+  const updateGuestMeal = useCallback((studentId, guestMeal) => {
+    setStudents((prev) =>
+      prev.map((s) => (s.studentId === studentId ? { ...s, guestMeal } : s))
+    );
+  }, []);
 
-    setFilteredStudents(filteredResult);
-  }, [sortBy, sortAsc, search, students, gender, residence]);
-
-  const exportToExcel = () => {
-    const excelData = filteredStudents.map((student) => ({
-      "Hall ID": student.hallId,
-      "Student ID": student.studentId,
-      Name: student.name,
-      "Room No": student.roomNo,
-      Residence: student.residence,
-      Breakfast: breakfastFeast || student?.meal?.breakfast ? "✓" : "",
-      Lunch: lunchFeast || student?.meal?.lunch ? "✓" : "",
-      Dinner: dinnerFeast || student?.meal?.dinner ? "✓" : "",
+  const exportToExcel = useCallback(() => {
+    const data = displayStudents.map((s) => ({
+      "Hall ID": s.hallId,
+      "Student ID": s.studentId,
+      Name: s.name,
+      "Room No": s.roomNo,
+      Residence: s.residence,
+      Breakfast: feasts.breakfast || s?.meal?.breakfast ? "✓" : "",
+      Lunch: feasts.lunch || s?.meal?.lunch ? "✓" : "",
+      Dinner: feasts.dinner || s?.meal?.dinner ? "✓" : "",
     }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Meal Data");
+    XLSX.writeFile(
+      wb,
+      `${formattedDate}_${gender}_${residence || "all"}_meal_sheet.xlsx`
+    );
+  }, [displayStudents, feasts, formattedDate, gender, residence]);
 
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Meal Data");
-
-    const formattedDate = formatDate(fromDate);
-    const fileName = `${formattedDate}_${gender}_wing_${
-      residence || "all"
-    }_meal_sheet.xlsx`;
-
-    XLSX.writeFile(workbook, fileName);
-  };
-
-  const handleMealLock = async (mealType) => {
-    const formattedDate = formatDate(fromDate);
-
-    try {
-      const checkResult = await Axios.post("/feast/check", {
-        date: formattedDate,
-        meal: mealType,
-        wing: gender, // Pass wing as gender
-      });
-      console.log(checkResult.data, "kksk");
-      const isFeastOn = checkResult.data.status === "on";
-
-      if (isFeastOn) {
-        await Axios.delete(
-          `/feast/date/${formattedDate}/meal/${mealType}/wing/${gender}`
-        );
-        toast.success(
-          `Hall feast for ${mealType} on ${formattedDate} turned off!`
-        );
-
-        if (mealType === "breakfast") {
-          setBreakfastLock(false);
-          setBreakfastFeast(false);
-        } else if (mealType === "lunch") {
-          setLunchLock(false);
-          setLunchFeast(false);
-        } else if (mealType === "dinner") {
-          setDinnerLock(false);
-          setDinnerFeast(false);
-        }
-      } else {
-        await Axios.post("/feast", {
+  const handleMealLock = useCallback(
+    async (mealType) => {
+      try {
+        const res = await Axios.post("/feast/check", {
           date: formattedDate,
           meal: mealType,
-          wing: gender, // Pass wing as gender
+          wing: gender,
         });
-        toast.success(
-          `Hall feast for ${mealType} on ${formattedDate} turned on!`
-        );
-
-        if (mealType === "breakfast") {
-          setBreakfastLock(true);
-          setBreakfastFeast(true);
-        } else if (mealType === "lunch") {
-          setLunchLock(true);
-          setLunchFeast(true);
-        } else if (mealType === "dinner") {
-          setDinnerLock(true);
-          setDinnerFeast(true);
+        const isFeastOn = res.data.status === "on";
+        if (isFeastOn) {
+          await Axios.delete(
+            `/feast/date/${formattedDate}/meal/${mealType}/wing/${gender}`
+          );
+          setFeasts((f) => ({ ...f, [mealType]: false }));
+          setLocks((l) => ({ ...l, [mealType]: false }));
+          toast.success(`Hall feast for ${mealType} turned off`);
+        } else {
+          await Axios.post("/feast", {
+            date: formattedDate,
+            meal: mealType,
+            wing: gender,
+          });
+          setFeasts((f) => ({ ...f, [mealType]: true }));
+          setLocks((l) => ({ ...l, [mealType]: true }));
+          toast.success(`Hall feast for ${mealType} turned on`);
         }
+      } catch {
+        toast.error(`Failed to update ${mealType} feast`);
       }
-    } catch (error) {
-      toast.error(`Failed to update ${mealType} lock status`);
-      console.error(error);
-    }
-  };
+    },
+    [formattedDate, gender]
+  );
 
-  const generateMeal = async () => {
-    const confirmResult = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to generate the meal for the selected date?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, generate it!",
-      cancelButtonText: "No, cancel",
-      reverseButtons: true,
+  const generateMeal = useCallback(async () => {
+    const ok = await confirm({
+      title: "Generate Meal?",
+      description: `Generate meals for ${formattedDate}?`,
+      confirmText: "Generate",
+      cancelText: "Cancel",
     });
-
-    if (confirmResult.isConfirmed) {
-      Swal.fire({
-        title: "Generating meal...",
-        text: "Please wait while we generate the meal.",
-        allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        },
+    if (!ok) return;
+    try {
+      setLoading(true);
+      const res = await Axios.post("/meal/generate-meal", {
+        date: formattedDate,
+        wing: gender,
       });
-
-      try {
-        const result = await Axios.post("/meal/generate-meal", {
-          date: formatDate(fromDate),
-          wing: gender, // Pass wing as gender
-        });
-        Swal.fire({
-          icon: "success",
-          title: "Meal generated successfully",
-          text: result.data.message,
-        });
-        setRefetch(!refetch);
-      } catch (error) {
-        Swal.fire({
-          icon: "error",
-          title: "Failed to generate meal",
-          text: "An error occurred while generating meal.",
-        });
-        console.error("Error generating meal:", error);
-      }
-    } else {
-      Swal.fire({
-        title: "Cancelled",
-        text: "Meal generation was cancelled.",
-        icon: "info",
-        timer: 1500,
-        showConfirmButton: false,
-      });
+      const params = { date: formattedDate, gender };
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (residence) params.residence = residence;
+      const result = await Axios.get("/meal/students", { params });
+      setStudents(result.data);
+      setLoading(false);
+      toast.success(res.data.message || "Meal generated successfully");
+    } catch {
+      setLoading(false);
+      toast.error("Failed to generate meal");
     }
-  };
+  }, [formattedDate, gender, debouncedSearch, residence]);
+
+  // True when user is typing but debounce hasn't fired yet
+  const isSearchPending = search !== debouncedSearch;
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen gap-3">
       <MealControls
         fromDate={fromDate}
         setFromDate={setFromDate}
         generateMeal={generateMeal}
         exportToExcel={exportToExcel}
+        formattedDate={formattedDate}
       />
-
       <MealStats
         gender={gender}
         setGender={setGender}
@@ -307,27 +232,34 @@ export const Meal = () => {
         setResidence={setResidence}
         search={search}
         setSearch={setSearch}
-        breakfastCount={breakfastCount}
-        lunchCount={lunchCount}
-        dinnerCount={dinnerCount}
+        breakfastCount={counts.b}
+        lunchCount={counts.l}
+        dinnerCount={counts.d}
+        studentCount={students.length}
+        isSearchPending={isSearchPending}
       />
-
-      <MealTable
-        students={filteredStudents}
-        setStudents={setStudents}
-        sortBy={sortBy}
-        setSortBy={setSortBy}
-        sortAsc={sortAsc}
-        setSortAsc={setSortAsc}
-        breakfastFeast={breakfastFeast}
-        lunchFeast={lunchFeast}
-        dinnerFeast={dinnerFeast}
-        breakfastLock={breakfastLock}
-        lunchLock={lunchLock}
-        dinnerLock={dinnerLock}
-        handleMealLock={handleMealLock}
-        date={fromDate}
-      />
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="text-sm">Loading meal data…</span>
+          </div>
+        </div>
+      ) : (
+        <MealTable
+          students={displayStudents}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          sortAsc={sortAsc}
+          setSortAsc={setSortAsc}
+          feasts={feasts}
+          locks={locks}
+          handleMealLock={handleMealLock}
+          date={formattedDate}
+          updateStudent={updateStudent}
+          updateGuestMeal={updateGuestMeal}
+        />
+      )}
     </div>
   );
 };

@@ -1,50 +1,60 @@
-import React, { useCallback, useEffect, useState } from "react";
-import formatDate from "../../Utils/formatDateString";
+import { useCallback, useEffect, useState } from "react";
 import { Axios } from "../../api/api";
 import DatePickerComponent from "../Common/DatePickerComponent";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useAuthUser } from "react-auth-kit";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const fmt = (v) => (v ? v.toFixed(2) : "0.00");
+
+function StatCard({ label, value, sub, color }) {
+  return (
+    <div className={`rounded-xl border bg-card p-4 flex flex-col gap-1 border-l-4 ${color}`}>
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
+      <span className="text-xl font-bold">{value} ৳</span>
+      {sub && <span className="text-xs text-muted-foreground">{sub} ৳ / head</span>}
+    </div>
+  );
+}
 
 export default function Expenses() {
   const auth = useAuthUser()();
-  const [distinctMonths, setDistinctMonths] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [mealBillData, setMealBillData] = useState([]);
-  const [wing, setWing] = useState(auth.wing === "ALL" ? "MALE" : auth.wing); // Add wing state
+  const [wing, setWing] = useState(auth.wing === "ALL" ? "MALE" : auth.wing);
 
   useEffect(() => {
     const fetchDistinctMonths = async () => {
       const toastId = toast.loading("Loading available months...");
       try {
         const res = await Axios.get("/meal/months");
-        setDistinctMonths(res.data);
         setSelectedMonth(res.data.slice(-1)[0]);
-        toast.success("Available months loaded", { id: toastId });
-      } catch (error) {
+        toast.success("Months loaded", { id: toastId });
+      } catch {
         toast.error("Error loading months", { id: toastId });
       }
     };
-
     fetchDistinctMonths();
   }, []);
 
   useEffect(() => {
-    const fetchBill = async () => {
-      if (selectedMonth) {
-        const toastId = toast.loading("Loading bill data...");
-        const [year, month] = selectedMonth.split("-");
-        try {
-          const res = await Axios.get(
-            `/cost/student?year=${year}&month=${month}&wing=${wing}`
-          );
-          setMealBillData(res.data.mealBillData);
-          toast.success("Bill data loaded", { id: toastId });
-        } catch (err) {
-          toast.error("Error fetching bill data", { id: toastId });
-        }
-      }
-    };
-    fetchBill();
+    if (!selectedMonth) return;
+    const [year, month] = selectedMonth.split("-");
+    const toastId = toast.loading("Loading bill data...");
+    Axios.get(`/cost/student?year=${year}&month=${month}&wing=${wing}`)
+      .then((res) => {
+        setMealBillData(res.data.mealBillData);
+        toast.success("Bill data loaded", { id: toastId });
+      })
+      .catch(() => toast.error("Error fetching bill data", { id: toastId }));
   }, [selectedMonth, wing]);
 
   const handleDateChange = useCallback((date) => {
@@ -53,248 +63,203 @@ export default function Expenses() {
     setSelectedMonth(`${year}-${month}`);
   }, []);
 
-  const handleWingChange = (e) => {
-    setWing(e.target.value);
-  };
-
   const getDaysInMonth = useCallback((year, month) => {
     const date = new Date(year, month, 0);
-    const days = [];
-    for (let i = 1; i <= date.getDate(); i++) {
-      days.push(
-        `${year}-${month.toString().padStart(2, "0")}-${i
-          .toString()
-          .padStart(2, "0")}`
-      );
-    }
-    return days;
+    return Array.from({ length: date.getDate() }, (_, i) =>
+      `${year}-${month.toString().padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`
+    );
   }, []);
-
-  const [year, month] = selectedMonth.split("-");
-  const daysOfMonth = getDaysInMonth(year, month);
 
   const handleGenerate = async () => {
     const toastId = toast.loading("Generating bill...");
+    const [year, month] = selectedMonth.split("-");
     try {
-      const yearMonth = selectedMonth.split("-");
-      const year = yearMonth[0];
-      const month = yearMonth[1];
-
-      const res = await Axios.post(
-        `/cost/monthly?month=${month}&year=${year}&wing=${wing}`
-      );
+      await Axios.post(`/cost/monthly?month=${month}&year=${year}&wing=${wing}`);
       toast.success("Bill generation successful", { id: toastId });
-      console.log(res);
-    } catch (e) {
-      toast.error("Error occurred during bill generation", { id: toastId });
+    } catch {
+      toast.error("Error during bill generation", { id: toastId });
     }
   };
 
+  const [year, month] = (selectedMonth || "-").split("-");
+  const daysOfMonth = selectedMonth ? getDaysInMonth(year, month) : [];
+
+  const totals = mealBillData.reduce(
+    (acc, d) => ({
+      breakfast: acc.breakfast + (d.mealBill.breakfast.totalCost || 0),
+      lunch: acc.lunch + (d.mealBill.lunch.totalCost || 0),
+      dinner: acc.dinner + (d.mealBill.dinner.totalCost || 0),
+      perHeadBreakfast: acc.perHeadBreakfast + (d.mealBill.breakfast.perHeadCost || 0),
+      perHeadLunch: acc.perHeadLunch + (d.mealBill.lunch.perHeadCost || 0),
+      perHeadDinner: acc.perHeadDinner + (d.mealBill.dinner.perHeadCost || 0),
+    }),
+    { breakfast: 0, lunch: 0, dinner: 0, perHeadBreakfast: 0, perHeadLunch: 0, perHeadDinner: 0 }
+  );
+  const grandTotal = totals.breakfast + totals.lunch + totals.dinner;
+  const grandPerHead = totals.perHeadBreakfast + totals.perHeadLunch + totals.perHeadDinner;
+
+  const subHeaders = ["Cost", "Students", "/Head"];
+
   return (
-    <div className="mt-2">
-      <div className="flex justify-between gap-2 h-auto">
-        <h2 className="text-lg self-center xs:text-2xl font-semibold">
-          Mess Bill
-        </h2>
-
-        {/* Add wing selection dropdown */}
-
-        <div className=" flex justify-center items-center">
-          <button
-            className="btn btn-sm mr-2 bg-emerald-500 rounded-md text-white font-extralight hover:bg-emerald-600"
-            onClick={handleGenerate}
-          >
-            Generate
-          </button>
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Mess Bill</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Daily cost breakdown by meal type</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" onClick={handleGenerate}>Generate</Button>
           {auth.wing === "ALL" && (
-            <div className="">
-              <select
-                value={wing}
-                onChange={handleWingChange}
-                className="border mr-2 border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:border-blue-500 transition-all duration-300 ease-in-out w-44"
-              >
-                <option value="MALE">MALE</option>
-                <option value="FEMALE">FEMALE</option>
-              </select>
-            </div>
+            <Select value={wing} onValueChange={setWing}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MALE">Male</SelectItem>
+                <SelectItem value="FEMALE">Female</SelectItem>
+              </SelectContent>
+            </Select>
           )}
-          <DatePickerComponent
-            selectedDate={new Date(selectedMonth + "-01")}
-            onDateChange={handleDateChange}
-          />
+          {selectedMonth && (
+            <DatePickerComponent
+              selectedDate={new Date(selectedMonth + "-01")}
+              onDateChange={handleDateChange}
+            />
+          )}
         </div>
       </div>
-      <div className="my-4">
-        <div className="">
-          <table className="table table-xs border-collapse border border-slate-500 table-hover h-full text-center">
-            <thead className="bg-gray-200 border border-slate-500 z-10">
-              <tr className="border">
-                <th rowSpan={2} className="p-0 border border-slate-500">
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard label="Breakfast" value={fmt(totals.breakfast)} sub={fmt(totals.perHeadBreakfast)} color="border-l-amber-400" />
+        <StatCard label="Lunch" value={fmt(totals.lunch)} sub={fmt(totals.perHeadLunch)} color="border-l-sky-400" />
+        <StatCard label="Dinner" value={fmt(totals.dinner)} sub={fmt(totals.perHeadDinner)} color="border-l-violet-400" />
+        <StatCard label="Grand Total" value={fmt(grandTotal)} sub={fmt(grandPerHead)} color="border-l-emerald-500" />
+      </div>
+
+      {/* Table */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-0 overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              {/* Meal group headers */}
+              <tr className="border-b border-border">
+                <th rowSpan={2} className="sticky left-0 z-20 bg-muted/60 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground border-r border-border w-20">
                   Date
                 </th>
-                <th className="p-0 border border-slate-500" colSpan={3}>
+                <th colSpan={3} className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider bg-amber-50 text-amber-700 border-x border-border">
                   Breakfast
                 </th>
-                <th className="p-0 border border-slate-500" colSpan={3}>
+                <th colSpan={3} className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider bg-sky-50 text-sky-700 border-x border-border">
                   Lunch
                 </th>
-                <th className="p-0 border border-slate-500" colSpan={3}>
+                <th colSpan={3} className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider bg-violet-50 text-violet-700 border-x border-border">
                   Dinner
                 </th>
-                <th className="p-0 border border-slate-500" colSpan={2}>
+                <th colSpan={2} className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 border-l border-border">
                   Total
                 </th>
               </tr>
-              <tr className="border">
-                <th className="border border-slate-500">Total Cost</th>
-                <th className="border border-slate-500">Total Students</th>
-                <th className="border border-slate-500">Per Head</th>
-                <th className="border border-slate-500">Total Cost</th>
-                <th className="border border-slate-500">Total Students</th>
-                <th className="border border-slate-500">Per Head</th>
-                <th className="border border-slate-500">Total Cost</th>
-                <th className="border border-slate-500">Total Students</th>
-                <th className="border border-slate-500">Per Head</th>
-                <th className="border border-slate-500">Total Cost</th>
-                <th className="border border-slate-500">Per Head</th>
+              {/* Sub-column headers */}
+              <tr className="border-b-2 border-border bg-muted/30">
+                {[
+                  ...subHeaders.map((h) => ({ label: h, cls: "text-amber-600" })),
+                  ...subHeaders.map((h) => ({ label: h, cls: "text-sky-600" })),
+                  ...subHeaders.map((h) => ({ label: h, cls: "text-violet-600" })),
+                  { label: "Cost", cls: "text-emerald-600" },
+                  { label: "/Head", cls: "text-emerald-600" },
+                ].map(({ label, cls }, i) => (
+                  <th key={i} className={`px-3 py-2 text-center text-xs font-medium whitespace-nowrap ${cls} border-x border-border/50`}>
+                    {label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {daysOfMonth.map((day) => {
-                const item = mealBillData.find((data) => data.date === day);
+              {daysOfMonth.map((day, idx) => {
+                const d = mealBillData.find((x) => x.date === day);
+                const rowTotal =
+                  (d?.mealBill?.breakfast?.totalCost || 0) +
+                  (d?.mealBill?.lunch?.totalCost || 0) +
+                  (d?.mealBill?.dinner?.totalCost || 0);
+                const rowPerHead =
+                  (d?.mealBill?.breakfast?.perHeadCost || 0) +
+                  (d?.mealBill?.lunch?.perHeadCost || 0) +
+                  (d?.mealBill?.dinner?.perHeadCost || 0);
+                const hasData = !!d;
                 return (
-                  <React.Fragment key={day}>
-                    <tr className="hover:bg-gray-100 border border-slate-500 text-center">
-                      <td className="px-1 border border-slate-500">
-                        {new Date(day).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </td>
-                      {/* for breakfast */}
-                      <td className="p-0 border border-slate-500">
-                        <span>
-                          {" "}
-                          {item?.mealBill?.breakfast?.totalCost?.toFixed(2) ||
-                            "0"}{" "}
-                          ৳
-                        </span>
-                      </td>
-                      <td className="p-0 border border-slate-500">
-                        <span>
-                          {item?.mealBill?.breakfast?.totalStudent || "0"}
-                        </span>
-                      </td>
-                      <td className="p-0 border border-slate-500">
-                        <span>
-                          {item?.mealBill?.breakfast?.perHeadCost?.toFixed(2) ||
-                            "0"}{" "}
-                          ৳
-                        </span>
-                      </td>
-                      {/* for lunch */}
-                      <td className="p-0 border border-slate-500">
-                        <span>
-                          {" "}
-                          {item?.mealBill?.lunch?.totalCost?.toFixed(2) ||
-                            "0"}{" "}
-                          ৳
-                        </span>
-                      </td>
-                      <td className="p-0 border border-slate-500">
-                        <span>
-                          {item?.mealBill?.lunch?.totalStudent || "0"}
-                        </span>
-                      </td>
-                      <td className="p-0 border border-slate-500">
-                        <span>
-                          {item?.mealBill?.lunch?.perHeadCost?.toFixed(2) ||
-                            "0"}{" "}
-                          ৳
-                        </span>
-                      </td>
-                      {/* for dinner */}
-                      <td className="p-0 border border-slate-500">
-                        <span>
-                          {" "}
-                          {item?.mealBill?.dinner?.totalCost?.toFixed(2) ||
-                            "0"}{" "}
-                          ৳
-                        </span>
-                      </td>
-                      <td className="p-0 border border-slate-500">
-                        <span>
-                          {item?.mealBill?.dinner?.totalStudent || "0"}
-                        </span>
-                      </td>
-                      <td className="p-0 border border-slate-500">
-                        <span>
-                          {item?.mealBill?.dinner?.perHeadCost?.toFixed(2) ||
-                            "0"}{" "}
-                          ৳
-                        </span>
-                      </td>
-                      {/* Total */}
-                      <td className="p-0 border border-slate-500">
-                        <span>
-                          {(
-                            (item?.mealBill?.breakfast?.totalCost || 0) +
-                            (item?.mealBill?.lunch?.totalCost || 0) +
-                            (item?.mealBill?.dinner?.totalCost || 0)
-                          ).toFixed(2)}{" "}
-                          ৳
-                        </span>
-                      </td>
-                      <td className="p-0 border border-slate-500">
-                        <span>
-                          {(
-                            (item?.mealBill?.breakfast?.perHeadCost || 0) +
-                            (item?.mealBill?.lunch?.perHeadCost || 0) +
-                            (item?.mealBill?.dinner?.perHeadCost || 0)
-                          ).toFixed(2)}{" "}
-                          ৳
-                        </span>
-                      </td>
-                    </tr>
-                  </React.Fragment>
+                  <tr
+                    key={day}
+                    className={`transition-colors hover:bg-muted/40 ${idx % 2 === 0 ? "bg-background" : "bg-muted/10"}`}
+                  >
+                    <td className="sticky left-0 z-10 px-4 py-2 font-semibold text-xs whitespace-nowrap border-r border-border bg-inherit">
+                      <div className="text-foreground">{new Date(day + "T00:00:00").toLocaleDateString("en-US", { weekday: "short" })}</div>
+                      <div className="text-muted-foreground font-normal">{new Date(day + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
+                    </td>
+                    {/* Breakfast */}
+                    <td className={`px-3 py-2 text-center text-xs border-l border-border/50 ${hasData ? "text-amber-700 font-medium" : "text-muted-foreground"}`}>
+                      {fmt(d?.mealBill?.breakfast?.totalCost)}
+                    </td>
+                    <td className="px-3 py-2 text-center text-xs border-l border-border/50 text-muted-foreground">
+                      {d?.mealBill?.breakfast?.totalStudent || "—"}
+                    </td>
+                    <td className={`px-3 py-2 text-center text-xs border-l border-border/50 ${hasData ? "text-amber-700" : "text-muted-foreground"}`}>
+                      {fmt(d?.mealBill?.breakfast?.perHeadCost)}
+                    </td>
+                    {/* Lunch */}
+                    <td className={`px-3 py-2 text-center text-xs border-l border-border ${hasData ? "text-sky-700 font-medium" : "text-muted-foreground"}`}>
+                      {fmt(d?.mealBill?.lunch?.totalCost)}
+                    </td>
+                    <td className="px-3 py-2 text-center text-xs border-l border-border/50 text-muted-foreground">
+                      {d?.mealBill?.lunch?.totalStudent || "—"}
+                    </td>
+                    <td className={`px-3 py-2 text-center text-xs border-l border-border/50 ${hasData ? "text-sky-700" : "text-muted-foreground"}`}>
+                      {fmt(d?.mealBill?.lunch?.perHeadCost)}
+                    </td>
+                    {/* Dinner */}
+                    <td className={`px-3 py-2 text-center text-xs border-l border-border ${hasData ? "text-violet-700 font-medium" : "text-muted-foreground"}`}>
+                      {fmt(d?.mealBill?.dinner?.totalCost)}
+                    </td>
+                    <td className="px-3 py-2 text-center text-xs border-l border-border/50 text-muted-foreground">
+                      {d?.mealBill?.dinner?.totalStudent || "—"}
+                    </td>
+                    <td className={`px-3 py-2 text-center text-xs border-l border-border/50 ${hasData ? "text-violet-700" : "text-muted-foreground"}`}>
+                      {fmt(d?.mealBill?.dinner?.perHeadCost)}
+                    </td>
+                    {/* Row Total */}
+                    <td className={`px-3 py-2 text-center text-xs border-l border-border font-semibold ${hasData ? "text-emerald-700" : "text-muted-foreground"}`}>
+                      {rowTotal.toFixed(2)}
+                    </td>
+                    <td className={`px-3 py-2 text-center text-xs border-l border-border/50 font-medium ${hasData ? "text-emerald-600" : "text-muted-foreground"}`}>
+                      {rowPerHead.toFixed(2)}
+                    </td>
+                  </tr>
                 );
               })}
-              {
-                <tr className="border-t">
-                  <td colSpan="11" className="text-right font-bold text-xl p-0">
-                    Grand Total
-                  </td>
-                  <td className="p-0 font-bold text-xl">
-                    {mealBillData
-                      .reduce(
-                        (total, item) =>
-                          total +
-                          (item.mealBill.breakfast.totalCost || 0) +
-                          (item.mealBill.lunch.totalCost || 0) +
-                          (item.mealBill.dinner.totalCost || 0),
-                        0
-                      )
-                      .toFixed(2)}{" "}
-                    ৳
-                    <br />
-                    {mealBillData
-                      .reduce(
-                        (total, item) =>
-                          total +
-                          (item.mealBill.breakfast.perHeadCost || 0) +
-                          (item.mealBill.lunch.perHeadCost || 0) +
-                          (item.mealBill.dinner.perHeadCost || 0),
-                        0
-                      )
-                      .toFixed(2)}{" "}
-                    ৳
-                  </td>
-                </tr>
-              }
             </tbody>
+            {/* Grand Total footer */}
+            <tfoot>
+              <tr className="border-t-2 border-border bg-muted/50">
+                <td className="sticky left-0 z-10 px-4 py-3 text-xs font-bold uppercase tracking-wide text-foreground border-r border-border bg-muted/50">
+                  Total
+                </td>
+                <td className="px-3 py-3 text-center text-xs font-bold text-amber-700 border-l border-border/50">{fmt(totals.breakfast)}</td>
+                <td className="px-3 py-3 text-center text-xs text-muted-foreground border-l border-border/50">—</td>
+                <td className="px-3 py-3 text-center text-xs font-semibold text-amber-600 border-l border-border/50">{fmt(totals.perHeadBreakfast)}</td>
+                <td className="px-3 py-3 text-center text-xs font-bold text-sky-700 border-l border-border">{fmt(totals.lunch)}</td>
+                <td className="px-3 py-3 text-center text-xs text-muted-foreground border-l border-border/50">—</td>
+                <td className="px-3 py-3 text-center text-xs font-semibold text-sky-600 border-l border-border/50">{fmt(totals.perHeadLunch)}</td>
+                <td className="px-3 py-3 text-center text-xs font-bold text-violet-700 border-l border-border">{fmt(totals.dinner)}</td>
+                <td className="px-3 py-3 text-center text-xs text-muted-foreground border-l border-border/50">—</td>
+                <td className="px-3 py-3 text-center text-xs font-semibold text-violet-600 border-l border-border/50">{fmt(totals.perHeadDinner)}</td>
+                <td className="px-3 py-3 text-center text-xs font-bold text-emerald-700 border-l border-border">{fmt(grandTotal)}</td>
+                <td className="px-3 py-3 text-center text-xs font-semibold text-emerald-600 border-l border-border/50">{fmt(grandPerHead)}</td>
+              </tr>
+            </tfoot>
           </table>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,232 +1,174 @@
-import React, { useEffect, useState } from "react";
-import toast from "react-hot-toast";
+import { memo, useState, useEffect, useCallback } from "react";
+
+const ITEM_HEIGHT = 44;
+import { toast } from "sonner";
+import { CheckCircle2 } from "lucide-react";
 import { Axios } from "../../../api/api";
-import {
-  CheckIcon,
-  TicketIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
-import { CheckBadgeIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
-import { formatDateTime } from "../../../Utils/formatDateString";
-import { dateToYYYYMMDD } from "../../../Utils/dateToYYYYMMDD";
-import Swal from "sweetalert2";
+import { cn } from "@/lib/utils";
+import { useConfirm } from "../../Common/ConfirmDialog";
 
-export const MealRow = ({
-  student: initialStudent,
-  setStudents,
-  breakfastFeast,
-  lunchFeast,
-  dinnerFeast,
-  date,
-}) => {
-  // Create local state to hold the student data
-  const [student, setStudent] = useState(initialStudent);
+const MealBtn = memo(({ active, feast, onClick, label }) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      "w-8 h-8 rounded-full text-xs font-bold transition-all duration-150 shrink-0",
+      feast
+        ? "bg-amber-400 text-white shadow-sm ring-2 ring-amber-200"
+        : active
+        ? "bg-emerald-500 text-white shadow-sm"
+        : "border-2 border-gray-200 text-gray-400 hover:border-emerald-300 hover:text-emerald-500"
+    )}
+  >
+    {label}
+  </button>
+));
+MealBtn.displayName = "MealBtn";
 
-  // When the 'initialStudent' prop changes, update the local 'student' state
-  useEffect(() => {
-    setStudent(initialStudent);
-  }, [initialStudent]);
+export const MealRow = memo(
+  ({
+    student,
+    breakfastFeast,
+    lunchFeast,
+    dinnerFeast,
+    date,
+    updateStudent,
+    updateGuestMeal,
+  }) => {
+    const confirm = useConfirm();
+    const [draft, setDraft] = useState(() => student.guestMeal ?? {});
 
-  // Function to handle meal toggle and update state
-  const handleMealToggle = async (studentId, meal, wing) => {
-    try {
-      const dateObj = new Date(date);
-      const year = dateObj.getFullYear();
-      const month = (dateObj.getMonth() + 1).toString().padStart(2, "0"); // Ensure 2 digits for month
-      const day = dateObj.getDate().toString().padStart(2, "0"); // Ensure 2 digits for day
-      const dateString = `${year}-${month}-${day}`;
+    useEffect(() => {
+      setDraft(student.guestMeal ?? {});
+    }, [
+      student.guestMeal?.breakfast,
+      student.guestMeal?.lunch,
+      student.guestMeal?.dinner,
+    ]);
 
-      const res = await Axios.put(
-        `/meal/toggle?studentId=${studentId}&meal=${meal}&wing=${wing}&date=${dateString}`
-      );
-      const updatedStudent = {
-        ...student,
-        meal: {
-          ...student.meal,
-          breakfast: res?.data?.meal?.meal?.breakfast,
-          lunch: res?.data?.meal?.meal?.lunch,
-          dinner: res?.data?.meal?.meal?.dinner,
-        },
-      };
-
-      // Update the student meal data
-      setStudent(updatedStudent);
-
-      setStudents((prevStudents) =>
-        prevStudents.map((s) =>
-          s.studentId === studentId ? updatedStudent : s
-        )
-      );
-
-      toast.success(`Meal ${meal} toggled for student ${studentId}`);
-    } catch (e) {
-      console.error(e);
-      toast.error(`Failed to toggle meal ${meal}`);
-    }
-  };
-
-  const handleGuestMealChange = (e) => {
-    const { value, name } = e.target;
-
-    // Convert empty value to null, otherwise parse the number
-    const parsedValue = value === "" ? null : Number(value);
-
-    const updatedStudent = {
-      ...student,
-      guestMeal: {
-        ...student.guestMeal,
-        [name]: parsedValue,
+    const handleToggle = useCallback(
+      async (meal) => {
+        try {
+          const res = await Axios.put(
+            `/meal/toggle?studentId=${student.studentId}&meal=${meal}&wing=${student.gender}&date=${date}`
+          );
+          updateStudent(student.studentId, res.data.meal.meal);
+          toast.success(`${meal} toggled`, { duration: 1500 });
+        } catch (err) {
+          console.error("Toggle error:", err?.response?.data || err);
+          const msg = err?.response?.data?.message || `Failed to toggle ${meal}`;
+          toast.error(msg);
+        }
       },
-    };
+      [student.studentId, student.gender, date, updateStudent]
+    );
 
-    setStudent(updatedStudent);
-  };
+    const handleGuestChange = useCallback((e) => {
+      const { name, value } = e.target;
+      setDraft((d) => ({
+        ...d,
+        [name]: value === "" ? null : Number(value),
+      }));
+    }, []);
 
-  const handleSubmitGuestMeal = async () => {
-    const { breakfast, lunch, dinner } = student.guestMeal;
-
-    try {
-      // Show confirmation dialog with meal counts
-      const result = await Swal.fire({
-        title: "Confirm Guest Meal Update",
-        html: `
-          <p>Breakfast: <strong>${breakfast ?? 0}</strong></p>
-          <p>Lunch: <strong>${lunch ?? 0}</strong></p>
-          <p>Dinner: <strong>${dinner ?? 0}</strong></p>
-          <p>Do you want to proceed with this update?</p>
-        `,
-        icon: "info",
-        showCancelButton: true,
-        confirmButtonText: "Yes, Update",
-        cancelButtonText: "Cancel",
+    const handleGuestSubmit = useCallback(async () => {
+      const ok = await confirm({
+        title: "Update Guest Meal?",
+        description: <>B: <strong>{draft.breakfast ?? 0}</strong> &nbsp; L: <strong>{draft.lunch ?? 0}</strong> &nbsp; D: <strong>{draft.dinner ?? 0}</strong></>,
+        confirmText: "Update",
+        cancelText: "Cancel",
       });
-
-      if (!result.isConfirmed) {
-        return;
+      if (!ok) return;
+      try {
+        const res = await Axios.put("/meal/guest-meal", {
+          studentId: student.studentId,
+          guestMeal: draft,
+          date,
+        });
+        updateGuestMeal(student.studentId, res.data.guestMeal);
+        toast.success("Guest meal updated");
+      } catch {
+        toast.error("Failed to update guest meal");
       }
+    }, [draft, student.studentId, date, updateGuestMeal]);
 
-      const formattedDate = dateToYYYYMMDD(date);
-
-      // API call to update guest meal
-      const res = await Axios.put("/meal/guest-meal", {
-        studentId: student.studentId,
-        guestMeal: student.guestMeal,
-        date: formattedDate,
-      });
-
-      const updatedStudent = {
-        ...student,
-        guestMeal: res?.data?.guestMeal,
-      };
-
-      // Update local state
-      setStudent(updatedStudent);
-
-      setStudents((prevStudents) =>
-        prevStudents.map((s) =>
-          s.studentId === student.studentId ? updatedStudent : s
-        )
-      );
-
-      toast.success("Guest meal updated successfully");
-    } catch (err) {
-      console.error("Error updating guest meal:", err);
-      toast.error("Failed to update guest meal. Please try again.");
-    }
-  };
-
-  return (
-    <tr className="hover:shadow-sm rounded-lg hover:bg-emerald-50 transition-all border-b-0">
-      <td>{student.hallId}</td>
-      <td>{student.studentId}</td>
-      <td>{student.name}</td>
-      <td>{student.roomNo}</td>
-      <td>{student.residence}</td>
-      <td className="flex gap-4 justify-center">
-        <button
-          onClick={() =>
-            handleMealToggle(student.studentId, "breakfast", student.gender)
-          }
-          className={`rounded-full w-10 h-10 transition-all ${
-            breakfastFeast || student?.meal?.breakfast
-              ? "bg-green-400 text-white"
-              : "bg-transparent border-2 border-green-300"
-          }`}
-        >
-          B
-        </button>
-        <button
-          onClick={() =>
-            handleMealToggle(student.studentId, "lunch", student.gender)
-          }
-          className={`rounded-full w-10 h-10 transition-all ${
-            lunchFeast || student?.meal?.lunch
-              ? "bg-green-400 text-white"
-              : "bg-transparent border-2 border-green-300"
-          }`}
-        >
-          L
-        </button>
-        <button
-          onClick={() =>
-            handleMealToggle(student.studentId, "dinner", student.gender)
-          }
-          className={`rounded-full w-10 h-10 transition-all ${
-            dinnerFeast || student?.meal?.dinner
-              ? "bg-green-400 text-white"
-              : "bg-transparent border-2 border-green-300"
-          }`}
-        >
-          D
-        </button>
-      </td>
-      <td className="">
-        <div className="grid grid-cols-4 gap-1 w-full place-items-center">
-          <input
-            key={`${student?.studentId}-breakfast`}
-            name="breakfast"
-            type="number"
-            min={0}
-            step={1}
-            value={student?.guestMeal?.breakfast}
-            onChange={handleGuestMealChange}
-            placeholder="Breakfast"
-            className="input input-bordered focus:outline-1 focus:ring-green-500 rounded-lg input-success w-20 h-10 placeholder:text-xs"
-          />
-          <input
-            key={`${student?.studentId}-lunch`}
-            name="lunch"
-            type="number"
-            min={0}
-            step={1}
-            value={student?.guestMeal?.lunch}
-            onChange={handleGuestMealChange}
-            placeholder="Lunch"
-            className="input input-bordered focus:outline-1 focus:ring-green-500 rounded-lg input-success w-20 h-10 placeholder:text-xs"
-          />
-          <input
-            key={`${student?.studentId}-dinner`}
-            name="dinner"
-            type="number"
-            min={0}
-            step={1}
-            value={student?.guestMeal?.dinner}
-            onChange={handleGuestMealChange}
-            placeholder="Dinner"
-            className="input input-bordered focus:outline-1 focus:ring-green-500 rounded-lg input-success w-20 h-10 placeholder:text-xs"
-          />
-          <div
-            className="tooltip hover:tooltip-open tooltip-left"
-            data-tip="Submit Guest Meal"
-          >
-            <CheckCircleIcon
-              className="cursor-pointer text-green-500 hover:text-green-800 transition-colors duration-500"
-              width={40}
-              onClick={handleSubmitGuestMeal}
+    return (
+      <tr
+        className="border-b border-border/40 hover:bg-muted/30 transition-colors duration-75"
+        style={{ height: ITEM_HEIGHT }}
+      >
+        <td className="px-3 py-0 font-medium text-sm whitespace-nowrap">
+          {student.hallId}
+        </td>
+        <td className="px-3 py-0 text-muted-foreground text-sm whitespace-nowrap">
+          {student.studentId}
+        </td>
+        <td className="px-3 py-0 text-sm">{student.name}</td>
+        <td className="px-3 py-0 text-muted-foreground text-sm tabular-nums">
+          {student.roomNo}
+        </td>
+        <td className="px-3 py-0 text-muted-foreground text-xs whitespace-nowrap">
+          {student.residence?.replace(/_/g, " ")}
+        </td>
+        <td className="px-3 py-0">
+          <div className="flex gap-1.5 justify-center">
+            <MealBtn
+              active={breakfastFeast || student?.meal?.breakfast}
+              feast={breakfastFeast}
+              onClick={() => handleToggle("breakfast")}
+              label="B"
+            />
+            <MealBtn
+              active={lunchFeast || student?.meal?.lunch}
+              feast={lunchFeast}
+              onClick={() => handleToggle("lunch")}
+              label="L"
+            />
+            <MealBtn
+              active={dinnerFeast || student?.meal?.dinner}
+              feast={dinnerFeast}
+              onClick={() => handleToggle("dinner")}
+              label="D"
             />
           </div>
-        </div>
-      </td>
-    </tr>
-  );
-};
+        </td>
+        <td className="px-3 py-0">
+          <div className="flex items-center gap-1">
+            {["breakfast", "lunch", "dinner"].map((meal) => (
+              <input
+                key={meal}
+                name={meal}
+                type="number"
+                min={0}
+                value={draft?.[meal] ?? ""}
+                onChange={handleGuestChange}
+                placeholder={meal[0].toUpperCase()}
+                className="w-12 h-7 rounded border border-input bg-background px-1.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            ))}
+            <button
+              onClick={handleGuestSubmit}
+              className="ml-0.5 p-0.5 rounded hover:bg-muted transition-colors"
+            >
+              <CheckCircle2 className="h-5 w-5 text-emerald-500 hover:text-emerald-700 transition-colors" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  },
+  (prev, next) =>
+    prev.student.studentId === next.student.studentId &&
+    prev.student.meal?.breakfast === next.student.meal?.breakfast &&
+    prev.student.meal?.lunch === next.student.meal?.lunch &&
+    prev.student.meal?.dinner === next.student.meal?.dinner &&
+    prev.student.guestMeal?.breakfast === next.student.guestMeal?.breakfast &&
+    prev.student.guestMeal?.lunch === next.student.guestMeal?.lunch &&
+    prev.student.guestMeal?.dinner === next.student.guestMeal?.dinner &&
+    prev.breakfastFeast === next.breakfastFeast &&
+    prev.lunchFeast === next.lunchFeast &&
+    prev.dinnerFeast === next.dinnerFeast &&
+    prev.date === next.date &&
+    prev.updateStudent === next.updateStudent &&
+    prev.updateGuestMeal === next.updateGuestMeal
+);
+MealRow.displayName = "MealRow";

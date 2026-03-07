@@ -1,104 +1,78 @@
-import React, { useState, useMemo, useEffect } from "react";
-import toast, { Toaster } from "react-hot-toast";
-import * as XLSX from "xlsx"; // Import xlsx for Excel file generation
+import React, { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
+import * as XLSX from "xlsx";
 import EditTransactionModal from "./EditTransactionModal";
 import DateFilters from "./DateFilters";
 import FilterOptions from "./FilterOptions";
 import TransactionTable from "./TransactionTable";
 import { Axios } from "../../../api/api";
-import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
-import { fixedInputClass } from "../../../Utils/constant";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthUser } from "react-auth-kit";
 
 const TransactionHistory = () => {
   const auth = useAuthUser()();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingRecord, setEditingRecord] = useState(null);
-  const [transactions, setTransactions] = useState([]);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const [editingRecord,   setEditingRecord]  = useState(null);
 
-  // Date range for filtering
+  const [transactions, setTransactions] = useState([]);
+  const [pagination,   setPagination]   = useState({ page: 1, totalPages: 1, total: 0 });
+  const [page,         setPage]         = useState(1);
+  const [pageSize,     setPageSize]     = useState(20);
+
   const [fromDate, setFromDate] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
   );
   const [toDate, setToDate] = useState(new Date());
 
-  // Wing selection (MALE/FEMALE)
-  const [selectedWing, setSelectedWing] = useState(
-    auth.wing === "ALL" ? "MALE" : auth.wing
-  );
+  const [selectedWing,     setSelectedWing]     = useState(auth.wing === "ALL" ? "MALE" : auth.wing);
+  const [transactionType,  setTransactionType]  = useState("BOTH");
+  const [mealType,         setMealType]         = useState("ALL");
+  const [sortOrder,        setSortOrder]        = useState("DESC");
 
-  // Filter options
-  const [transactionType, setTransactionType] = useState("BOTH");
-  const [mealType, setMealType] = useState("ALL");
-  const [sortOrder, setSortOrder] = useState("DESC");
+  const formatDate = (date) => date.toISOString().split("T")[0];
 
-  // Format the date to YYYY-MM-DD for API usage
-  const formatDate = (date) => {
-    return date.toISOString().split("T")[0];
-  };
+  const fetchTransactions = useCallback(async (pg) => {
+    const toastId = toast.loading("Fetching transactions...");
+    try {
+      const params = new URLSearchParams({
+        fromDate:  formatDate(fromDate),
+        toDate:    formatDate(toDate),
+        wing:      selectedWing,
+        sortOrder,
+        page:      pg,
+        limit:     pageSize,
+      });
+      if (transactionType !== "BOTH") params.set("type", transactionType);
+      if (mealType        !== "ALL")  params.set("meal", mealType);
 
-  // Fetch transactions from API
+      const res = await Axios.get(`stock/transactions?${params}`);
+      setTransactions(res.data.transactions);
+      setPagination(res.data.pagination);
+      toast.success("Transactions fetched successfully!", { id: toastId });
+    } catch {
+      toast.error("Error fetching transactions.", { id: toastId });
+    }
+  }, [fromDate, toDate, selectedWing, transactionType, mealType, sortOrder, pageSize]);
+
+  // Reset to page 1 when any filter changes
   useEffect(() => {
-    const fetchTransactions = async () => {
-      const toastId = toast.loading("Fetching transactions...");
-      try {
-        const res = await Axios.get(
-          `stock/transactions?fromDate=${formatDate(
-            fromDate
-          )}&toDate=${formatDate(toDate)}&wing=${selectedWing}`
-        );
-        const data = res.data;
-        setTransactions(data);
-        setFilteredTransactions(data); // Initialize filtered transactions
-        toast.success("Transactions fetched successfully!", { id: toastId });
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-        toast.error("Error fetching transactions.", { id: toastId });
-      }
-    };
-
-    fetchTransactions();
-  }, [fromDate, toDate, selectedWing]); // Re-fetch data when fromDate, toDate, or selectedWing changes
-
-  // Function to sort transactions by date
-  const sortTransactionsByDate = (transactions, order) => {
-    return [...transactions].sort((a, b) => {
-      const dateA = new Date(a.date).getTime(); // Convert to timestamp
-      const dateB = new Date(b.date).getTime(); // Convert to timestamp
-      return order === "ASC" ? dateA - dateB : dateB - dateA;
-    });
-  };
-
-  // Memoize filtered transactions
-  const filteredData = useMemo(() => {
-    const filtered = transactions.filter((transaction) => {
-      const transactionDate = new Date(transaction.date);
-      const withinDateRange =
-        transactionDate >= fromDate && transactionDate <= toDate;
-      const typeMatch =
-        transactionType === "BOTH" ||
-        (transactionType === "IN" && transaction.type === "IN") ||
-        (transactionType === "OUT" && transaction.type === "OUT");
-      const mealMatch = mealType === "ALL" || transaction.meal === mealType;
-      return withinDateRange && typeMatch && mealMatch;
-    });
-
-    return sortTransactionsByDate(filtered, sortOrder);
-  }, [transactions, fromDate, toDate, transactionType, mealType, sortOrder]);
+    setPage(1);
+  }, [fromDate, toDate, selectedWing, transactionType, mealType, sortOrder, pageSize]);
 
   useEffect(() => {
-    setFilteredTransactions(filteredData);
-  }, [filteredData]);
+    fetchTransactions(page);
+  }, [page, fetchTransactions]);
 
   const toggleTransactionType = () => {
-    setTransactionType((prevType) =>
-      prevType === "BOTH" ? "IN" : prevType === "IN" ? "OUT" : "BOTH"
+    setTransactionType((prev) =>
+      prev === "BOTH" ? "IN" : prev === "IN" ? "OUT" : "BOTH"
     );
   };
 
   const toggleSortOrder = () => {
-    setSortOrder((prevOrder) => (prevOrder === "ASC" ? "DESC" : "ASC"));
+    setSortOrder((prev) => (prev === "ASC" ? "DESC" : "ASC"));
   };
 
   const showEditModal = (record) => {
@@ -106,127 +80,79 @@ const TransactionHistory = () => {
     setIsModalVisible(true);
   };
 
-  // Show delete confirmation toast
   const showDeleteConfirmation = (record) => {
-    toast((t) => (
-      <div>
-        <p>Are you sure you want to delete this transaction?</p>
-        <p>
-          <strong>Item:</strong> {record?.item?.name}
-        </p>
-        <p>
-          <strong>Quantity:</strong> {record?.quantityChange}
-        </p>
-        <p>
-          <strong>Amount:</strong> {record?.transactionAmount?.toFixed(2)} ৳
-        </p>
-        <div className="flex justify-end gap-2 mt-3">
-          <button
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded"
-            onClick={() => {
-              confirmDelete(record._id);
-              toast.dismiss(t.id);
-            }}
-          >
-            Confirm
-          </button>
-          <button
-            className="bg-gray-300 hover:bg-gray-400 px-4 py-1 rounded"
-            onClick={() => toast.dismiss(t.id)}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    ));
+    toast.warning("Delete this transaction?", {
+      description: `${record?.item?.name}  ·  qty ${record?.quantityChange}  ·  ${record?.transactionAmount?.toFixed(2)} ৳`,
+      duration: Infinity,
+      action: {
+        label: "Delete",
+        onClick: () => confirmDelete(record._id),
+      },
+      cancel: {
+        label: "Cancel",
+      },
+    });
   };
 
-  // Confirm delete handler
   const confirmDelete = async (recordId) => {
     try {
       await Axios.delete(`/stock/transaction/${recordId}`);
-
-      // Remove the deleted record from the transactions array
-      const updatedData = transactions.filter((item) => item._id !== recordId);
-      setTransactions(updatedData);
-
+      fetchTransactions(page);
       toast.success("Transaction deleted successfully");
     } catch (error) {
-      console.error("Error deleting transaction:", error.response.data.error);
-      toast.error(error.response.data.error);
+      toast.error(error.response?.data?.error || "Error deleting transaction");
     }
   };
 
-  // Flatten data to exclude _id and include item fields, adding Unit Price column
-  const flattenData = (data) => {
-    return data.map((transaction) => ({
-      Date: new Date(transaction.date).toLocaleDateString("en-GB"),
-      "Item Name": transaction.item.name,
-      quantity: transaction.quantityChange,
-      Unit: transaction.item.unit,
-      "Unit Price": (
-        transaction.transactionAmount / transaction.quantityChange
-      ).toFixed(2),
-      "Total Amount": transaction.transactionAmount.toFixed(2),
-      Meal: transaction.meal,
-      Type: transaction.type,
-      Category: transaction.category || "",
-    }));
-  };
-
-  // Function to export data to Excel
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
+    const toastId = toast.loading("Preparing export...");
     try {
-      const flattenedData = flattenData(filteredTransactions);
-      const ws = XLSX.utils.json_to_sheet(flattenedData);
+      // Fetch all data (no page/limit) for export
+      const params = new URLSearchParams({
+        fromDate:  formatDate(fromDate),
+        toDate:    formatDate(toDate),
+        wing:      selectedWing,
+        sortOrder,
+        limit:     10000,
+        page:      1,
+      });
+      if (transactionType !== "BOTH") params.set("type", transactionType);
+      if (mealType        !== "ALL")  params.set("meal", mealType);
+
+      const res  = await Axios.get(`stock/transactions?${params}`);
+      const data = res.data.transactions.map((t) => ({
+        Date:           new Date(t.date).toLocaleDateString("en-GB"),
+        "Item Name":    t.item.name,
+        quantity:       t.quantityChange,
+        Unit:           t.item.unit,
+        "Unit Price":   (t.transactionAmount / t.quantityChange).toFixed(2),
+        "Total Amount": t.transactionAmount.toFixed(2),
+        Meal:           t.meal,
+        Type:           t.type,
+        Category:       t.category || "",
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Transactions");
-
-      // Get the current date and time
-      const currentDate = new Date();
-      const datePart = currentDate
-        .toLocaleDateString("en-GB")
-        .replace(/\//g, "-"); // Format date as dd-mm-yyyy
-      const timePart = currentDate
-        .toLocaleTimeString("en-GB", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        })
-        .replace(/:/g, "-"); // Format time as HH-MM-SS
-
-      // Create the file name
-      const fileName = `${datePart}_${timePart}_transaction-history.xlsx`;
-
-      // Write the Excel file
-      XLSX.writeFile(wb, fileName);
-    } catch (error) {
-      toast.error("Error exporting Excel file");
+      const datePart = new Date().toLocaleDateString("en-GB").replace(/\//g, "-");
+      XLSX.writeFile(wb, `${datePart}_transaction-history.xlsx`);
+      toast.success("Export ready", { id: toastId });
+    } catch {
+      toast.error("Error exporting Excel file", { id: toastId });
     }
   };
 
   const handleUpdateSave = async (updatedRecord) => {
     try {
-      // Call the API to update the transaction
-      const res = await Axios.put(
-        `/stock/transaction/${updatedRecord._id}`,
-        updatedRecord
+      const res = await Axios.put(`/stock/transaction/${updatedRecord._id}`, updatedRecord);
+      const updated = res.data.updatedTransaction;
+      setTransactions((prev) =>
+        prev.map((t) => (t._id === updated._id ? updated : t))
       );
-      const updatedTransaction = res.data.updatedTransaction;
-
-      // Update the transactions in the state with the new updated transaction
-      const updatedTransactions = transactions.map((transaction) =>
-        transaction._id === updatedTransaction._id
-          ? updatedTransaction
-          : transaction
-      );
-      setTransactions(updatedTransactions);
-
-      // Close the modal and show success message
       setIsModalVisible(false);
       toast.success("Transaction updated successfully");
-    } catch (error) {
-      console.error("Error updating transaction:", error);
+    } catch {
       toast.error("Failed to update transaction.");
     }
   };
@@ -234,63 +160,36 @@ const TransactionHistory = () => {
   const handleSync = async () => {
     const toastId = toast.loading("Syncing...");
     try {
-      const year = toDate.getFullYear();
+      const year  = toDate.getFullYear();
       const month = Number(toDate.getMonth()) + 1;
-      const wing = selectedWing;
-
-      // Send the query parameters along with the POST request
-      const res = await Axios.post(
-        `/cost/sync?year=${year}&month=${month}&wing=${wing}`
-      );
-
+      await Axios.post(`/cost/sync?year=${year}&month=${month}&wing=${selectedWing}`);
       toast.success("Sync successful!", { id: toastId });
-    } catch (e) {
-      console.log(e);
+    } catch {
       toast.error("Sync failed!", { id: toastId });
     }
   };
 
   return (
-    <div className="mt-2">
-      <div className="flex justify-between gap-2 h-auto ">
-        <h2 className="text-lg self-center xs:text-2xl font-semibold">
-          Transaction History
-        </h2>
-        <div className="flex justify-center items-center gap-2">
-          <button
-            className="btn btn-sm bg-emerald-500 rounded-md text-white font-extralight hover:bg-emerald-600"
-            onClick={handleSync}
-          >
-            Sync
-          </button>
-          <DateFilters
-            fromDate={fromDate}
-            toDate={toDate}
-            setFromDate={setFromDate}
-            setToDate={setToDate}
-          />
+    <div className="space-y-2">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">Transaction History</h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" onClick={handleSync}>Sync</Button>
+          <DateFilters fromDate={fromDate} toDate={toDate} setFromDate={setFromDate} setToDate={setToDate} />
           {auth.wing === "ALL" && (
-            <div className="relative">
-              <select
-                value={selectedWing}
-                onChange={(e) => setSelectedWing(e.target.value)}
-                className={`${fixedInputClass} h-auto cursor-pointer w-44`}
-              >
-                <option value="">Gender</option>
-                <option value="MALE">MALE</option>
-                <option value="FEMALE">FEMALE</option>
-              </select>
-            </div>
+            <Select value={selectedWing} onValueChange={setSelectedWing}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MALE">Male</SelectItem>
+                <SelectItem value="FEMALE">Female</SelectItem>
+              </SelectContent>
+            </Select>
           )}
-          <button
-            className="bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 px-2 py-2 font-thin flex items-center gap-2 hover:ring-1 ring-offset-2 ring-emerald-500 transition-all duration-300"
-            onClick={exportToExcel}
-            style={{
-              fontSize: "0.7rem",
-            }}
-          >
-            <ArrowDownTrayIcon style={{ height: "22px", width: "22px" }} />
-          </button>
+          <Button size="icon" variant="outline" onClick={exportToExcel}>
+            <Download className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
@@ -300,13 +199,20 @@ const TransactionHistory = () => {
         toggleTransactionType={toggleTransactionType}
         setMealType={setMealType}
       />
+
       <TransactionTable
-        transactions={filteredTransactions}
+        transactions={transactions}
         sortOrder={sortOrder}
         toggleSortOrder={toggleSortOrder}
         showEditModal={showEditModal}
-        handleDelete={showDeleteConfirmation} // Change delete handler to show toast
+        handleDelete={showDeleteConfirmation}
+        pagination={pagination}
+        page={page}
+        onPageChange={setPage}
+        pageSize={pageSize}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
       />
+
       {editingRecord && (
         <EditTransactionModal
           visible={isModalVisible}
