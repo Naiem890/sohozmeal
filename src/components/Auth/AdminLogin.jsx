@@ -10,33 +10,37 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const REFRESH_TOKEN_DAYS = 7;
+
 export default function AdminLogin() {
-  const signIn = useSignIn();
+  const signIn   = useSignIn();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]           = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const email = e.target.email.value;
+    const email    = e.target.email.value;
     const password = e.target.password.value;
     setLoading(true);
     try {
-      const result = await Axios.post("/auth/admin/login", { email, password }).then(
-        (res) => res.data
-      );
+      const result = await Axios.post("/auth/admin/login", { email, password }).then((r) => r.data);
+
+      localStorage.setItem("_refresh_token", result.refreshToken);
+
       signIn({
-        token: result.token,
-        expiresIn: 3600,
+        token:     result.accessToken,
+        expiresIn: REFRESH_TOKEN_DAYS * 24 * 60,
         tokenType: "Bearer",
         authState: {
           email,
-          _id: result._id,
-          role: "admin",
+          _id:             result._id,
+          role:            "admin",
+          wing:            result.wing,
           isAuthenticated: true,
-          wing: result.wing,
         },
       });
+
       toast.success("Login successful");
       navigate("/admin/dashboard");
     } catch (error) {

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { Axios } from "../../api/api";
-import DatePickerComponent from "../Common/DatePickerComponent";
 import { toast } from "sonner";
 import { useAuthUser } from "react-auth-kit";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,108 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// ─── Month Picker ─────────────────────────────────────────────────────────────
+
+const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function MonthPicker({ value, onChange }) {
+  const [open, setOpen]         = useState(false);
+  const today                   = new Date();
+  const maxYear                 = today.getFullYear();
+  const maxMonth                = today.getMonth(); // 0-indexed
+  const [viewYear, setViewYear] = useState(value?.getFullYear() ?? maxYear);
+
+  const selYear  = value?.getFullYear();
+  const selMonth = value?.getMonth();
+
+  const isDisabled = (mi) =>
+    viewYear > maxYear || (viewYear === maxYear && mi > maxMonth);
+
+  const isSelected = (mi) => viewYear === selYear && mi === selMonth;
+
+  const handleSelect = (mi) => {
+    if (isDisabled(mi)) return;
+    onChange(new Date(viewYear, mi, 1));
+    setOpen(false);
+  };
+
+  const label = value
+    ? value.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : "Select month";
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 w-[170px] justify-start font-normal"
+        >
+          <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="truncate">{label}</span>
+        </Button>
+      </PopoverTrigger>
+
+      <PopoverContent className="w-[216px] p-3" align="end">
+        {/* Year navigation */}
+        <div className="flex items-center justify-between mb-3 px-1">
+          <button
+            type="button"
+            onClick={() => setViewYear((y) => y - 1)}
+            className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-sm font-semibold tabular-nums">{viewYear}</span>
+          <button
+            type="button"
+            onClick={() => setViewYear((y) => y + 1)}
+            disabled={viewYear >= maxYear}
+            className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Month grid */}
+        <div className="grid grid-cols-3 gap-1">
+          {MONTH_LABELS.map((m, i) => {
+            const disabled = isDisabled(i);
+            const selected = isSelected(i);
+            return (
+              <button
+                key={m}
+                type="button"
+                disabled={disabled}
+                onClick={() => handleSelect(i)}
+                className={cn(
+                  "rounded-md py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  selected
+                    ? "bg-primary text-primary-foreground"
+                    : disabled
+                    ? "text-muted-foreground/35 cursor-not-allowed"
+                    : "hover:bg-muted text-foreground cursor-pointer"
+                )}
+              >
+                {m}
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
 
 const fmt = (v) => (v ? v.toFixed(2) : "0.00");
 
@@ -25,10 +126,12 @@ function StatCard({ label, value, sub, color }) {
   );
 }
 
+// ─── Expenses page ────────────────────────────────────────────────────────────
+
 export default function Expenses() {
   const auth = useAuthUser()();
   const [selectedMonth, setSelectedMonth] = useState("");
-  const [mealBillData, setMealBillData] = useState([]);
+  const [mealBillData, setMealBillData]   = useState([]);
   const [wing, setWing] = useState(auth.wing === "ALL" ? "MALE" : auth.wing);
 
   useEffect(() => {
@@ -57,8 +160,8 @@ export default function Expenses() {
       .catch(() => toast.error("Error fetching bill data", { id: toastId }));
   }, [selectedMonth, wing]);
 
-  const handleDateChange = useCallback((date) => {
-    const year = date.getFullYear();
+  const handleMonthChange = useCallback((date) => {
+    const year  = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     setSelectedMonth(`${year}-${month}`);
   }, []);
@@ -81,21 +184,22 @@ export default function Expenses() {
     }
   };
 
-  const [year, month] = (selectedMonth || "-").split("-");
-  const daysOfMonth = selectedMonth ? getDaysInMonth(year, month) : [];
+  const [year, month]  = (selectedMonth || "-").split("-");
+  const daysOfMonth    = selectedMonth ? getDaysInMonth(year, month) : [];
+  const pickerValue    = selectedMonth ? new Date(selectedMonth + "-01") : undefined;
 
   const totals = mealBillData.reduce(
     (acc, d) => ({
-      breakfast: acc.breakfast + (d.mealBill.breakfast.totalCost || 0),
-      lunch: acc.lunch + (d.mealBill.lunch.totalCost || 0),
-      dinner: acc.dinner + (d.mealBill.dinner.totalCost || 0),
+      breakfast:        acc.breakfast        + (d.mealBill.breakfast.totalCost  || 0),
+      lunch:            acc.lunch            + (d.mealBill.lunch.totalCost      || 0),
+      dinner:           acc.dinner           + (d.mealBill.dinner.totalCost     || 0),
       perHeadBreakfast: acc.perHeadBreakfast + (d.mealBill.breakfast.perHeadCost || 0),
-      perHeadLunch: acc.perHeadLunch + (d.mealBill.lunch.perHeadCost || 0),
-      perHeadDinner: acc.perHeadDinner + (d.mealBill.dinner.perHeadCost || 0),
+      perHeadLunch:     acc.perHeadLunch     + (d.mealBill.lunch.perHeadCost     || 0),
+      perHeadDinner:    acc.perHeadDinner    + (d.mealBill.dinner.perHeadCost    || 0),
     }),
     { breakfast: 0, lunch: 0, dinner: 0, perHeadBreakfast: 0, perHeadLunch: 0, perHeadDinner: 0 }
   );
-  const grandTotal = totals.breakfast + totals.lunch + totals.dinner;
+  const grandTotal   = totals.breakfast + totals.lunch + totals.dinner;
   const grandPerHead = totals.perHeadBreakfast + totals.perHeadLunch + totals.perHeadDinner;
 
   const subHeaders = ["Cost", "Students", "/Head"];
@@ -110,6 +214,7 @@ export default function Expenses() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button size="sm" onClick={handleGenerate}>Generate</Button>
+
           {auth.wing === "ALL" && (
             <Select value={wing} onValueChange={setWing}>
               <SelectTrigger className="w-32">
@@ -121,21 +226,17 @@ export default function Expenses() {
               </SelectContent>
             </Select>
           )}
-          {selectedMonth && (
-            <DatePickerComponent
-              selectedDate={new Date(selectedMonth + "-01")}
-              onDateChange={handleDateChange}
-            />
-          )}
+
+          <MonthPicker value={pickerValue} onChange={handleMonthChange} />
         </div>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label="Breakfast" value={fmt(totals.breakfast)} sub={fmt(totals.perHeadBreakfast)} color="border-l-amber-400" />
-        <StatCard label="Lunch" value={fmt(totals.lunch)} sub={fmt(totals.perHeadLunch)} color="border-l-sky-400" />
-        <StatCard label="Dinner" value={fmt(totals.dinner)} sub={fmt(totals.perHeadDinner)} color="border-l-violet-400" />
-        <StatCard label="Grand Total" value={fmt(grandTotal)} sub={fmt(grandPerHead)} color="border-l-emerald-500" />
+        <StatCard label="Lunch"     value={fmt(totals.lunch)}     sub={fmt(totals.perHeadLunch)}     color="border-l-sky-400" />
+        <StatCard label="Dinner"    value={fmt(totals.dinner)}    sub={fmt(totals.perHeadDinner)}    color="border-l-violet-400" />
+        <StatCard label="Grand Total" value={fmt(grandTotal)}     sub={fmt(grandPerHead)}            color="border-l-emerald-500" />
       </div>
 
       {/* Table */}
@@ -143,7 +244,6 @@ export default function Expenses() {
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              {/* Meal group headers */}
               <tr className="border-b border-border">
                 <th rowSpan={2} className="sticky left-0 z-20 bg-muted/60 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground border-r border-border w-20">
                   Date
@@ -161,13 +261,12 @@ export default function Expenses() {
                   Total
                 </th>
               </tr>
-              {/* Sub-column headers */}
               <tr className="border-b-2 border-border bg-muted/30">
                 {[
                   ...subHeaders.map((h) => ({ label: h, cls: "text-amber-600" })),
                   ...subHeaders.map((h) => ({ label: h, cls: "text-sky-600" })),
                   ...subHeaders.map((h) => ({ label: h, cls: "text-violet-600" })),
-                  { label: "Cost", cls: "text-emerald-600" },
+                  { label: "Cost",  cls: "text-emerald-600" },
                   { label: "/Head", cls: "text-emerald-600" },
                 ].map(({ label, cls }, i) => (
                   <th key={i} className={`px-3 py-2 text-center text-xs font-medium whitespace-nowrap ${cls} border-x border-border/50`}>
@@ -181,12 +280,12 @@ export default function Expenses() {
                 const d = mealBillData.find((x) => x.date === day);
                 const rowTotal =
                   (d?.mealBill?.breakfast?.totalCost || 0) +
-                  (d?.mealBill?.lunch?.totalCost || 0) +
-                  (d?.mealBill?.dinner?.totalCost || 0);
+                  (d?.mealBill?.lunch?.totalCost     || 0) +
+                  (d?.mealBill?.dinner?.totalCost    || 0);
                 const rowPerHead =
                   (d?.mealBill?.breakfast?.perHeadCost || 0) +
-                  (d?.mealBill?.lunch?.perHeadCost || 0) +
-                  (d?.mealBill?.dinner?.perHeadCost || 0);
+                  (d?.mealBill?.lunch?.perHeadCost     || 0) +
+                  (d?.mealBill?.dinner?.perHeadCost    || 0);
                 const hasData = !!d;
                 return (
                   <tr
@@ -197,7 +296,6 @@ export default function Expenses() {
                       <div className="text-foreground">{new Date(day + "T00:00:00").toLocaleDateString("en-US", { weekday: "short" })}</div>
                       <div className="text-muted-foreground font-normal">{new Date(day + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
                     </td>
-                    {/* Breakfast */}
                     <td className={`px-3 py-2 text-center text-xs border-l border-border/50 ${hasData ? "text-amber-700 font-medium" : "text-muted-foreground"}`}>
                       {fmt(d?.mealBill?.breakfast?.totalCost)}
                     </td>
@@ -207,7 +305,6 @@ export default function Expenses() {
                     <td className={`px-3 py-2 text-center text-xs border-l border-border/50 ${hasData ? "text-amber-700" : "text-muted-foreground"}`}>
                       {fmt(d?.mealBill?.breakfast?.perHeadCost)}
                     </td>
-                    {/* Lunch */}
                     <td className={`px-3 py-2 text-center text-xs border-l border-border ${hasData ? "text-sky-700 font-medium" : "text-muted-foreground"}`}>
                       {fmt(d?.mealBill?.lunch?.totalCost)}
                     </td>
@@ -217,7 +314,6 @@ export default function Expenses() {
                     <td className={`px-3 py-2 text-center text-xs border-l border-border/50 ${hasData ? "text-sky-700" : "text-muted-foreground"}`}>
                       {fmt(d?.mealBill?.lunch?.perHeadCost)}
                     </td>
-                    {/* Dinner */}
                     <td className={`px-3 py-2 text-center text-xs border-l border-border ${hasData ? "text-violet-700 font-medium" : "text-muted-foreground"}`}>
                       {fmt(d?.mealBill?.dinner?.totalCost)}
                     </td>
@@ -227,7 +323,6 @@ export default function Expenses() {
                     <td className={`px-3 py-2 text-center text-xs border-l border-border/50 ${hasData ? "text-violet-700" : "text-muted-foreground"}`}>
                       {fmt(d?.mealBill?.dinner?.perHeadCost)}
                     </td>
-                    {/* Row Total */}
                     <td className={`px-3 py-2 text-center text-xs border-l border-border font-semibold ${hasData ? "text-emerald-700" : "text-muted-foreground"}`}>
                       {rowTotal.toFixed(2)}
                     </td>
@@ -238,7 +333,6 @@ export default function Expenses() {
                 );
               })}
             </tbody>
-            {/* Grand Total footer */}
             <tfoot>
               <tr className="border-t-2 border-border bg-muted/50">
                 <td className="sticky left-0 z-10 px-4 py-3 text-xs font-bold uppercase tracking-wide text-foreground border-r border-border bg-muted/50">

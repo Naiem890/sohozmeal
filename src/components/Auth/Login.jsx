@@ -10,34 +10,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const REFRESH_TOKEN_DAYS = 7;
+
 export default function Login() {
-  const signIn = useSignIn();
+  const signIn   = useSignIn();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]           = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     const studentId = e.target.studentId.value;
-    const password = e.target.password.value;
+    const password  = e.target.password.value;
     setLoading(true);
     try {
-      const result = await Axios.post("/auth/login", { studentId, password }).then(
-        (res) => res.data
-      );
+      const result = await Axios.post("/auth/login", { studentId, password }).then((r) => r.data);
+
+      localStorage.setItem("_refresh_token", result.refreshToken);
+
       signIn({
-        token: result.token,
-        expiresIn: 3600,
+        token:     result.accessToken,
+        expiresIn: REFRESH_TOKEN_DAYS * 24 * 60, // keep auth-kit state alive for 7 days
         tokenType: "Bearer",
         authState: {
           studentId,
-          name: result?.student?.name,
-          role: result?.role,
-          wing: result.wing,
-          _id: result?.student?._id,
+          name:            result?.student?.name,
+          role:            "student",
+          wing:            result.wing,
+          _id:             result?.student?._id,
           isAuthenticated: true,
         },
       });
+
       toast.success("Login successful");
       if (result?.student?.firstTimeLogin) {
         navigate("/change-password", { state: result.student.firstTimeLogin });

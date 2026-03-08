@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { MealTable } from "./MealTable";
@@ -8,6 +8,7 @@ import { MealControls } from "./MealControls";
 import { useConfirm } from "../../Common/ConfirmDialog";
 import { useAuthUser } from "react-auth-kit";
 import { Loader2 } from "lucide-react";
+import Pagination from "../../Common/Pagination";
 
 export const formatMealDate = (date) => {
   const d = new Date(date);
@@ -30,6 +31,10 @@ export const Meal = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [feasts, setFeasts] = useState(EMPTY_FEASTS);
   const [locks, setLocks] = useState(EMPTY_FEASTS);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+  const [mealCounts, setMealCounts] = useState({ breakfast: 0, lunch: 0, dinner: 0 });
 
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date();
@@ -45,14 +50,24 @@ export const Meal = () => {
     return () => clearTimeout(t);
   }, [search]);
 
-  // Fetch feasts separately — only needs date + gender
+  // Fetch feasts + students together in one effect
   useEffect(() => {
     let cancelled = false;
-    Axios.get(`/feast/date/${formattedDate}/wing/${gender}`)
-      .then((res) => {
+    setLoading(true);
+    setPage(1);
+
+    const params = { date: formattedDate, wing: gender, page: 1, limit: pageSize };
+    if (debouncedSearch) params.search = debouncedSearch;
+    if (residence) params.residence = residence;
+
+    Promise.all([
+      Axios.get(`/feast/date/${formattedDate}/wing/${gender}`),
+      Axios.get("/meal/students", { params }),
+    ])
+      .then(([feastRes, studentsRes]) => {
         if (cancelled) return;
-        if (res.data.length > 0) {
-          const meals = res.data[0].meal;
+        if (feastRes.data.length > 0) {
+          const meals = feastRes.data[0].meal;
           const f = {
             breakfast: meals.includes("breakfast"),
             lunch: meals.includes("lunch"),
@@ -64,43 +79,43 @@ export const Meal = () => {
           setFeasts(EMPTY_FEASTS);
           setLocks(EMPTY_FEASTS);
         }
+        setStudents(studentsRes.data.students ?? []);
+        setPagination(studentsRes.data.pagination ?? { total: 0, totalPages: 1 });
+        setMealCounts(studentsRes.data.mealCounts ?? { breakfast: 0, lunch: 0, dinner: 0 });
+        setLoading(false);
       })
       .catch(() => {
         if (!cancelled) {
           setFeasts(EMPTY_FEASTS);
           setLocks(EMPTY_FEASTS);
-        }
-      });
-    return () => { cancelled = true; };
-  }, [formattedDate, gender]);
-
-  // Fetch students from backend with all active filters
-  const isFirstLoad = useRef(true);
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-
-    const params = { date: formattedDate, gender };
-    if (debouncedSearch) params.search = debouncedSearch;
-    if (residence) params.residence = residence;
-
-    Axios.get("/meal/students", { params })
-      .then((res) => {
-        if (!cancelled) {
-          setStudents(res.data);
-          setLoading(false);
-          isFirstLoad.current = false;
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
           setLoading(false);
           toast.error("Failed to load students");
         }
       });
 
     return () => { cancelled = true; };
-  }, [formattedDate, gender, debouncedSearch, residence]);
+  }, [formattedDate, gender, debouncedSearch, residence, pageSize]);
+
+  const handlePageChange = useCallback((pg) => {
+    setLoading(true);
+
+    const params = { date: formattedDate, wing: gender, page: pg, limit: pageSize };
+    if (debouncedSearch) params.search = debouncedSearch;
+    if (residence) params.residence = residence;
+
+    Axios.get("/meal/students", { params })
+      .then((res) => {
+        setStudents(res.data.students ?? []);
+        setPagination(res.data.pagination ?? { total: 0, totalPages: 1 });
+        setMealCounts(res.data.mealCounts ?? { breakfast: 0, lunch: 0, dinner: 0 });
+        setPage(pg);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+        toast.error("Failed to load students");
+      });
+  }, [formattedDate, gender, debouncedSearch, residence, pageSize]);
 
   // Sort client-side — instant, no API round-trip needed
   const displayStudents = useMemo(() => {
@@ -112,13 +127,14 @@ export const Meal = () => {
     });
   }, [students, sortBy, sortAsc]);
 
+  // Use backend meal counts; feast days override to total student count
   const counts = useMemo(
     () => ({
-      b: students.filter((s) => feasts.breakfast || s?.meal?.breakfast).length,
-      l: students.filter((s) => feasts.lunch || s?.meal?.lunch).length,
-      d: students.filter((s) => feasts.dinner || s?.meal?.dinner).length,
+      b: feasts.breakfast ? pagination.total : mealCounts.breakfast,
+      l: feasts.lunch     ? pagination.total : mealCounts.lunch,
+      d: feasts.dinner    ? pagination.total : mealCounts.dinner,
     }),
-    [students, feasts]
+    [mealCounts, feasts, pagination.total]
   );
 
   const updateStudent = useCallback((studentId, meal) => {
@@ -133,25 +149,36 @@ export const Meal = () => {
     );
   }, []);
 
-  const exportToExcel = useCallback(() => {
-    const data = displayStudents.map((s) => ({
-      "Hall ID": s.hallId,
-      "Student ID": s.studentId,
-      Name: s.name,
-      "Room No": s.roomNo,
-      Residence: s.residence,
-      Breakfast: feasts.breakfast || s?.meal?.breakfast ? "✓" : "",
-      Lunch: feasts.lunch || s?.meal?.lunch ? "✓" : "",
-      Dinner: feasts.dinner || s?.meal?.dinner ? "✓" : "",
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Meal Data");
-    XLSX.writeFile(
-      wb,
-      `${formattedDate}_${gender}_${residence || "all"}_meal_sheet.xlsx`
-    );
-  }, [displayStudents, feasts, formattedDate, gender, residence]);
+  const exportToExcel = useCallback(async () => {
+    try {
+      const params = { date: formattedDate, wing: gender, page: 1, limit: 9999 };
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (residence) params.residence = residence;
+      const res = await Axios.get("/meal/students", { params });
+      const allStudents = [...res.data.students].sort((a, b) => {
+        if (!sortBy) return 0;
+        if (a[sortBy] < b[sortBy]) return sortAsc ? -1 : 1;
+        if (a[sortBy] > b[sortBy]) return sortAsc ? 1 : -1;
+        return 0;
+      });
+      const data = allStudents.map((s) => ({
+        "Hall ID": s.hallId,
+        "Student ID": s.studentId,
+        Name: s.name,
+        "Room No": s.roomNo,
+        Residence: s.residence,
+        Breakfast: feasts.breakfast || s?.meal?.breakfast ? "✓" : "",
+        Lunch: feasts.lunch || s?.meal?.lunch ? "✓" : "",
+        Dinner: feasts.dinner || s?.meal?.dinner ? "✓" : "",
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Meal Data");
+      XLSX.writeFile(wb, `${formattedDate}_${gender}_${residence || "all"}_meal_sheet.xlsx`);
+    } catch {
+      toast.error("Failed to export");
+    }
+  }, [feasts, formattedDate, gender, residence, debouncedSearch, sortBy, sortAsc]);
 
   const handleMealLock = useCallback(
     async (mealType) => {
@@ -200,18 +227,20 @@ export const Meal = () => {
         date: formattedDate,
         wing: gender,
       });
-      const params = { date: formattedDate, gender };
+      const params = { date: formattedDate, wing: gender, page, limit: pageSize };
       if (debouncedSearch) params.search = debouncedSearch;
       if (residence) params.residence = residence;
       const result = await Axios.get("/meal/students", { params });
-      setStudents(result.data);
+      setStudents(result.data.students ?? []);
+      setPagination(result.data.pagination ?? { total: 0, totalPages: 1 });
+      setMealCounts(result.data.mealCounts ?? { breakfast: 0, lunch: 0, dinner: 0 });
       setLoading(false);
       toast.success(res.data.message || "Meal generated successfully");
     } catch {
       setLoading(false);
       toast.error("Failed to generate meal");
     }
-  }, [formattedDate, gender, debouncedSearch, residence]);
+  }, [formattedDate, gender, debouncedSearch, residence, page, pageSize]);
 
   // True when user is typing but debounce hasn't fired yet
   const isSearchPending = search !== debouncedSearch;
@@ -235,7 +264,7 @@ export const Meal = () => {
         breakfastCount={counts.b}
         lunchCount={counts.l}
         dinnerCount={counts.d}
-        studentCount={students.length}
+        studentCount={pagination.total}
         isSearchPending={isSearchPending}
       />
       {loading ? (
@@ -246,19 +275,29 @@ export const Meal = () => {
           </div>
         </div>
       ) : (
-        <MealTable
-          students={displayStudents}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-          sortAsc={sortAsc}
-          setSortAsc={setSortAsc}
-          feasts={feasts}
-          locks={locks}
-          handleMealLock={handleMealLock}
-          date={formattedDate}
-          updateStudent={updateStudent}
-          updateGuestMeal={updateGuestMeal}
-        />
+        <div className="flex-1 min-h-0 flex flex-col">
+          <MealTable
+            students={displayStudents}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            sortAsc={sortAsc}
+            setSortAsc={setSortAsc}
+            feasts={feasts}
+            locks={locks}
+            handleMealLock={handleMealLock}
+            date={formattedDate}
+            updateStudent={updateStudent}
+            updateGuestMeal={updateGuestMeal}
+          />
+          <Pagination
+            page={page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={(size) => setPageSize(size)}
+          />
+        </div>
       )}
     </div>
   );
