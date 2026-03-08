@@ -1,11 +1,12 @@
 import { memo, useState, useEffect, useCallback } from "react";
-
-const ITEM_HEIGHT = 44;
 import { toast } from "sonner";
-import { CheckCircle2 } from "lucide-react";
+import { Check, Minus, Plus } from "lucide-react";
 import { Axios } from "../../../api/api";
 import { cn } from "@/lib/utils";
-import { useConfirm } from "../../Common/ConfirmDialog";
+
+const ITEM_HEIGHT = 44;
+
+// ─── Meal toggle button ───────────────────────────────────────────────────────
 
 const MealBtn = memo(({ active, feast, onClick, label }) => (
   <button
@@ -24,6 +25,41 @@ const MealBtn = memo(({ active, feast, onClick, label }) => (
 ));
 MealBtn.displayName = "MealBtn";
 
+// ─── Guest meal stepper ───────────────────────────────────────────────────────
+
+const GuestStepper = memo(({ label, value, onChange }) => (
+  <div className="flex items-center">
+    <span className="text-[9px] font-semibold text-muted-foreground/60 w-3 shrink-0 select-none">
+      {label}
+    </span>
+    <button
+      type="button"
+      onClick={() => onChange(Math.max(0, value - 1))}
+      className="w-5 h-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+    >
+      <Minus className="h-2.5 w-2.5" />
+    </button>
+    <span
+      className={cn(
+        "w-5 text-center text-xs tabular-nums font-mono select-none",
+        value > 0 ? "text-amber-600 font-bold" : "text-muted-foreground/40"
+      )}
+    >
+      {value}
+    </span>
+    <button
+      type="button"
+      onClick={() => onChange(value + 1)}
+      className="w-5 h-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+    >
+      <Plus className="h-2.5 w-2.5" />
+    </button>
+  </div>
+));
+GuestStepper.displayName = "GuestStepper";
+
+// ─── Row ──────────────────────────────────────────────────────────────────────
+
 export const MealRow = memo(
   ({
     student,
@@ -34,16 +70,35 @@ export const MealRow = memo(
     updateStudent,
     updateGuestMeal,
   }) => {
-    const confirm = useConfirm();
-    const [draft, setDraft] = useState(() => student.guestMeal ?? {});
+    const [draft, setDraft] = useState(() => ({
+      breakfast: student.guestMeal?.breakfast ?? 0,
+      lunch:     student.guestMeal?.lunch     ?? 0,
+      dinner:    student.guestMeal?.dinner    ?? 0,
+    }));
+    const [saving, setSaving] = useState(false);
 
+    // Sync draft when parent state updates (e.g. after save or page refresh)
     useEffect(() => {
-      setDraft(student.guestMeal ?? {});
+      setDraft({
+        breakfast: student.guestMeal?.breakfast ?? 0,
+        lunch:     student.guestMeal?.lunch     ?? 0,
+        dinner:    student.guestMeal?.dinner    ?? 0,
+      });
     }, [
       student.guestMeal?.breakfast,
       student.guestMeal?.lunch,
       student.guestMeal?.dinner,
     ]);
+
+    const saved = student.guestMeal ?? { breakfast: 0, lunch: 0, dinner: 0 };
+    const isDirty =
+      draft.breakfast !== (saved.breakfast ?? 0) ||
+      draft.lunch     !== (saved.lunch     ?? 0) ||
+      draft.dinner    !== (saved.dinner    ?? 0);
+
+    const setMeal = useCallback((meal) => (value) => {
+      setDraft((d) => ({ ...d, [meal]: value }));
+    }, []);
 
     const handleToggle = useCallback(
       async (meal) => {
@@ -54,7 +109,6 @@ export const MealRow = memo(
           updateStudent(student.studentId, res.data.meal.meal);
           toast.success(`${meal} toggled`, { duration: 1500 });
         } catch (err) {
-          console.error("Toggle error:", err?.response?.data || err);
           const msg = err?.response?.data?.message || `Failed to toggle ${meal}`;
           toast.error(msg);
         }
@@ -62,22 +116,9 @@ export const MealRow = memo(
       [student.studentId, student.gender, date, updateStudent]
     );
 
-    const handleGuestChange = useCallback((e) => {
-      const { name, value } = e.target;
-      setDraft((d) => ({
-        ...d,
-        [name]: value === "" ? null : Number(value),
-      }));
-    }, []);
-
-    const handleGuestSubmit = useCallback(async () => {
-      const ok = await confirm({
-        title: "Update Guest Meal?",
-        description: <>B: <strong>{draft.breakfast ?? 0}</strong> &nbsp; L: <strong>{draft.lunch ?? 0}</strong> &nbsp; D: <strong>{draft.dinner ?? 0}</strong></>,
-        confirmText: "Update",
-        cancelText: "Cancel",
-      });
-      if (!ok) return;
+    const handleGuestSave = useCallback(async () => {
+      if (saving) return;
+      setSaving(true);
       try {
         const res = await Axios.put("/meal/guest-meal", {
           studentId: student.studentId,
@@ -85,15 +126,22 @@ export const MealRow = memo(
           date,
         });
         updateGuestMeal(student.studentId, res.data.meal.guestMeal);
-        toast.success("Guest meal updated");
+        toast.success("Guest meal updated", { duration: 1500 });
       } catch {
         toast.error("Failed to update guest meal");
+      } finally {
+        setSaving(false);
       }
-    }, [draft, student.studentId, date, updateGuestMeal]);
+    }, [draft, student.studentId, date, updateGuestMeal, saving]);
+
+    const totalGuest = draft.breakfast + draft.lunch + draft.dinner;
 
     return (
       <tr
-        className="border-b border-border/40 hover:bg-muted/30 transition-colors duration-75"
+        className={cn(
+          "border-b border-border/40 transition-colors duration-75",
+          isDirty ? "bg-amber-50/60 hover:bg-amber-50" : "hover:bg-muted/30"
+        )}
         style={{ height: ITEM_HEIGHT }}
       >
         <td className="px-3 py-0 font-medium text-sm whitespace-nowrap">
@@ -102,13 +150,24 @@ export const MealRow = memo(
         <td className="px-3 py-0 text-muted-foreground text-sm whitespace-nowrap">
           {student.studentId}
         </td>
-        <td className="px-3 py-0 text-sm">{student.name}</td>
+        <td className="px-3 py-0 text-sm">
+          <div className="flex items-center gap-1.5">
+            {student.name}
+            {totalGuest > 0 && !isDirty && (
+              <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200">
+                +{totalGuest}
+              </span>
+            )}
+          </div>
+        </td>
         <td className="px-3 py-0 text-muted-foreground text-sm tabular-nums">
           {student.roomNo}
         </td>
         <td className="px-3 py-0 text-muted-foreground text-xs whitespace-nowrap">
           {student.residence?.replace(/_/g, " ")}
         </td>
+
+        {/* Meal toggles */}
         <td className="px-3 py-0">
           <div className="flex gap-1.5 justify-center">
             <MealBtn
@@ -131,25 +190,26 @@ export const MealRow = memo(
             />
           </div>
         </td>
-        <td className="px-3 py-0">
+
+        {/* Guest meal steppers */}
+        <td className="px-2 py-0">
           <div className="flex items-center gap-1">
-            {["breakfast", "lunch", "dinner"].map((meal) => (
-              <input
-                key={meal}
-                name={meal}
-                type="number"
-                min={0}
-                value={draft?.[meal] ?? ""}
-                onChange={handleGuestChange}
-                placeholder={meal[0].toUpperCase()}
-                className="w-12 h-7 rounded border border-input bg-background px-1.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            ))}
+            <GuestStepper label="B" value={draft.breakfast} onChange={setMeal("breakfast")} />
+            <GuestStepper label="L" value={draft.lunch}     onChange={setMeal("lunch")} />
+            <GuestStepper label="D" value={draft.dinner}    onChange={setMeal("dinner")} />
+
             <button
-              onClick={handleGuestSubmit}
-              className="ml-0.5 p-0.5 rounded hover:bg-muted transition-colors"
+              type="button"
+              onClick={handleGuestSave}
+              disabled={!isDirty || saving}
+              className={cn(
+                "ml-1 h-6 w-6 flex items-center justify-center rounded-full transition-all duration-150",
+                isDirty && !saving
+                  ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 scale-110"
+                  : "text-muted-foreground/25 cursor-default"
+              )}
             >
-              <CheckCircle2 className="h-5 w-5 text-emerald-500 hover:text-emerald-700 transition-colors" />
+              <Check className="h-3.5 w-3.5" />
             </button>
           </div>
         </td>
@@ -157,18 +217,18 @@ export const MealRow = memo(
     );
   },
   (prev, next) =>
-    prev.student.studentId === next.student.studentId &&
-    prev.student.meal?.breakfast === next.student.meal?.breakfast &&
-    prev.student.meal?.lunch === next.student.meal?.lunch &&
-    prev.student.meal?.dinner === next.student.meal?.dinner &&
+    prev.student.studentId           === next.student.studentId           &&
+    prev.student.meal?.breakfast      === next.student.meal?.breakfast      &&
+    prev.student.meal?.lunch          === next.student.meal?.lunch          &&
+    prev.student.meal?.dinner         === next.student.meal?.dinner         &&
     prev.student.guestMeal?.breakfast === next.student.guestMeal?.breakfast &&
-    prev.student.guestMeal?.lunch === next.student.guestMeal?.lunch &&
-    prev.student.guestMeal?.dinner === next.student.guestMeal?.dinner &&
+    prev.student.guestMeal?.lunch     === next.student.guestMeal?.lunch     &&
+    prev.student.guestMeal?.dinner    === next.student.guestMeal?.dinner    &&
     prev.breakfastFeast === next.breakfastFeast &&
-    prev.lunchFeast === next.lunchFeast &&
-    prev.dinnerFeast === next.dinnerFeast &&
-    prev.date === next.date &&
-    prev.updateStudent === next.updateStudent &&
+    prev.lunchFeast     === next.lunchFeast     &&
+    prev.dinnerFeast    === next.dinnerFeast     &&
+    prev.date           === next.date            &&
+    prev.updateStudent  === next.updateStudent   &&
     prev.updateGuestMeal === next.updateGuestMeal
 );
 MealRow.displayName = "MealRow";
