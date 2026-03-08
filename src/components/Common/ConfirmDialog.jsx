@@ -25,7 +25,7 @@ export function ConfirmProvider({ children }) {
   );
 
   const handle = (result) => {
-    setState({ open: false, options: {} });
+    setState((s) => ({ ...s, open: false }));
     resolveRef.current?.(result);
     resolveRef.current = null;
   };
@@ -43,27 +43,33 @@ export function ConfirmProvider({ children }) {
       {children}
       <Dialog
         open={state.open}
-        onOpenChange={(open) => {
-          if (!open) handle(false);
-        }}
+        onOpenChange={(open) => { if (!open) handle(false); }}
       >
-        <DialogContent
-          className="sm:max-w-sm"
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handle(true); } }}
-        >
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             {description && (
-              <DialogDescription className="pt-0.5">
+              <DialogDescription className="pt-0.5 leading-relaxed">
                 {description}
               </DialogDescription>
             )}
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="outline" size="sm" onClick={() => handle(false)}>
+          <DialogFooter className="flex-row justify-end gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-w-20"
+              onClick={() => handle(false)}
+            >
               {cancelText}
             </Button>
-            <Button variant={variant} size="sm" onClick={() => handle(true)}>
+            <Button
+              autoFocus
+              variant={variant}
+              size="sm"
+              className="min-w-20"
+              onClick={() => handle(true)}
+            >
               {confirmText}
             </Button>
           </DialogFooter>
