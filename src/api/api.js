@@ -1,7 +1,7 @@
 import axios from "axios";
 
-export const BASE_URL = "http://localhost:5000/api";
-// export const BASE_URL = "https://hall.mist.ac.bd/api";
+// export const BASE_URL = "http://localhost:5000/api";
+export const BASE_URL = "https://hall.mist.ac.bd/api";
 
 export const Axios = axios.create({ baseURL: BASE_URL });
 
