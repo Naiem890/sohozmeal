@@ -47,7 +47,10 @@ export function ConfirmProvider({ children }) {
           if (!open) handle(false);
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent
+          className="sm:max-w-sm"
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handle(true); } }}
+        >
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             {description && (
