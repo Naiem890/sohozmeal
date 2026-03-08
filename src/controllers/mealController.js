@@ -473,24 +473,25 @@ const formatDate = (dateString) => {
 
 
 router.get("/students", async (req, res) => {
-  const { date, gender, search, residence } = req.query;
+  const { date, wing, search, residence, page = 1, limit = 20 } = req.query;
   if (!date) {
     return res.status(400).json({ error: "Date parameter is required" });
   }
-
-  if (!gender) {
-    return res.status(400).json({ error: "Gender parameter is required" });
+  if (!wing) {
+    return res.status(400).json({ error: "Wing parameter is required" });
   }
 
+  const pageNum  = Math.max(1, parseInt(page)  || 1);
+  const limitNum = Math.min(1000, Math.max(1, parseInt(limit) || 20));
+
   try {
-    const studentFilter = { gender };
+    const studentFilter = { gender: wing };
 
     if (residence) {
       studentFilter.residence = residence;
     }
 
     if (search) {
-      // Escape regex special chars to prevent ReDoS
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const regex = new RegExp(escaped, "i");
       studentFilter.$or = [
@@ -500,36 +501,68 @@ router.get("/students", async (req, res) => {
       ];
     }
 
-    const students = await Student.find(studentFilter, {
-      studentId: 1, hallId: 1, name: 1, gender: 1, residence: 1, roomNo: 1,
-    });
+    // Run total count + paginated fetch + all IDs (for meal counts) in parallel
+    const [total, paginatedStudents, allIds] = await Promise.all([
+      Student.countDocuments(studentFilter),
+      Student.find(studentFilter, {
+        studentId: 1, hallId: 1, name: 1, gender: 1, residence: 1, roomNo: 1, batch: 1,
+      }).sort({ roomNo: 1, studentId: 1 }).skip((pageNum - 1) * limitNum).limit(limitNum).lean(),
+      Student.find(studentFilter, { studentId: 1 }).lean().then((docs) => docs.map((s) => s.studentId)),
+    ]);
 
-    // Return empty array (not 404) when filters yield no results
-    if (students.length === 0) {
-      return res.status(200).json([]);
+    const totalPages = Math.ceil(total / limitNum);
+
+    // Meal counts across ALL matching students (for stats bar)
+    const countsAgg = await Meal.aggregate([
+      { $match: { date, studentId: { $in: allIds } } },
+      {
+        $group: {
+          _id: null,
+          breakfast: { $sum: { $cond: ["$meal.breakfast", 1, 0] } },
+          lunch:     { $sum: { $cond: ["$meal.lunch",     1, 0] } },
+          dinner:    { $sum: { $cond: ["$meal.dinner",    1, 0] } },
+        },
+      },
+    ]);
+    const mealCounts = countsAgg[0]
+      ? { breakfast: countsAgg[0].breakfast, lunch: countsAgg[0].lunch, dinner: countsAgg[0].dinner }
+      : { breakfast: 0, lunch: 0, dinner: 0 };
+
+    if (total === 0) {
+      return res.status(200).json({
+        students: [],
+        pagination: { page: pageNum, limit: limitNum, total: 0, totalPages: 0 },
+        mealCounts,
+      });
     }
 
-    const meals = await Meal.find({ date });
+    const paginatedIds = paginatedStudents.map((s) => s.studentId);
+    const meals = await Meal.find({ date, studentId: { $in: paginatedIds } }).lean();
 
     const mealMap = meals.reduce((acc, meal) => {
-      acc[meal.studentId] = meal.meal;
-      acc[meal.studentId].guestMeal = meal.guestMeal;
+      acc[meal.studentId] = { ...meal.meal, guestMeal: meal.guestMeal };
       return acc;
     }, {});
 
-    const studentMealData = students.map(student => ({
+    const studentMealData = paginatedStudents.map((student) => ({
       studentId: student.studentId,
-      batch: student.batch,
-      hallId: student.hallId,
-      name: student.name,
-      gender: student.gender,
+      batch:     student.batch,
+      hallId:    student.hallId,
+      name:      student.name,
+      gender:    student.gender,
       residence: student.residence,
-      roomNo: student.roomNo,
-      meal: mealMap[student.studentId] || { breakfast: false, lunch: false, dinner: false },
+      roomNo:    student.roomNo,
+      meal:      mealMap[student.studentId]
+        ? { breakfast: mealMap[student.studentId].breakfast, lunch: mealMap[student.studentId].lunch, dinner: mealMap[student.studentId].dinner }
+        : { breakfast: false, lunch: false, dinner: false },
       guestMeal: mealMap[student.studentId]?.guestMeal || { breakfast: 0, lunch: 0, dinner: 0 },
     }));
 
-    res.status(200).json(studentMealData);
+    res.status(200).json({
+      students: studentMealData,
+      pagination: { page: pageNum, limit: limitNum, total, totalPages },
+      mealCounts,
+    });
   } catch (error) {
     console.error("Error retrieving students and meals: ", error);
     res.status(500).json({ error: "Internal server error" });
