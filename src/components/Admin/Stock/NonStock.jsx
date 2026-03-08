@@ -61,6 +61,7 @@ export const NonStock = ({
     setQuantity("");
     setMeal("");
     setPrice("");
+    setTimeout(() => dateRef.current?.focus(), 0);
   };
 
   const handleKeyDown = (e, nextRef, prevRef) => {

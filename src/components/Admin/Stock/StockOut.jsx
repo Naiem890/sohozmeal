@@ -69,6 +69,8 @@ export const StockOut = ({
       addTransaction({ type: "OUT", item: selectedItem.itemId, name: selectedItem.name, quantity, meal, date, category: "STORED", wing });
       toast.success(editTransaction ? "Stock out transaction updated!" : "Stock out transaction added locally!");
       resetForm();
+    } else {
+      setTimeout(() => dateRef.current?.focus(), 0);
     }
   };
 
@@ -76,6 +78,7 @@ export const StockOut = ({
     setSelectedItem(null);
     setQuantity("");
     setMeal("");
+    setTimeout(() => dateRef.current?.focus(), 0);
   };
 
   const handleKeyDown = (e, nextRef, prevRef) => {

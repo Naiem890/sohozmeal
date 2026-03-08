@@ -57,6 +57,8 @@ export const StockIn = ({
       addTransaction({ type: "IN", item: summarySelectedItem._id, name: summarySelectedItem.name, quantity, price, date, wing });
       toast.success(editTransaction ? "Transaction updated!" : "Transaction added locally!");
       reset();
+    } else {
+      setTimeout(() => dateRef.current?.focus(), 0);
     }
   };
 
