@@ -1,10 +1,6 @@
-import { useEffect, useRef, useState } from "react";
 import { MealRow } from "./MealRow";
 import { MealLocks } from "./MealLocks";
 import { ArrowUpDown } from "lucide-react";
-
-const ITEM_HEIGHT = 44;
-const BUFFER = 8;
 
 export const MealTable = ({
   students,
@@ -19,38 +15,6 @@ export const MealTable = ({
   updateStudent,
   updateGuestMeal,
 }) => {
-  const scrollRef = useRef(null);
-  const [scrollTop, setScrollTop] = useState(0);
-  const [containerHeight, setContainerHeight] = useState(600);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setContainerHeight(el.clientHeight);
-    const onScroll = () => setScrollTop(el.scrollTop);
-    const ro = new ResizeObserver(() => setContainerHeight(el.clientHeight));
-    el.addEventListener("scroll", onScroll, { passive: true });
-    ro.observe(el);
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      ro.disconnect();
-    };
-  }, []);
-
-  // Reset scroll on list change
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    setScrollTop(0);
-  }, [students]);
-
-  const startIdx = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - BUFFER);
-  const endIdx = Math.min(
-    students.length,
-    Math.ceil((scrollTop + containerHeight) / ITEM_HEIGHT) + BUFFER
-  );
-  const paddingTop = startIdx * ITEM_HEIGHT;
-  const paddingBottom = Math.max(0, (students.length - endIdx) * ITEM_HEIGHT);
-
   const toggleSort = (col) => {
     if (sortBy === col) setSortAsc((p) => !p);
     else {
@@ -77,7 +41,7 @@ export const MealTable = ({
 
   return (
     <div className="flex-1 rounded-xl border bg-card shadow-sm overflow-hidden min-h-0">
-      <div ref={scrollRef} className="overflow-auto h-full">
+      <div className="overflow-auto h-full">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-muted/60 sticky top-0 z-10 border-b border-border/60 backdrop-blur-sm">
@@ -113,12 +77,7 @@ export const MealTable = ({
             </tr>
           </thead>
           <tbody>
-            {paddingTop > 0 && (
-              <tr style={{ height: paddingTop }} aria-hidden="true">
-                <td />
-              </tr>
-            )}
-            {students.slice(startIdx, endIdx).map((student) => (
+            {students.map((student) => (
               <MealRow
                 key={student.studentId}
                 student={student}
@@ -130,11 +89,6 @@ export const MealTable = ({
                 updateGuestMeal={updateGuestMeal}
               />
             ))}
-            {paddingBottom > 0 && (
-              <tr style={{ height: paddingBottom }} aria-hidden="true">
-                <td />
-              </tr>
-            )}
           </tbody>
         </table>
         {students.length === 0 && (
