@@ -297,40 +297,47 @@ export const Stock = () => {
 
             {/* Pending transactions */}
             {transactions.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">
+              <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+                  <p className="text-sm font-semibold flex items-center gap-2">
                     Pending Transactions
-                    <Badge variant="secondary" className="ml-2">{transactions.length}</Badge>
+                    <Badge variant="secondary">{transactions.length}</Badge>
                   </p>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-muted-foreground text-xs"
+                    className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
                     onClick={() => setTransactions([])}
                   >
                     Clear all
                   </Button>
                 </div>
-                <div className="border rounded-md divide-y text-sm">
+
+                {/* Scrollable list */}
+                <div className="divide-y max-h-52 overflow-auto">
                   {transactions.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between px-3 py-2">
-                      <div className="flex flex-wrap gap-3 text-sm">
+                    <div key={t.id} className="flex items-center justify-between px-3 py-2 hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center flex-wrap gap-x-3 gap-y-0.5 text-sm min-w-0">
                         <span className={cn(
-                          "font-semibold",
-                          t.type === "IN" ? "text-green-600" : t.category === "NON_STORED" ? "text-amber-600" : "text-red-600"
+                          "text-xs font-bold w-8 shrink-0",
+                          t.type === "IN" ? "text-green-600" : t.category === "NON_STORED" ? "text-amber-600" : "text-red-500"
                         )}>
                           {t.type === "IN" ? "IN" : t.category === "NON_STORED" ? "NON" : "OUT"}
                         </span>
-                        <span>{t.name}</span>
-                        <span className="text-muted-foreground">{t.quantity} × {t.price ?? "avg"}</span>
-                        {t.meal && <span className="text-muted-foreground">{t.meal}</span>}
-                        <span className="text-muted-foreground">{t.date}</span>
+                        <span className="font-medium truncate">{t.name}</span>
+                        <span className="text-muted-foreground tabular-nums">{t.quantity} × {t.price ?? "avg"}</span>
+                        {t.meal && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded">
+                            {t.meal}
+                          </span>
+                        )}
+                        <span className="text-muted-foreground text-xs">{t.date}</span>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 text-red-400 hover:text-red-600 hover:bg-red-50"
+                        className="h-6 w-6 shrink-0 text-muted-foreground/40 hover:text-red-500 hover:bg-red-50"
                         onClick={() => removeTransaction(t.id)}
                       >
                         <Trash2 className="h-3 w-3" />
@@ -338,11 +345,18 @@ export const Stock = () => {
                     </div>
                   ))}
                 </div>
-                <Button ref={submitRef} size="sm" onClick={handleSubmit} className="min-w-28 gap-1.5">
-                  <Send className="h-4 w-4" />
-                  Submit ({transactions.length})
-                  <span className="text-[9px] opacity-50 font-mono ml-0.5">Ctrl+↵</span>
-                </Button>
+
+                {/* Footer */}
+                <div className="px-3 py-2 border-t bg-muted/20 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    {transactions.length} item{transactions.length !== 1 ? "s" : ""} ready to submit
+                  </span>
+                  <Button ref={submitRef} size="sm" onClick={handleSubmit} className="gap-1.5 h-7 text-xs">
+                    <Send className="h-3.5 w-3.5" />
+                    Submit
+                    <span className="text-[9px] opacity-50 font-mono">Ctrl+↵</span>
+                  </Button>
+                </div>
               </div>
             )}
 
