@@ -34,6 +34,10 @@ export const StockIn = ({
   }, [childRef]);
 
   useEffect(() => {
+    dateRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
     if (editTransaction) {
       const { item, quantity, price, date } = editTransaction.transaction;
       const selectedItem = stockItems.find((i) => i._id === item);
@@ -46,7 +50,7 @@ export const StockIn = ({
 
   const handleStockIn = async (e) => {
     e.preventDefault();
-    if (!summarySelectedItem) { toast.error("Please select a valid item"); return; }
+    if (!summarySelectedItem) { toast.error("Please select a valid item"); setTimeout(() => dateRef.current?.focus(), 0); return; }
     const ok = await confirm({
       title: "Confirm Stock In",
       description: `Add ${quantity} × ${summarySelectedItem?.name} at ${price}/unit?`,
