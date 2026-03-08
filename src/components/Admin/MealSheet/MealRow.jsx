@@ -84,7 +84,7 @@ export const MealRow = memo(
           guestMeal: draft,
           date,
         });
-        updateGuestMeal(student.studentId, res.data.guestMeal);
+        updateGuestMeal(student.studentId, res.data.meal.guestMeal);
         toast.success("Guest meal updated");
       } catch {
         toast.error("Failed to update guest meal");

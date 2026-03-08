@@ -1,9 +1,17 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Axios } from "../../api/api";
 import { format, isToday } from "date-fns";
+import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 const fixedInputClass = "w-full rounded-lg h-12 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6";
 const fixedButtonClass = "w-full rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 px-4 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-colors";
-import { toast } from "sonner";
 import { useReactToPrint } from "react-to-print";
 import { useConfirm } from "../Common/ConfirmDialog";
 import * as XLSX from "xlsx"; // Import xlsx for Excel file generation
@@ -117,8 +125,8 @@ const MealRoutineAdmin = () => {
     }
   };
 
-  const handleWingChange = (e) => {
-    setSelectedWing(e.target.value); // Update selected wing
+  const handleWingChange = (value) => {
+    setSelectedWing(value);
   };
 
   // Export meal data to Excel
@@ -149,18 +157,15 @@ const MealRoutineAdmin = () => {
         <h2 className="text-2xl font-semibold">Meal Routine</h2>
         {/* Wing Selection Dropdown */}
         {auth.wing === "ALL" && (
-          <div className="flex items-center">
-            {/* <label className="mr-2 font-semibold">Select Wing:</label> */}
-            <select
-              value={selectedWing}
-              onChange={handleWingChange}
-              className={`${fixedInputClass} h-auto cursor-pointer w-60`}
-            >
-              <option value="">Gender</option>
-              <option value="MALE">MALE</option>
-              <option value="FEMALE">FEMALE</option>
-            </select>
-          </div>
+          <Select value={selectedWing} onValueChange={handleWingChange}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="Wing" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="MALE">Male</SelectItem>
+              <SelectItem value="FEMALE">Female</SelectItem>
+            </SelectContent>
+          </Select>
         )}
       </div>
 
