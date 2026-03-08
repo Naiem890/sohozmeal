@@ -8,9 +8,9 @@ export const StockSummaryTable = ({ stocks, summarySearch, setSummarySearch }) =
     : stocks;
 
   return (
-    <div className="space-y-2">
-      <h2 className="text-base font-semibold">Stock Summary</h2>
-      <div className="relative">
+    <div className="flex flex-col h-full gap-2">
+      <h2 className="text-base font-semibold shrink-0">Stock Summary</h2>
+      <div className="relative shrink-0">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
         <input
           type="text"
@@ -20,7 +20,7 @@ export const StockSummaryTable = ({ stocks, summarySearch, setSummarySearch }) =
           className="flex h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
       </div>
-      <div className="overflow-auto max-h-[500px] border rounded-md">
+      <div className="flex-1 overflow-auto min-h-0 border rounded-md">
         <Table>
           <TableHeader className="sticky top-0 bg-background">
             <TableRow>

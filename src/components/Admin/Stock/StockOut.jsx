@@ -26,6 +26,7 @@ export const StockOut = ({
   const confirm = useConfirm();
   const dateRef = useRef(null);
   const mealRef = useRef(null);
+  const itemRef = useRef(null);
   const quantityRef = useRef(null);
 
   const stockItems = stocks.map((s) => ({
@@ -105,7 +106,7 @@ export const StockOut = ({
             className={inputClass}
             value={meal}
             onChange={(e) => setMeal(e.target.value)}
-            onKeyDown={(e) => handleKeyDown(e, quantityRef, dateRef)}
+            onKeyDown={(e) => handleKeyDown(e, itemRef, dateRef)}
           >
             <option value="" disabled>Meal</option>
             {["BREAKFAST", "LUNCH", "DINNER"].map((m) => (
@@ -116,6 +117,7 @@ export const StockOut = ({
         <div className="w-48">
           <Label className="text-xs text-muted-foreground mb-1.5 block">Item</Label>
           <ItemSearchInput
+            ref={itemRef}
             items={stockItems}
             value={selectedItem}
             onChange={(item) => {
@@ -123,6 +125,7 @@ export const StockOut = ({
               setSummarySelectedItem(item);
               if (item) setTimeout(() => quantityRef.current?.focus(), 0);
             }}
+            onKeyDown={(e) => handleKeyDown(e, quantityRef, mealRef)}
             placeholder="Search item..."
           />
         </div>

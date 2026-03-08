@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Axios } from "../../../api/api";
 import { StockItemsList } from "./StockItemsList";
@@ -6,7 +6,7 @@ import { StockSummaryTable } from "./StockSummaryTable";
 import { StockIn } from "./StockIn";
 import { StockOut } from "./StockOut";
 import { NonStock } from "./NonStock";
-import { Send, Trash2 } from "lucide-react";
+import { Keyboard, Send, Trash2 } from "lucide-react";
 import { useAuthUser } from "react-auth-kit";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,11 +17,87 @@ let rowCounter = 0;
 const newId = () => `row-${++rowCounter}`;
 
 const TABS = [
-  { key: "stockIn", label: "Stock In" },
+  { key: "stockIn",  label: "Stock In" },
   { key: "stockOut", label: "Stock Out" },
   { key: "nonStock", label: "Non-Stock" },
-  { key: "items", label: "Items Management" },
+  { key: "items",    label: "Items" },
 ];
+
+// ─── Keyboard shortcut guide ──────────────────────────────────────────────────
+
+const Kbd = ({ children }) => (
+  <kbd className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono font-medium text-muted-foreground leading-none">
+    {children}
+  </kbd>
+);
+
+const SHORTCUT_GROUPS = [
+  {
+    title: "Tab Switching",
+    items: [
+      { keys: ["Alt", "1"], desc: "Stock In" },
+      { keys: ["Alt", "2"], desc: "Stock Out" },
+      { keys: ["Alt", "3"], desc: "Non-Stock" },
+      { keys: ["Alt", "4"], desc: "Items" },
+    ],
+  },
+  {
+    title: "Field Navigation",
+    items: [
+      { keys: ["Tab"], desc: "Next field" },
+      { keys: ["Shift", "Tab"], desc: "Previous field" },
+      { keys: ["→", "↓"], desc: "Next field (arrow)" },
+      { keys: ["←", "↑"], desc: "Prev field (arrow)" },
+    ],
+  },
+  {
+    title: "Item Search",
+    items: [
+      { keys: ["↑", "↓"], desc: "Navigate dropdown" },
+      { keys: ["Enter"], desc: "Select highlighted" },
+      { keys: ["Esc"], desc: "Close dropdown" },
+      { keys: ["type"], desc: "Filter items" },
+    ],
+  },
+  {
+    title: "Transactions",
+    items: [
+      { keys: ["Enter"], desc: "Add to pending list" },
+      { keys: ["Ctrl", "↵"], desc: "Submit all pending" },
+      { keys: ["?"], desc: "Toggle this guide" },
+    ],
+  },
+];
+
+const KeyboardGuide = () => (
+  <div className="rounded-lg border bg-muted/20 p-3.5">
+    <p className="text-xs font-semibold flex items-center gap-1.5 mb-3 text-muted-foreground">
+      <Keyboard className="h-3.5 w-3.5" />
+      Keyboard Shortcuts
+    </p>
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {SHORTCUT_GROUPS.map((group) => (
+        <div key={group.title}>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/50 mb-2">
+            {group.title}
+          </p>
+          <div className="space-y-1.5">
+            {group.items.map(({ keys, desc }) => (
+              <div key={desc} className="flex items-center gap-1.5 text-xs">
+                <span className="flex gap-0.5 shrink-0">
+                  {keys.map((k) => <Kbd key={k}>{k}</Kbd>)}
+                </span>
+                <span className="text-muted-foreground truncate">{desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export const Stock = () => {
   const auth = useAuthUser()();
@@ -36,10 +112,11 @@ export const Stock = () => {
   const [summarySelectedItem, setSummarySelectedItem] = useState(null);
   const [editTransaction, setEditTransaction] = useState(null);
   const [summarySearch, setSummarySearch] = useState("");
+  const [showGuide, setShowGuide] = useState(true);
 
-  const submitRef = useRef(null);
-  const childRef = useRef(null);
-  const stockInSubmit = useRef(null);
+  const submitRef     = useRef(null);
+  const childRef      = useRef(null);
+  const stockInSubmit  = useRef(null);
   const stockOutSubmit = useRef(null);
   const nonStockSubmit = useRef(null);
 
@@ -76,7 +153,7 @@ export const Stock = () => {
     setTransactions((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (transactions.length === 0) {
       toast.error("No transactions to submit.");
       return;
@@ -95,46 +172,91 @@ export const Stock = () => {
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [transactions, wing]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const tabKeys = ["stockIn", "stockOut", "nonStock", "items"];
+    const handler = (e) => {
+      const inInput = ["INPUT", "TEXTAREA", "SELECT"].includes(
+        document.activeElement?.tagName
+      );
+
+      // Alt+1–4: switch tabs
+      if (e.altKey && e.key >= "1" && e.key <= "4") {
+        e.preventDefault();
+        setTab(tabKeys[parseInt(e.key) - 1]);
+        return;
+      }
+      // Ctrl+Enter: submit pending
+      if (e.ctrlKey && e.key === "Enter") {
+        e.preventDefault();
+        handleSubmit();
+        return;
+      }
+      // ?: toggle guide (not when typing)
+      if (e.key === "?" && !inInput) {
+        setShowGuide((g) => !g);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [handleSubmit]);
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-2xl font-bold tracking-tight">Stock</h2>
-        {auth.wing === "ALL" && (
-          <Select value={wing} onValueChange={setWing}>
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="MALE">Male</SelectItem>
-              <SelectItem value="FEMALE">Female</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
+        <div className="flex items-center gap-2">
+          {auth.wing === "ALL" && (
+            <Select value={wing} onValueChange={setWing}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MALE">Male</SelectItem>
+                <SelectItem value="FEMALE">Female</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowGuide((g) => !g)}
+            className={cn(
+              "gap-1.5 text-xs text-muted-foreground",
+              showGuide && "bg-muted text-foreground"
+            )}
+          >
+            <Keyboard className="h-3.5 w-3.5" />
+            Shortcuts
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-0 border-b">
-        {TABS.map(({ key, label }) => (
+        {TABS.map(({ key, label }, i) => (
           <button
             key={key}
             onClick={() => setTab(key)}
             className={cn(
-              "px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+              "px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5",
               tab === key
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
             {label}
+            <span className="text-[9px] opacity-30 font-mono">Alt+{i + 1}</span>
           </button>
         ))}
       </div>
 
       {tab !== "items" && (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 items-start">
+          {/* Left: form + pending + guide */}
           <div className="xl:col-span-2 space-y-4">
             {tab === "stockIn" && (
               <StockIn
@@ -173,7 +295,7 @@ export const Stock = () => {
               />
             )}
 
-            {/* Pending transactions list */}
+            {/* Pending transactions */}
             {transactions.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -216,15 +338,20 @@ export const Stock = () => {
                     </div>
                   ))}
                 </div>
-                <Button ref={submitRef} size="sm" onClick={handleSubmit} className="min-w-28">
-                  <Send className="h-4 w-4 mr-1" />
+                <Button ref={submitRef} size="sm" onClick={handleSubmit} className="min-w-28 gap-1.5">
+                  <Send className="h-4 w-4" />
                   Submit ({transactions.length})
+                  <span className="text-[9px] opacity-50 font-mono ml-0.5">Ctrl+↵</span>
                 </Button>
               </div>
             )}
+
+            {/* Keyboard guide */}
+            {showGuide && <KeyboardGuide />}
           </div>
 
-          <div>
+          {/* Right: sticky stock summary */}
+          <div className="sticky top-6 self-start h-[calc(100vh-8rem)]">
             <StockSummaryTable
               stocks={stocks}
               summarySearch={summarySearch}

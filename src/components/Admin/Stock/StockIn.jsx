@@ -25,6 +25,7 @@ export const StockIn = ({
 
   const confirm = useConfirm();
   const dateRef = useRef(null);
+  const itemRef = useRef(null);
   const quantityRef = useRef(null);
   const priceRef = useRef(null);
 
@@ -83,18 +84,20 @@ export const StockIn = ({
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            onKeyDown={(e) => handleKeyDown(e, quantityRef, null)}
+            onKeyDown={(e) => handleKeyDown(e, itemRef, null)}
           />
         </div>
         <div className="w-48">
           <Label className="text-xs text-muted-foreground mb-1.5 block">Item</Label>
           <ItemSearchInput
+            ref={itemRef}
             items={stockItems.filter((i) => i.category === "STORED")}
             value={summarySelectedItem}
             onChange={(item) => {
               setSummarySelectedItem(item);
               if (item) setTimeout(() => quantityRef.current?.focus(), 0);
             }}
+            onKeyDown={(e) => handleKeyDown(e, quantityRef, dateRef)}
             placeholder="Search item..."
           />
         </div>

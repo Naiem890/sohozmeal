@@ -24,6 +24,7 @@ export const NonStock = ({
 
   const dateRef = useRef(null);
   const mealRef = useRef(null);
+  const itemRef = useRef(null);
   const priceRef = useRef(null);
   const quantityRef = useRef(null);
 
@@ -90,7 +91,7 @@ export const NonStock = ({
             className={`${inputClass} w-full`}
             value={meal}
             onChange={(e) => setMeal(e.target.value)}
-            onKeyDown={(e) => handleKeyDown(e, priceRef, dateRef)}
+            onKeyDown={(e) => handleKeyDown(e, itemRef, dateRef)}
           >
             <option value="" disabled>Meal</option>
             {["BREAKFAST", "LUNCH", "DINNER"].map((m) => (
@@ -101,12 +102,14 @@ export const NonStock = ({
         <div className="w-48">
           <Label className="text-xs text-muted-foreground mb-1.5 block">Item</Label>
           <ItemSearchInput
+            ref={itemRef}
             items={stockItems}
             value={selectedItem}
             onChange={(item) => {
               setSelectedItem(item);
               if (item) setTimeout(() => priceRef.current?.focus(), 0);
             }}
+            onKeyDown={(e) => handleKeyDown(e, priceRef, mealRef)}
             placeholder="Search item..."
           />
         </div>
