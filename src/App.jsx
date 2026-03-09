@@ -1,5 +1,6 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import { useAuthUser } from "react-auth-kit";
+import { useEffect } from "react";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { useAuthUser, useSignOut } from "react-auth-kit";
 
 // Auth guards
 import PublicRoute          from "./components/Auth/PublicRoute";
@@ -50,6 +51,34 @@ import Navbar from "./components/Common/Navbar";
 
 const STAFF_ROLES = new Set(["MESS", "WIFI", "CLEANING", "REPAIR"]);
 
+/**
+ * Listens for the "auth:session-expired" event dispatched by api.js and calls
+ * react-auth-kit's signOut() so all auth cookies are cleared with the correct
+ * attributes (Secure/SameSite), then navigates to the appropriate login page.
+ */
+function SessionExpiryHandler() {
+  const signOut  = useSignOut();
+  const navigate = useNavigate();
+  const getUser  = useAuthUser();
+
+  useEffect(() => {
+    function handleSessionExpired() {
+      const user = getUser();
+      const redirectTo =
+        user?.role === "admin"          ? "/admin"
+        : STAFF_ROLES.has(user?.role)   ? "/staff"
+        : "/login";
+      signOut();
+      navigate(redirectTo, { replace: true });
+    }
+
+    window.addEventListener("auth:session-expired", handleSessionExpired);
+    return () => window.removeEventListener("auth:session-expired", handleSessionExpired);
+  }, [signOut, navigate, getUser]);
+
+  return null;
+}
+
 /** Redirects to the right dashboard when visiting "/" */
 function RootRedirect() {
   const user = useAuthUser()();
@@ -73,6 +102,7 @@ function CatchAll() {
 export default function App() {
   return (
     <>
+      <SessionExpiryHandler />
       <Navbar />
       <Routes>
         {/* ── Root ── */}

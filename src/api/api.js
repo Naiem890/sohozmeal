@@ -15,15 +15,18 @@ function setCookie(name, value, maxAgeSeconds) {
   document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${maxAgeSeconds}; path=/`;
 }
 
-function deleteCookie(name) {
-  document.cookie = `${name}=; max-age=0; path=/`;
-}
+// ─── Session expiry signal ────────────────────────────────────────────────────
+// Dispatches a custom DOM event so the React AuthEventHandler component can call
+// useSignOut() + navigate() — avoiding direct cookie manipulation which can miss
+// the Secure/SameSite attributes set by react-auth-kit on HTTPS and cause loops.
 
-function clearAuth() {
-  deleteCookie("_auth");
-  deleteCookie("_auth_state");
-  deleteCookie("_auth_type");
+const LOGIN_PATHS = new Set(["/login", "/admin", "/staff"]);
+
+function signalSessionExpired() {
+  // Already on a login page — nothing to do (prevents re-firing after navigate)
+  if (LOGIN_PATHS.has(window.location.pathname)) return;
   localStorage.removeItem("_refresh_token");
+  window.dispatchEvent(new CustomEvent("auth:session-expired"));
 }
 
 // ─── Refresh token state ──────────────────────────────────────────────────────
@@ -68,8 +71,7 @@ Axios.interceptors.response.use(
 
     const refreshToken = localStorage.getItem("_refresh_token");
     if (!refreshToken) {
-      clearAuth();
-      window.location.href = "/login";
+      signalSessionExpired();
       return Promise.reject(error);
     }
 
@@ -98,8 +100,7 @@ Axios.interceptors.response.use(
       return Axios(original);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      clearAuth();
-      window.location.href = "/login";
+      signalSessionExpired();
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
