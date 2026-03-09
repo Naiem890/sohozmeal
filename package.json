@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test": "jest --forceExit --detectOpenHandles",
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
     "generateJson:male": "node src/data/generateJson.js male",
@@ -39,7 +40,15 @@
   },
   "devDependencies": {
     "eslint": "^8.48.0",
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^11.0.1",
     "nodemon": "^3.0.1",
+    "supertest": "^7.2.2",
     "xlsx": "^0.18.5"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 60000,
+    "testMatch": ["**/src/__tests__/**/*.test.js"]
   }
 }
