@@ -61,17 +61,22 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal Server Error" });
 });
 
-// Connect to the database
-try {
-  dbConnect();
-} catch (error) {
-  console.error("Database connection error: ", error);
+const { initializeCronFromConfig } = require("../cron/mealGenerate");
+
+async function startServer() {
+  try {
+    await dbConnect();
+  } catch (error) {
+    console.error("Database connection error: ", error);
+  }
+
+  // require("../src/data/insertStudents");
+  await initializeCronFromConfig();
+
+  app.listen(port, () => {
+    console.log(`Sohoz Meal app listening on port ${port}!`);
+    console.log(`Running on port: ${port}`);
+  });
 }
 
-// require("../src/data/insertStudents");
-require("../cron/mealGenerate");
-
-app.listen(port, () => {
-  console.log(`Sohoz Meal app listening on port ${port}!`);
-  console.log(`Running on port: ${port}`);
-});
+startServer();

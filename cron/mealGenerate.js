@@ -4,11 +4,10 @@ const { sendSMS } = require("../src/utils/sendSMS");
 const Student = require("../src/models/student");
 const contacts = require("../src/config/contactPerson");
 const phones = contacts.developer.map((dev) => dev.phone);
-// Schedule the cron job to run daily at 09:55 PM
-// const generateMealsForStudents = async () => {
-//for Testing
-schedule.scheduleJob({ hour: 21, minute: 55, tz: "Asia/Dhaka" }, async () => {
-  //comment previous line testing
+
+let currentJob = null;
+
+async function jobHandler() {
   console.log("Cron job executed: Generating meals for students.");
 
   try {
@@ -34,33 +33,21 @@ schedule.scheduleJob({ hour: 21, minute: 55, tz: "Asia/Dhaka" }, async () => {
     // Create new meals for the next day
     const newMeals = studentIds.map((studentId) => {
       if (previousDayMealsMap[studentId]) {
-        // If a meal already exists for the student on the previous day, create a new meal based on it
         const { guestMeal, _id, ...previousMealWithoutGuest } = previousDayMealsMap[studentId].toObject();
-        return {
-          ...previousMealWithoutGuest,
-          date: nextDay,
-        };
+        return { ...previousMealWithoutGuest, date: nextDay };
       } else {
-        // If no meal exists for the student on the previous day, create an empty meal
         return {
-          studentId: studentId,
+          studentId,
           date: nextDay,
-          meal: {
-            breakfast: false,
-            lunch: false,
-            dinner: false,
-          },
+          meal: { breakfast: false, lunch: false, dinner: false },
         };
       }
     });
-    
+
     // Insert the new meals into the database
     await Meal.insertMany(newMeals);
     if (newMeals.length > 0) {
-      // I want to extract how many meals are on for breakfast, lunch and dinner
-      const breakfastMeals = newMeals.filter(
-        (meal) => meal.meal.breakfast === true
-      );
+      const breakfastMeals = newMeals.filter((meal) => meal.meal.breakfast === true);
       const lunchMeals = newMeals.filter((meal) => meal.meal.lunch === true);
       const dinnerMeals = newMeals.filter((meal) => meal.meal.dinner === true);
       const result = await sendSMS(
@@ -69,17 +56,53 @@ schedule.scheduleJob({ hour: 21, minute: 55, tz: "Asia/Dhaka" }, async () => {
       );
       console.log("SMS sent successfully!", result.data);
     } else {
-      const result = sendSMS(
-        `No meals found. \n\n-Sohoz Meal App`,
-        "01790732717"
-      );
+      const result = sendSMS(`No meals found. \n\n-Sohoz Meal App`, "01790732717");
       console.log("SMS sent successfully!", result.data);
     }
   } catch (error) {
     console.error("Error generating meal:", error);
   }
-}); //comment this while testing
-// }; //for Testing
-// generateMealsForStudents(); //for Testing
+}
 
-console.log("Cron job scheduled to run daily at 09:55 PM!");
+/**
+ * Cancel the existing cron job and schedule a new one at the given time (Asia/Dhaka).
+ */
+function rescheduleJob(hour, minute) {
+  if (currentJob) {
+    currentJob.cancel();
+  }
+  currentJob = schedule.scheduleJob({ hour, minute, tz: "Asia/Dhaka" }, jobHandler);
+  console.log(
+    `Cron job scheduled to run daily at ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} Asia/Dhaka`
+  );
+}
+
+/**
+ * Read MealConfig from DB and schedule the cron 5 minutes before the earliest cutoff.
+ * Falls back to 21:55 if no config exists.
+ */
+async function initializeCronFromConfig() {
+  const MealConfig = require("../src/models/mealConfig");
+  let cronHour = 21;
+  let cronMinute = 55;
+
+  try {
+    const configs = await MealConfig.find({ wing: { $in: ["MALE", "FEMALE"] } });
+    if (configs.length > 0) {
+      let minTotalMinutes = Infinity;
+      for (const cfg of configs) {
+        const total = cfg.cutoffHour * 60 + cfg.cutoffMinute;
+        if (total < minTotalMinutes) minTotalMinutes = total;
+      }
+      const cronTotal = minTotalMinutes - 5;
+      cronHour = Math.floor(Math.abs(cronTotal) / 60) % 24;
+      cronMinute = ((cronTotal % 60) + 60) % 60;
+    }
+  } catch (err) {
+    console.error("Error reading MealConfig for cron init, using default 21:55:", err);
+  }
+
+  rescheduleJob(cronHour, cronMinute);
+}
+
+module.exports = { rescheduleJob, initializeCronFromConfig };

@@ -159,6 +159,27 @@ router.put("/config", validateToken, checkAdminRole, async (req, res) => {
       { wing: wing.toUpperCase(), cutoffHour: Number(cutoffHour), cutoffMinute: Number(cutoffMinute) },
       { upsert: true, new: true }
     );
+
+    // Reschedule cron: run 5 minutes before the earliest cutoff across both wings
+    try {
+      const { rescheduleJob } = require("../../cron/mealGenerate");
+      const allConfigs = await MealConfig.find({ wing: { $in: ["MALE", "FEMALE"] } });
+      let cronHour = 21, cronMinute = 55;
+      if (allConfigs.length > 0) {
+        let minTotal = Infinity;
+        for (const cfg of allConfigs) {
+          const total = cfg.cutoffHour * 60 + cfg.cutoffMinute;
+          if (total < minTotal) minTotal = total;
+        }
+        const cronTotal = minTotal - 5;
+        cronHour = Math.floor(Math.abs(cronTotal) / 60) % 24;
+        cronMinute = ((cronTotal % 60) + 60) % 60;
+      }
+      rescheduleJob(cronHour, cronMinute);
+    } catch (cronErr) {
+      console.error("Error rescheduling cron after config update:", cronErr);
+    }
+
     res.status(200).json({ message: "Meal config updated", config });
   } catch (err) {
     console.error("Error updating meal config:", err);
