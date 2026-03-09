@@ -3,7 +3,7 @@ import { useSignOut } from "react-auth-kit";
 import { toast } from "sonner";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useConfirm } from "../Common/ConfirmDialog";
-import { Axios } from "../../api/api";
+import { Axios, clearCachedToken } from "../../api/api";
 import MISTImage from "../../assets/MIST.png";
 import Logo from "../Common/Logo";
 import { cn } from "@/lib/utils";
@@ -24,8 +24,10 @@ export default function StaffAside({ isOpen, onClose }) {
 
     if (ok) {
       try {
-        await Axios.post("/auth/logout", {});
+        const refreshToken = localStorage.getItem("_refresh_token");
+        await Axios.post("/auth/logout", { refreshToken });
         localStorage.removeItem("_refresh_token");
+        clearCachedToken();
         signOut();
         navigate("/");
         toast.success("Logged out successfully!");

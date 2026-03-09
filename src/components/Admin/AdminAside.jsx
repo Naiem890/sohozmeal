@@ -18,7 +18,7 @@ import { useAuthUser, useSignOut } from "react-auth-kit";
 import { toast } from "sonner";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useConfirm } from "../Common/ConfirmDialog";
-import { Axios } from "../../api/api";
+import { Axios, clearCachedToken } from "../../api/api";
 import mistlogo from "../../assets/MIST.png";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -53,8 +53,10 @@ export default function AdminAside({ isOpen, toggleDrawer, isCollapsed, toggleCo
     });
     if (ok) {
       try {
-        await Axios.post("/auth/logout", {});
+        const refreshToken = localStorage.getItem("_refresh_token");
+        await Axios.post("/auth/logout", { refreshToken });
         localStorage.removeItem("_refresh_token");
+        clearCachedToken();
         signOut();
         navigate("/");
         toast.success("Logged out successfully!");

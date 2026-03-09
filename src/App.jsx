@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { useAuthUser, useSignOut } from "react-auth-kit";
+import { clearCachedToken } from "./api/api";
 
 // Auth guards
 import PublicRoute          from "./components/Auth/PublicRoute";
@@ -68,6 +69,7 @@ function SessionExpiryHandler() {
         user?.role === "admin"          ? "/admin"
         : STAFF_ROLES.has(user?.role)   ? "/staff"
         : "/login";
+      clearCachedToken();
       signOut();
       navigate(redirectTo, { replace: true });
     }

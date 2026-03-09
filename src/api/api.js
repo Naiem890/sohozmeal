@@ -11,8 +11,19 @@ function getCookie(name) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-function setCookie(name, value, maxAgeSeconds) {
-  document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${maxAgeSeconds}; path=/`;
+// ─── In-memory access token cache ────────────────────────────────────────────
+// We never write to the _auth cookie directly. Writing to document.cookie can
+// create a DUPLICATE _auth cookie on HTTPS production (different domain attribute
+// vs what react-auth-kit's universal-cookie sets), which survives signOut() and
+// causes stale-token conflicts when switching roles.
+// Instead, cache the refreshed token in memory. On page load the cookie provides
+// the initial token; after any refresh, the cache takes over until signOut().
+
+let cachedAccessToken = null;
+
+/** Call this on every logout/session-expiry so the cache doesn't outlive the session. */
+export function clearCachedToken() {
+  cachedAccessToken = null;
 }
 
 // ─── Session expiry signal ────────────────────────────────────────────────────
@@ -45,7 +56,7 @@ function processQueue(error, token = null) {
 // ─── Request interceptor — attach access token from cookie ────────────────────
 
 Axios.interceptors.request.use((config) => {
-  const token = getCookie("_auth");
+  const token = cachedAccessToken || getCookie("_auth");
   if (token) config.headers["Authorization"] = `Bearer ${token}`;
   if (!(config.data instanceof FormData)) {
     config.headers["Content-Type"] = "application/json";
@@ -92,9 +103,7 @@ Axios.interceptors.response.use(
       const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
       const newToken = data.accessToken;
 
-      // Update _auth cookie — 15 min to match backend ACCESS_TOKEN_EXPIRY
-      setCookie("_auth", newToken, 900);
-
+      cachedAccessToken = newToken;
       processQueue(null, newToken);
       original.headers["Authorization"] = `Bearer ${newToken}`;
       return Axios(original);
