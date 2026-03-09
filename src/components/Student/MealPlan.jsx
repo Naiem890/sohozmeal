@@ -8,9 +8,8 @@ import { Axios } from "../../api/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Minus, Plus } from "lucide-react";
 
 const MEALS = ["breakfast", "lunch", "dinner"];
 
@@ -371,39 +370,97 @@ export default function MealPlan() {
       </div>
 
       {/* ── Guest Meal Dialog ── */}
-      <Dialog
-        open={showGuestModal}
-        onOpenChange={(open) => { if (!open) handleModalClose(); }}
-      >
+      <Dialog open={showGuestModal} onOpenChange={(open) => { if (!open) handleModalClose(); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              Guest Meal — {validDate()}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-1">
-            {MEALS.map((meal) => (
-              <div key={meal} className="space-y-1.5">
-                <Label className="capitalize">{meal}</Label>
-                <Input
-                  name={meal}
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Number of guests"
-                  value={guestMeal[meal]}
-                  onChange={handleGuestCountChange}
-                  onKeyDown={(e) => {
-                    if (["-", ".", "e", "E"].includes(e.key)) e.preventDefault();
-                  }}
-                />
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
+                <Users className="h-4 w-4 text-primary" />
               </div>
-            ))}
-            <Button className="w-full" onClick={handleSubmitGuestMeal}>
-              Submit
-            </Button>
+              Guest Meal
+            </DialogTitle>
+            <DialogDescription>
+              Add extra guests for <span className="font-semibold text-foreground">{validDate()}</span>.
+              Guests are charged the same per-head rate.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-1">
+            {MEALS.map((mealType) => {
+              const { label, color } = MEAL_META[mealType];
+              const count = guestMeal[mealType] || 0;
+
+              const cardBg    = { amber: "bg-amber-50   border-amber-200",   emerald: "bg-emerald-50 border-emerald-200", indigo: "bg-indigo-50  border-indigo-200"  }[color];
+              const labelCls  = { amber: "text-amber-700",  emerald: "text-emerald-700", indigo: "text-indigo-700"  }[color];
+              const dotCls    = { amber: "bg-amber-400",    emerald: "bg-emerald-400",   indigo: "bg-indigo-400"    }[color];
+              const btnCls    = { amber: "hover:bg-amber-100 text-amber-700 border-amber-300",   emerald: "hover:bg-emerald-100 text-emerald-700 border-emerald-300", indigo: "hover:bg-indigo-100 text-indigo-700 border-indigo-300"  }[color];
+              const countCls  = { amber: "text-amber-800",  emerald: "text-emerald-800", indigo: "text-indigo-800"  }[color];
+
+              const decrement = () => setGuestMeal((p) => ({ ...p, [mealType]: Math.max(0, (p[mealType] || 0) - 1) }));
+              const increment = () => setGuestMeal((p) => ({ ...p, [mealType]: (p[mealType] || 0) + 1 }));
+
+              return (
+                <div key={mealType} className={`flex items-center justify-between rounded-xl border p-3.5 ${cardBg}`}>
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotCls}`} />
+                    <span className={`text-sm font-semibold ${labelCls}`}>{label}</span>
+                    {count > 0 && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full bg-white/70 font-medium ${countCls}`}>
+                        {count} {count === 1 ? "guest" : "guests"}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={decrement}
+                      disabled={count === 0}
+                      className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-colors bg-white/80 disabled:opacity-30 disabled:cursor-not-allowed ${btnCls}`}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <input
+                      type="number"
+                      min="0"
+                      value={count}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setGuestMeal((p) => ({ ...p, [mealType]: v === "" ? 0 : Math.max(0, Math.floor(Number(v))) }));
+                      }}
+                      onKeyDown={(e) => { if (["-", ".", "e", "E"].includes(e.key)) e.preventDefault(); }}
+                      className={`w-10 text-center text-sm font-bold rounded-lg border bg-white/80 py-1 focus:outline-none focus:ring-1 focus:ring-ring ${countCls} border-current/20`}
+                    />
+                    <button
+                      type="button"
+                      onClick={increment}
+                      className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-colors bg-white/80 ${btnCls}`}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Total summary */}
+            {(guestMeal.breakfast + guestMeal.lunch + guestMeal.dinner) > 0 && (
+              <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
+                <span className="text-sm text-muted-foreground">Total guests</span>
+                <span className="text-base font-bold text-foreground">
+                  {guestMeal.breakfast + guestMeal.lunch + guestMeal.dinner}
+                </span>
+              </div>
+            )}
           </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={handleModalClose} className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitGuestMeal} className="flex-1">
+              Confirm
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
