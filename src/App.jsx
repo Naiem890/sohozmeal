@@ -1,48 +1,89 @@
-import { Route, Routes } from "react-router-dom";
-import AdminDashboard from "./components/Admin/AdminDashboard";
-import Expenses from "./components/Admin/Expenses";
-import { Stock } from "./components/Admin/Stock/Stock";
-import { StudentList } from "./components/Admin/StudentList";
-import AdminLogin from "./components/Auth/AdminLogin";
-import ChangePassword from "./components/Auth/ChangePassword";
-import Login from "./components/Auth/Login";
-import RequiredAdminAuth from "./components/Auth/RequiredAdminAuth";
-import RequiredStudentAuth from "./components/Auth/RequiredStudentAuth";
-import Navbar from "./components/Common/Navbar";
-import BillPayment from "./components/Student/BillPayment";
-import Dashboard from "./components/Student/Dashboard";
-import MealPlan from "./components/Student/MealPlan";
-import MealRoutine from "./components/Student/MealRoutine";
-import Profile from "./components/Student/Profile";
-import MealRoutineAdmin from "./components/Student/MealRoutineAdmin";
-import BillCount from "./components/Student/BillCount";
-import TotalBill from "./components/Admin/TotalBill";
-import TransactionHistory from "./components/Admin/Transaction History/TransactionHistory";
-import { Meal } from "./components/Admin/MealSheet/Meal";
-import StaffLogin from "./components/Staff/StaffLogin";
-import RequiredStaffAuth from "./components/Auth/RequireStaffAuth";
-import StaffDashboard from "./components/Staff/StaffDashboard";
-import { Bills } from "./components/Admin/Bills/Bills";
-import Complaints from "./components/Admin/Complaints/Complaints";
-import StudentComplaints from "./components/Student/Complaints/Complaints";
-import BloodBank from "./components/Admin/BloodBank/BloodBank";
-import AddComplaint from "./components/Student/Complaints/AddComplaint";
-import ComplaintDetails from "./components/Student/Complaints/ComplaintDetails";
-import NoticeBoard from "./components/Admin/NoticeBoard";
-import Tution from "./components/Student/Tution";
-import BloodDonate from "./components/Student/BloodDonate";
-import Notice from "./components/Student/Notice";
-import Settings from "./components/Admin/Settings";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { useAuthUser } from "react-auth-kit";
 
-function App() {
+// Auth guards
+import PublicRoute          from "./components/Auth/PublicRoute";
+import RequiredAdminAuth    from "./components/Auth/RequiredAdminAuth";
+import RequiredStudentAuth  from "./components/Auth/RequiredStudentAuth";
+import RequiredStaffAuth    from "./components/Auth/RequireStaffAuth";
+
+// Auth pages
+import Login          from "./components/Auth/Login";
+import AdminLogin     from "./components/Auth/AdminLogin";
+import StaffLogin     from "./components/Staff/StaffLogin";
+import ChangePassword from "./components/Auth/ChangePassword";
+
+// Admin
+import AdminDashboard      from "./components/Admin/AdminDashboard";
+import { StudentList }     from "./components/Admin/StudentList";
+import { Meal }            from "./components/Admin/MealSheet/Meal";
+import { Stock }           from "./components/Admin/Stock/Stock";
+import Expenses            from "./components/Admin/Expenses";
+import { Bills }           from "./components/Admin/Bills/Bills";
+import Complaints          from "./components/Admin/Complaints/Complaints";
+import BloodBank           from "./components/Admin/BloodBank/BloodBank";
+import TotalBill           from "./components/Admin/TotalBill";
+import NoticeBoard         from "./components/Admin/NoticeBoard";
+import MealRoutineAdmin    from "./components/Student/MealRoutineAdmin";
+import TransactionHistory  from "./components/Admin/Transaction History/TransactionHistory";
+import Settings            from "./components/Admin/Settings";
+
+// Student
+import Dashboard           from "./components/Student/Dashboard";
+import MealPlan            from "./components/Student/MealPlan";
+import Profile             from "./components/Student/Profile";
+import Notice              from "./components/Student/Notice";
+import Tution              from "./components/Student/Tution";
+import BloodDonate         from "./components/Student/BloodDonate";
+import BillPayment         from "./components/Student/BillPayment";
+import BillCount           from "./components/Student/BillCount";
+import MealRoutine         from "./components/Student/MealRoutine";
+import StudentComplaints   from "./components/Student/Complaints/Complaints";
+import AddComplaint        from "./components/Student/Complaints/AddComplaint";
+import ComplaintDetails    from "./components/Student/Complaints/ComplaintDetails";
+
+// Staff
+import StaffDashboard from "./components/Staff/StaffDashboard";
+
+// Navbar (currently renders null — kept for compatibility)
+import Navbar from "./components/Common/Navbar";
+
+const STAFF_ROLES = new Set(["MESS", "WIFI", "CLEANING", "REPAIR"]);
+
+/** Redirects to the right dashboard when visiting "/" */
+function RootRedirect() {
+  const user = useAuthUser()();
+  if (!user)                      return <Navigate to="/login" replace />;
+  if (user.role === "student")    return <Navigate to="/dashboard/" replace />;
+  if (user.role === "admin")      return <Navigate to="/admin/dashboard/" replace />;
+  if (STAFF_ROLES.has(user.role)) return <Navigate to="/staff/dashboard" replace />;
+  return <Navigate to="/login" replace />;
+}
+
+/** Catch-all: send authenticated users to their dashboard, others to /login */
+function CatchAll() {
+  const user = useAuthUser()();
+  if (!user)                      return <Navigate to="/login" replace />;
+  if (user.role === "student")    return <Navigate to="/dashboard/" replace />;
+  if (user.role === "admin")      return <Navigate to="/admin/dashboard/" replace />;
+  if (STAFF_ROLES.has(user.role)) return <Navigate to="/staff/dashboard" replace />;
+  return <Navigate to="/login" replace />;
+}
+
+export default function App() {
   return (
     <>
       <Navbar />
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin" element={<AdminLogin />} />
-        <Route path="/staff" element={<StaffLogin />} />
+        {/* ── Root ── */}
+        <Route path="/" element={<RootRedirect />} />
+
+        {/* ── Public / login pages ── */}
+        <Route path="/login"  element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/admin"  element={<PublicRoute><AdminLogin /></PublicRoute>} />
+        <Route path="/staff"  element={<PublicRoute><StaffLogin /></PublicRoute>} />
+
+        {/* ── First-time password change (top-level, outside dashboard layout) ── */}
         <Route
           path="/change-password"
           element={
@@ -52,52 +93,53 @@ function App() {
           }
         />
 
+        {/* ── Admin dashboard ── */}
         <Route
-          path="/admin/dashboard/"
+          path="/admin/dashboard"
           element={
             <RequiredAdminAuth>
               <AdminDashboard />
             </RequiredAdminAuth>
           }
         >
-          <Route index element={<StudentList />} />
-          <Route path="meal" element={<Meal />} />
-          <Route path="stock" element={<Stock />} />
-          <Route path="expenses" element={<Expenses />} />
-          <Route path="bills" element={<Bills />} />
-          <Route path="complaints" element={<Complaints />} />
-          <Route path="blood-bank" element={<BloodBank />} />
-          <Route path="totalBill" element={<TotalBill />} />
-          <Route path="notice-board" element={<NoticeBoard />} />
-          <Route path="meal-routine" element={<MealRoutineAdmin />} />
+          <Route index                   element={<StudentList />} />
+          <Route path="meal"             element={<Meal />} />
+          <Route path="meal-routine"     element={<MealRoutineAdmin />} />
+          <Route path="stock"            element={<Stock />} />
           <Route path="transaction-history" element={<TransactionHistory />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="expenses"         element={<Expenses />} />
+          <Route path="bills"            element={<Bills />} />
+          <Route path="totalBill"        element={<TotalBill />} />
+          <Route path="notice-board"     element={<NoticeBoard />} />
+          <Route path="complaints"       element={<Complaints />} />
+          <Route path="blood-bank"       element={<BloodBank />} />
+          <Route path="settings"         element={<Settings />} />
         </Route>
+
+        {/* ── Student dashboard ── */}
         <Route
-          path="/dashboard/"
+          path="/dashboard"
           element={
             <RequiredStudentAuth>
               <Dashboard />
             </RequiredStudentAuth>
           }
         >
-          <Route index element={<MealPlan />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="notice" element={<Notice />} />
-          <Route path="tution" element={<Tution />} />
-          <Route path="blood-donate" element={<BloodDonate />} />
-          <Route path="change-password" element={<ChangePassword />} />
-          <Route path="bill-payment" element={<BillPayment />} />
-          <Route path="cost-count" element={<BillCount />} />
-          <Route path="meal-routine" element={<MealRoutine />} />
-          <Route path="complaints" element={<StudentComplaints />} />
-          <Route path="add-complaint" element={<AddComplaint />} />
-          <Route
-            path="complaints/complaint-details/*"
-            element={<ComplaintDetails />}
-          />
+          <Route index                                  element={<MealPlan />} />
+          <Route path="profile"                         element={<Profile />} />
+          <Route path="notice"                          element={<Notice />} />
+          <Route path="tution"                          element={<Tution />} />
+          <Route path="blood-donate"                    element={<BloodDonate />} />
+          <Route path="change-password"                 element={<ChangePassword />} />
+          <Route path="bill-payment"                    element={<BillPayment />} />
+          <Route path="cost-count"                      element={<BillCount />} />
+          <Route path="meal-routine"                    element={<MealRoutine />} />
+          <Route path="complaints"                      element={<StudentComplaints />} />
+          <Route path="add-complaint"                   element={<AddComplaint />} />
+          <Route path="complaints/complaint-details/*"  element={<ComplaintDetails />} />
         </Route>
 
+        {/* ── Staff dashboard ── */}
         <Route
           path="/staff/dashboard"
           element={
@@ -108,9 +150,10 @@ function App() {
         >
           <Route index element={<Complaints />} />
         </Route>
+
+        {/* ── Catch-all ── */}
+        <Route path="*" element={<CatchAll />} />
       </Routes>
     </>
   );
 }
-
-export default App;

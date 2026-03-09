@@ -10,17 +10,19 @@ import {
   User,
   Bell,
   Table2,
+  Heart,
 } from "lucide-react";
 import Logo from "../Common/Logo";
 import MISTImage from "../../assets/MIST.png";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { label: "Meal Plan",    path: "/dashboard/",            icon: UtensilsCrossed },
-  { label: "Meal Routine", path: "/dashboard/meal-routine", icon: Table2 },
-  { label: "Bill Count",   path: "/dashboard/cost-count",   icon: Calculator },
-  { label: "Profile",      path: "/dashboard/profile",       icon: User },
-  { label: "Notice",       path: "/dashboard/notice",        icon: Bell },
+  { label: "Meal Plan",    path: "/dashboard/",              icon: UtensilsCrossed },
+  { label: "Meal Routine", path: "/dashboard/meal-routine",  icon: Table2 },
+  { label: "Bill Count",   path: "/dashboard/cost-count",    icon: Calculator },
+  { label: "Blood Bank",   path: "/dashboard/blood-donate",  icon: Heart },
+  { label: "Profile",      path: "/dashboard/profile",        icon: User },
+  { label: "Notice",       path: "/dashboard/notice",         icon: Bell },
 ];
 
 export default function Aside({ isOpen, onClose }) {
@@ -39,7 +41,7 @@ export default function Aside({ isOpen, onClose }) {
     if (ok) {
       try {
         await Axios.post("/auth/logout", {});
-        localStorage.clear();
+        localStorage.removeItem("_refresh_token");
         signOut();
         navigate("/");
         toast.success("Logged out successfully!");

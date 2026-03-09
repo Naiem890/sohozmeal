@@ -7,12 +7,9 @@ import { AuthProvider } from "react-auth-kit";
 import { Toaster } from "sonner";
 import { ConfirmProvider } from "./components/Common/ConfirmDialog.jsx";
 
-// Remove legacy token validity cache used by old auth guards
-localStorage.removeItem("token_validity");
-
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <AuthProvider authType={"localstorage"} authName={"_auth"}>
+    <AuthProvider authType={"cookie"} authName={"_auth"}>
       <BrowserRouter>
         <ConfirmProvider>
           <App />
