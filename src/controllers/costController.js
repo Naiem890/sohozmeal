@@ -387,6 +387,8 @@ router.post("/monthly", validateToken, async (req, res) => {
 router.get("/monthly/all", validateToken, async (req, res) => {
   try {
     const { month, year, wing, search } = req.query;
+    const pageNum  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
 
     // Validate month and year
     if (!month || !year || isNaN(month) || isNaN(year)) {
@@ -409,7 +411,10 @@ router.get("/monthly/all", validateToken, async (req, res) => {
       ];
     }
 
-    // Fetch students matching filter and include the required fields
+    // Count total matching students for pagination metadata
+    const totalStudents = await Student.countDocuments(studentFilter);
+
+    // Fetch only the current page of students
     const students = await Student.find(
       studentFilter,
       {
@@ -423,7 +428,11 @@ router.get("/monthly/all", validateToken, async (req, res) => {
         residence: 1,
         _id: 0,
       }
-    ).exec();
+    )
+      .sort({ hallId: 1 })
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .exec();
 
     // Extract only the studentId field into an array and map details into a new object
     const studentIds = students.map(student => student.studentId);
@@ -587,6 +596,12 @@ router.get("/monthly/all", validateToken, async (req, res) => {
       message: `Meal status, hall feast information, monthly costs, and student details for the ${wing} wing for the month of ${month}-${year}`,
       studentMonthlyCosts,
       studentDetailsById,
+      pagination: {
+        page:       pageNum,
+        limit:      limitNum,
+        total:      totalStudents,
+        totalPages: Math.ceil(totalStudents / limitNum),
+      },
     });
   } catch (error) {
     console.error("Error fetching meal status, hall feasts, monthly costs, and student details:", error);
