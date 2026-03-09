@@ -165,7 +165,7 @@ router.put(
       name,
       hallId,
       newStudentId,
-      studentId,
+      studentId: bodyStudentId,
       phoneNumber,
       gender,
       department,
@@ -181,6 +181,8 @@ router.put(
       isDonor,
       lastDonationDate,
     } = req.body;
+
+    const studentId = bodyStudentId || req.user.studentId;
 
     try {
       const student = await Student.findOne({ studentId }, { password: 0 });
@@ -411,13 +413,61 @@ router.post(
 );
 
 // Blood Group Information of specific wing
+// Query params: search, bloodGroup, availability (AVAILABLE|UNAVAILABLE), dateFrom, dateTo
 router.get("/blood-bank/:gender", validateToken, async (req, res) => {
   try {
     const { gender } = req.params;
+    const { search, bloodGroup, availability, dateFrom, dateTo } = req.query;
 
     const matchFilter = { isDonor: true };
+    const andConditions = [];
+
     if (gender.toUpperCase() !== "ALL") {
       matchFilter.gender = gender.toUpperCase();
+    }
+
+    if (bloodGroup && bloodGroup !== "ALL") {
+      matchFilter.bloodGroup = bloodGroup;
+    }
+
+    if (search && search.trim()) {
+      andConditions.push({
+        $or: [
+          { name: { $regex: search.trim(), $options: "i" } },
+          { phoneNumber: { $regex: search.trim(), $options: "i" } },
+          { studentId: { $regex: search.trim(), $options: "i" } },
+        ],
+      });
+    }
+
+    const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+    if (availability === "AVAILABLE") {
+      const cutoff = new Date(Date.now() - NINETY_DAYS_MS);
+      andConditions.push({
+        $or: [
+          { lastDonationDate: null },
+          { lastDonationDate: { $exists: false } },
+          { lastDonationDate: { $lte: cutoff } },
+        ],
+      });
+    } else if (availability === "UNAVAILABLE") {
+      const cutoff = new Date(Date.now() - NINETY_DAYS_MS);
+      andConditions.push({ lastDonationDate: { $gt: cutoff } });
+    }
+
+    if (dateFrom || dateTo) {
+      const dateCondition = {};
+      if (dateFrom) dateCondition.$gte = new Date(dateFrom);
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        dateCondition.$lte = toDate;
+      }
+      andConditions.push({ lastDonationDate: dateCondition });
+    }
+
+    if (andConditions.length > 0) {
+      matchFilter.$and = andConditions;
     }
 
     const donorData = await Student.aggregate([
@@ -428,12 +478,15 @@ router.get("/blood-bank/:gender", validateToken, async (req, res) => {
           count: { $sum: 1 },
           donorInfo: {
             $push: {
+              studentId: "$studentId",
               name: "$name",
               phoneNumber: "$phoneNumber",
               lastDonationDate: "$lastDonationDate",
               residence: "$residence",
               roomNo: "$roomNo",
               gender: "$gender",
+              batch: "$batch",
+              department: "$department",
             },
           },
         },
