@@ -37,7 +37,7 @@ const navLinks = [
   { link: "Settings", path: "/admin/dashboard/settings", icon: Settings },
 ];
 
-export default function AdminAside({ toggleDrawer, isCollapsed, toggleCollapse }) {
+export default function AdminAside({ isOpen, toggleDrawer, isCollapsed, toggleCollapse }) {
   const auth = useAuthUser()();
   const signOut = useSignOut();
   const navigate = useNavigate();
@@ -54,7 +54,7 @@ export default function AdminAside({ toggleDrawer, isCollapsed, toggleCollapse }
     if (ok) {
       try {
         await Axios.post("/auth/logout", {});
-        localStorage.clear();
+        localStorage.removeItem("_refresh_token");
         signOut();
         navigate("/");
         toast.success("Logged out successfully!");
@@ -69,7 +69,10 @@ export default function AdminAside({ toggleDrawer, isCollapsed, toggleCollapse }
       <aside
         className={cn(
           "fixed z-[200] top-0 left-0 h-screen flex flex-col bg-white border-r border-border transition-all duration-300 overflow-hidden",
-          isCollapsed ? "w-[60px]" : "w-56"
+          isCollapsed ? "w-[60px]" : "w-56",
+          // Mobile: slide in/out; desktop: always visible
+          "lg:translate-x-0",
+          isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Header */}

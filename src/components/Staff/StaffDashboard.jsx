@@ -1,39 +1,43 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import StaffAside from "./StaffAside";
 import { Menu } from "lucide-react";
+import StaffAside from "./StaffAside";
 
-const StaffDashboard = () => {
+export default function StaffDashboard() {
   const [isOpen, setIsOpen] = useState(false);
-  const closeDrawer = () => setIsOpen(false);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <StaffAside isOpen={isOpen} onClose={closeDrawer} />
+    <div className="h-screen overflow-hidden bg-background flex">
+      {/* Sidebar */}
+      <StaffAside isOpen={isOpen} onClose={() => setIsOpen(false)} />
 
+      {/* Mobile overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 z-[150] bg-black/40 lg:hidden"
-          onClick={closeDrawer}
+          onClick={() => setIsOpen(false)}
         />
       )}
 
-      <div className="flex-1 min-w-0 lg:pl-72">
-        <div className="sticky top-0 z-[100] lg:hidden flex items-center gap-3 bg-white shadow-sm px-4 py-3 mb-4">
+      {/* Main column */}
+      <div className="flex-1 min-w-0 flex flex-col h-screen lg:pl-72">
+        {/* Mobile topbar */}
+        <header className="lg:hidden shrink-0 flex items-center gap-3 bg-card border-b border-border px-4 h-14">
           <button
-            onClick={() => setIsOpen((p) => !p)}
-            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+            onClick={() => setIsOpen((v) => !v)}
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
+            aria-label="Toggle menu"
           >
-            <Menu className="h-5 w-5 text-gray-600" />
+            <Menu className="h-5 w-5 text-foreground" />
           </button>
-          <span className="font-semibold text-gray-700">Staff Portal</span>
-        </div>
-        <div className="px-4 pb-8">
+          <span className="font-semibold text-foreground">Staff Portal</span>
+        </header>
+
+        {/* Scrollable content */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           <Outlet />
-        </div>
+        </main>
       </div>
     </div>
   );
-};
-
-export default StaffDashboard;
+}

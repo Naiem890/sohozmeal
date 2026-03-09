@@ -25,7 +25,7 @@ export default function StaffAside({ isOpen, onClose }) {
     if (ok) {
       try {
         await Axios.post("/auth/logout", {});
-        localStorage.clear();
+        localStorage.removeItem("_refresh_token");
         signOut();
         navigate("/");
         toast.success("Logged out successfully!");
@@ -42,7 +42,7 @@ export default function StaffAside({ isOpen, onClose }) {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-[200] flex flex-col w-72 bg-white shadow-lg transition-transform duration-300",
+        "fixed inset-y-0 left-0 z-[200] flex flex-col w-72 bg-card border-r border-border transition-transform duration-300",
         "lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}
