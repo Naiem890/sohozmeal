@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Axios } from "../../api/api";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { MonthYearPicker } from "@/components/ui/date-picker";
 import {
   Table,
   TableBody,
@@ -16,11 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
 
 const fmt = (n) => Number(n).toFixed(2);
 
@@ -45,17 +34,13 @@ function MealCol({ on, cost, gCost, g }) {
 
 export default function BillCount() {
   const now = new Date();
-  const [year,  setYear]  = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [selectedMonth, setSelectedMonth] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const [mealBillData, setMealBillData] = useState([]);
   const [hallFeasts,   setHallFeasts]   = useState([]);
   const [wing] = useState("MALE");
 
-  const years = useMemo(() => {
-    const y = [];
-    for (let i = now.getFullYear(); i >= now.getFullYear() - 3; i--) y.push(i);
-    return y;
-  }, []);
+  const year  = selectedMonth.getFullYear();
+  const month = selectedMonth.getMonth() + 1;
 
   useEffect(() => {
     const fetchBill = async () => {
@@ -130,34 +115,12 @@ export default function BillCount() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Mess Bill</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {MONTHS[month - 1]} {year}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-            <SelectTrigger className="w-36 h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MONTHS.map((m, i) => (
-                <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-            <SelectTrigger className="w-24 h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <h1 className="text-2xl font-bold tracking-tight">Mess Bill</h1>
+        <MonthYearPicker
+          value={selectedMonth}
+          onChange={setSelectedMonth}
+          className="w-44"
+        />
       </div>
 
       {/* Grand Total summary card */}
@@ -168,6 +131,9 @@ export default function BillCount() {
           </p>
           <p className="text-2xl font-bold tabular-nums mt-0.5">
             {fmt(grandTotal)} ৳
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {selectedMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
           </p>
         </div>
         <div className="flex gap-4 text-center">
