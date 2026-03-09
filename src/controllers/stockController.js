@@ -314,11 +314,12 @@ router.post("/out/:stockId", validateToken, async (req, res) => {
 
 // Get all Stock Transactions (added wing filter)
 router.get("/transactions/all", validateToken, async (req, res) => {
-  const { wing } = req.query; // Get wing from query parameters
+  const { wing, item } = req.query;
   try {
-    // Filter by wing if provided
-    const query = wing ? { wing } : {};
-    const stockTransactions = await StockTransaction.find(query).sort({ date: -1 }).populate("item");
+    const query = {};
+    if (wing) query.wing = wing;
+    if (item) query.item = item;
+    const stockTransactions = await StockTransaction.find(query).sort({ date: 1 }).populate("item");
     res.json(stockTransactions);
   } catch (error) {
     res.status(500).json({ error: "Error retrieving stock transactions" });
