@@ -1,8 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
 import { ItemSearchInput } from "./ItemSearchInput";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const inputClass =
   "flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:cursor-not-allowed";
@@ -74,31 +83,30 @@ export const NonStock = ({
       <div className="flex flex-wrap gap-2">
         <div>
           <Label className="text-xs text-muted-foreground mb-1.5 block">Date</Label>
-          <input
+          <DatePicker
             ref={dateRef}
-            required
-            className={inputClass}
-            type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(d) => setDate(format(d, "yyyy-MM-dd"))}
             onKeyDown={(e) => handleKeyDown(e, mealRef, null)}
+            className="w-36"
           />
         </div>
-        <div className="w-32">
+        <div className="w-36">
           <Label className="text-xs text-muted-foreground mb-1.5 block">Meal</Label>
-          <select
-            ref={mealRef}
-            required
-            className={`${inputClass} w-full`}
-            value={meal}
-            onChange={(e) => setMeal(e.target.value)}
-            onKeyDown={(e) => handleKeyDown(e, itemRef, dateRef)}
-          >
-            <option value="" disabled>Meal</option>
-            {["BREAKFAST", "LUNCH", "DINNER"].map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+          <Select required value={meal} onValueChange={(v) => { setMeal(v); setTimeout(() => itemRef.current?.focus(), 0); }}>
+            <SelectTrigger
+              ref={mealRef}
+              className="h-9 w-full"
+              onKeyDown={(e) => handleKeyDown(e, itemRef, dateRef)}
+            >
+              <SelectValue placeholder="Meal" />
+            </SelectTrigger>
+            <SelectContent>
+              {["BREAKFAST", "LUNCH", "DINNER"].map((m) => (
+                <SelectItem key={m} value={m}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="w-48">
           <Label className="text-xs text-muted-foreground mb-1.5 block">Item</Label>

@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
+import { format } from "date-fns";
 import { useConfirm } from "../../Common/ConfirmDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
 import { ItemSearchInput } from "./ItemSearchInput";
 
 const inputClass =
@@ -83,14 +85,12 @@ export const StockIn = ({
       <div className="flex gap-2 flex-wrap">
         <div>
           <Label className="text-xs text-muted-foreground mb-1.5 block">Date</Label>
-          <input
+          <DatePicker
             ref={dateRef}
-            required
-            className={inputClass}
-            type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(d) => setDate(format(d, "yyyy-MM-dd"))}
             onKeyDown={(e) => handleKeyDown(e, itemRef, null)}
+            className="w-36"
           />
         </div>
         <div className="w-48">
