@@ -168,8 +168,11 @@ export const Meal = () => {
         "Room No": s.roomNo,
         Residence: s.residence,
         Breakfast: feasts.breakfast || s?.meal?.breakfast ? "✓" : "",
+        "Guest Breakfast": s?.guestMeal?.breakfast || 0,
         Lunch: feasts.lunch || s?.meal?.lunch ? "✓" : "",
+        "Guest Lunch": s?.guestMeal?.lunch || 0,
         Dinner: feasts.dinner || s?.meal?.dinner ? "✓" : "",
+        "Guest Dinner": s?.guestMeal?.dinner || 0,
       }));
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
