@@ -11,106 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-// ─── Month Picker ─────────────────────────────────────────────────────────────
-
-const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-
-function MonthPicker({ value, onChange }) {
-  const [open, setOpen]         = useState(false);
-  const today                   = new Date();
-  const maxYear                 = today.getFullYear();
-  const maxMonth                = today.getMonth(); // 0-indexed
-  const [viewYear, setViewYear] = useState(value?.getFullYear() ?? maxYear);
-
-  const selYear  = value?.getFullYear();
-  const selMonth = value?.getMonth();
-
-  const isDisabled = (mi) =>
-    viewYear > maxYear || (viewYear === maxYear && mi > maxMonth);
-
-  const isSelected = (mi) => viewYear === selYear && mi === selMonth;
-
-  const handleSelect = (mi) => {
-    if (isDisabled(mi)) return;
-    onChange(new Date(viewYear, mi, 1));
-    setOpen(false);
-  };
-
-  const label = value
-    ? value.toLocaleDateString("en-US", { month: "long", year: "numeric" })
-    : "Select month";
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2 w-[170px] justify-start font-normal"
-        >
-          <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="truncate">{label}</span>
-        </Button>
-      </PopoverTrigger>
-
-      <PopoverContent className="w-[216px] p-3" align="end">
-        {/* Year navigation */}
-        <div className="flex items-center justify-between mb-3 px-1">
-          <button
-            type="button"
-            onClick={() => setViewYear((y) => y - 1)}
-            className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <span className="text-sm font-semibold tabular-nums">{viewYear}</span>
-          <button
-            type="button"
-            onClick={() => setViewYear((y) => y + 1)}
-            disabled={viewYear >= maxYear}
-            className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Month grid */}
-        <div className="grid grid-cols-3 gap-1">
-          {MONTH_LABELS.map((m, i) => {
-            const disabled = isDisabled(i);
-            const selected = isSelected(i);
-            return (
-              <button
-                key={m}
-                type="button"
-                disabled={disabled}
-                onClick={() => handleSelect(i)}
-                className={cn(
-                  "rounded-md py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  selected
-                    ? "bg-primary text-primary-foreground"
-                    : disabled
-                    ? "text-muted-foreground/35 cursor-not-allowed"
-                    : "hover:bg-muted text-foreground cursor-pointer"
-                )}
-              >
-                {m}
-              </button>
-            );
-          })}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
+import { MonthYearPicker } from "@/components/ui/date-picker";
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
@@ -227,7 +128,7 @@ export default function Expenses() {
             </Select>
           )}
 
-          <MonthPicker value={pickerValue} onChange={handleMonthChange} />
+          <MonthYearPicker value={pickerValue} onChange={handleMonthChange} />
         </div>
       </div>
 
