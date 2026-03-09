@@ -249,7 +249,7 @@ export const Meal = () => {
   const isSearchPending = search !== debouncedSearch;
 
   return (
-    <div className="flex flex-col h-screen gap-3">
+    <div className="flex flex-col h-full gap-3">
       <MealControls
         fromDate={fromDate}
         setFromDate={setFromDate}
