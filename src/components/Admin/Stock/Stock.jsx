@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Axios } from "../../../api/api";
 import { StockItemsList } from "./StockItemsList";
 import { StockSummaryTable } from "./StockSummaryTable";
+import { StockItemHistory } from "./StockItemHistory";
 import { StockIn } from "./StockIn";
 import { StockOut } from "./StockOut";
 import { NonStock } from "./NonStock";
@@ -113,6 +114,7 @@ export const Stock = () => {
   const [editTransaction, setEditTransaction] = useState(null);
   const [summarySearch, setSummarySearch] = useState("");
   const [showGuide, setShowGuide] = useState(true);
+  const [historyItem, setHistoryItem] = useState(null);
 
   const submitRef     = useRef(null);
   const childRef      = useRef(null);
@@ -398,6 +400,7 @@ export const Stock = () => {
               stocks={stocks}
               summarySearch={summarySearch}
               setSummarySearch={setSummarySearch}
+              onItemClick={(item) => setHistoryItem(item)}
             />
           </div>
         </div>
@@ -410,8 +413,16 @@ export const Stock = () => {
           stockItems={stockItems}
           refetchHandler={() => setRefetch((p) => !p)}
           wing={wing}
+          onItemClick={(item) => setHistoryItem(item)}
         />
       )}
+
+      <StockItemHistory
+        item={historyItem}
+        wing={wing}
+        open={!!historyItem}
+        onOpenChange={(open) => { if (!open) setHistoryItem(null); }}
+      />
     </div>
   );
 };

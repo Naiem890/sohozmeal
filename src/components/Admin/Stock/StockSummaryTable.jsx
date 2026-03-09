@@ -2,14 +2,19 @@ import React from "react";
 import { Search } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-export const StockSummaryTable = ({ stocks, summarySearch, setSummarySearch }) => {
+export const StockSummaryTable = ({ stocks, summarySearch, setSummarySearch, onItemClick }) => {
   const filtered = summarySearch
     ? stocks.filter((s) => s.item?.name?.toLowerCase().includes(summarySearch.toLowerCase()))
     : stocks;
 
   return (
     <div className="flex flex-col h-full gap-2">
-      <h2 className="text-base font-semibold shrink-0">Stock Summary</h2>
+      <div className="flex items-center justify-between shrink-0">
+        <h2 className="text-base font-semibold">Stock Summary</h2>
+        {onItemClick && (
+          <span className="text-[10px] text-muted-foreground">Click row for history</span>
+        )}
+      </div>
       <div className="relative shrink-0">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
         <input
@@ -33,7 +38,11 @@ export const StockSummaryTable = ({ stocks, summarySearch, setSummarySearch }) =
           <TableBody>
             {filtered.length > 0 ? (
               filtered.map((stock) => (
-                <TableRow key={stock._id}>
+                <TableRow
+                  key={stock._id}
+                  onClick={() => onItemClick?.(stock.item)}
+                  className={onItemClick ? "cursor-pointer hover:bg-muted/60 transition-colors" : ""}
+                >
                   <TableCell className="text-sm font-medium">{stock?.item?.name}</TableCell>
                   <TableCell className="text-sm">{stock?.quantity?.toFixed(2)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{stock?.item?.unit}</TableCell>

@@ -17,6 +17,7 @@ export const StockItemsList = ({
   categories,
   refetchHandler,
   wing,
+  onItemClick,
 }) => {
   const confirm = useConfirm();
   const [name, setName] = useState("");
@@ -115,7 +116,11 @@ export const StockItemsList = ({
           </TableHeader>
           <TableBody>
             {filtered.map((item) => (
-              <TableRow key={item._id}>
+              <TableRow
+                key={item._id}
+                onClick={() => onItemClick?.(item)}
+                className={onItemClick ? "cursor-pointer hover:bg-muted/60 transition-colors" : ""}
+              >
                 <TableCell className="text-sm">{item.name}</TableCell>
                 <TableCell className="text-sm">{item.unit}</TableCell>
                 <TableCell>
@@ -123,7 +128,7 @@ export const StockItemsList = ({
                     {item.category}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-1 justify-end">
                     <Button
                       variant="ghost"
