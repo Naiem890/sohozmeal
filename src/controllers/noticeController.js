@@ -1,8 +1,15 @@
 const router = require("express").Router();
 const { validateToken } = require("../utils/validateToken");
+const { checkAdminRole } = require("../utils/checkAdminRole");
 const Notice = require("../models/notice");
 
-// Get all notices (paginated)
+// Helper: check if an admin can write a notice with this noticeFor value
+function canAdminWriteNotice(adminWing, noticeFor) {
+  if (adminWing === "ALL") return true;
+  return adminWing === noticeFor;
+}
+
+// Get all notices (paginated) — ALL-wing admin only
 router.get("/", validateToken, async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
@@ -51,69 +58,73 @@ router.get("/:noticeFor", validateToken, async (req, res) => {
   }
 });
 
-
 // Create a new notice
-router.post("/", validateToken, async (req, res) => {
+router.post("/", validateToken, checkAdminRole, async (req, res) => {
   const { title, description, noticeFor } = req.body;
+  const adminWing = req.user.wing;
+
+  if (!canAdminWriteNotice(adminWing, noticeFor)) {
+    return res.status(403).json({ message: "You can only post notices for your own wing" });
+  }
 
   try {
     const newNotice = new Notice({ title, description, noticeFor });
     await newNotice.save();
-    res
-      .status(201)
-      .json({ message: "Notice created successfully", notice: newNotice });
+    res.status(201).json({ message: "Notice created successfully", notice: newNotice });
   } catch (error) {
     console.error("Error creating notice:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while creating the notice" });
+    res.status(500).json({ message: "An error occurred while creating the notice" });
   }
 });
 
 // Update a notice by ID
-router.put("/:id", validateToken, async (req, res) => {
+router.put("/:id", validateToken, checkAdminRole, async (req, res) => {
   const { id } = req.params;
   const { title, description, noticeFor } = req.body;
+  const adminWing = req.user.wing;
 
   try {
+    const existing = await Notice.findById(id);
+    if (!existing) return res.status(404).json({ message: "Notice not found" });
+
+    if (!canAdminWriteNotice(adminWing, existing.noticeFor)) {
+      return res.status(403).json({ message: "You do not have permission to edit this notice" });
+    }
+    if (noticeFor && !canAdminWriteNotice(adminWing, noticeFor)) {
+      return res.status(403).json({ message: "You can only assign notices to your own wing" });
+    }
+
     const updatedNotice = await Notice.findByIdAndUpdate(
       id,
       { title, description, noticeFor },
       { new: true }
     );
 
-    if (!updatedNotice) {
-      return res.status(404).json({ message: "Notice not found" });
-    }
-
-    res
-      .status(200)
-      .json({ message: "Notice updated successfully", notice: updatedNotice });
+    res.status(200).json({ message: "Notice updated successfully", notice: updatedNotice });
   } catch (error) {
     console.error("Error updating notice:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while updating the notice" });
+    res.status(500).json({ message: "An error occurred while updating the notice" });
   }
 });
 
 // Delete a notice by ID
-router.delete("/:id", validateToken, async (req, res) => {
+router.delete("/:id", validateToken, checkAdminRole, async (req, res) => {
   const { id } = req.params;
+  const adminWing = req.user.wing;
 
   try {
-    const deletedNotice = await Notice.findByIdAndDelete(id);
+    const existing = await Notice.findById(id);
+    if (!existing) return res.status(404).json({ message: "Notice not found" });
 
-    if (!deletedNotice) {
-      return res.status(404).json({ message: "Notice not found" });
+    if (!canAdminWriteNotice(adminWing, existing.noticeFor)) {
+      return res.status(403).json({ message: "You do not have permission to delete this notice" });
     }
 
+    await Notice.findByIdAndDelete(id);
     res.status(200).json({ message: "Notice deleted successfully" });
   } catch (error) {
     console.error("Error deleting notice:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while deleting the notice" });
+    res.status(500).json({ message: "An error occurred while deleting the notice" });
   }
 });
 

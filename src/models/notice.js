@@ -8,7 +8,7 @@ const noticeSchema = new mongoose.Schema({
     required: true,
     enum: ["MALE", "FEMALE", "ALL"],
   },
-});
+}, { timestamps: true });
 
 const Notice = mongoose.model("Notice", noticeSchema);
 
