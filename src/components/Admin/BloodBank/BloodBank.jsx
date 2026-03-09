@@ -1,91 +1,166 @@
-import { useEffect, useState } from "react";
-import TableComponent from "../../Common/BloodBank/TableComponent";
-import { Axios } from "../../../api/api";
+import { useEffect, useState, useMemo } from "react";
 import { useAuthUser } from "react-auth-kit";
+import { Heart, Users, Droplets } from "lucide-react";
+import { Axios } from "../../../api/api";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import BloodDonorTable from "../../Common/BloodBank/BloodDonorTable";
+import { BG_COLORS, isDonorAvailable } from "../../Common/BloodBank/bloodBankUtils";
 
-const bloodGroupStats = [
-  { group: "A+" },
-  { group: "A-" },
-  { group: "B+" },
-  { group: "B-" },
-  { group: "O+" },
-  { group: "O-" },
-  { group: "AB+" },
-  { group: "AB-" },
-];
+const ALL_BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
-const gradients = [
-  "from-blue-500 to-blue-600",
-  "from-emerald-500 to-emerald-600",
-  "from-violet-500 to-violet-600",
-  "from-rose-500 to-rose-600",
-  "from-cyan-500 to-cyan-600",
-  "from-amber-500 to-amber-600",
-  "from-indigo-500 to-indigo-600",
-  "from-teal-500 to-teal-600",
-];
+function BloodStatCard({ group, total, available }) {
+  const colors = BG_COLORS[group] || "bg-gray-100 text-gray-700 border-gray-200";
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-4 flex items-center gap-4">
+        <div className={`w-14 h-14 rounded-xl flex items-center justify-center border-2 font-bold text-lg shrink-0 ${colors}`}>
+          {group}
+        </div>
+        <div className="min-w-0">
+          <p className="text-2xl font-bold leading-none">{total}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {available > 0 ? (
+              <span className="text-emerald-600 font-medium">{available} available</span>
+            ) : (
+              "No available donors"
+            )}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const WING_TABS = {
+  ALL: { label: "Both Wings", value: "ALL" },
+  MALE: { label: "Male Wing", value: "MALE" },
+  FEMALE: { label: "Female Wing", value: "FEMALE" },
+};
 
 const BloodBank = () => {
   const auth = useAuthUser()();
+  const adminWing = auth?.wing || "MALE";
 
-  const [bloodBankData, setBloodBankData] = useState([]);
+  // Determine available tabs
+  const tabs = useMemo(() => {
+    if (adminWing === "ALL") return ["MALE", "FEMALE", "ALL"];
+    return [adminWing];
+  }, [adminWing]);
+
+  const [selectedWing, setSelectedWing] = useState(adminWing === "ALL" ? "ALL" : adminWing);
+  const [bloodBankData, setBloodBankData] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getBloodBankData = async () => {
-      try {
-        const response = await Axios(`/student/blood-bank/${auth.wing}`);
-        const data = response.data;
-        console.log(response.data);
-        setBloodBankData(data);
-      } catch (error) {
-        console.error("Error fetching blood bank data:", error);
-      }
-    };
-    getBloodBankData();
-  }, [auth.wing]);
+    setLoading(true);
+    setBloodBankData({});
+    Axios.get(`/student/blood-bank/${selectedWing}`)
+      .then((res) => setBloodBankData(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [selectedWing]);
+
+  // Compute stats per blood group
+  const stats = useMemo(() => {
+    return ALL_BLOOD_GROUPS.map((group) => {
+      const entry = bloodBankData[group];
+      if (!entry) return { group, total: 0, available: 0 };
+      const available = (entry.donors || []).filter((d) =>
+        isDonorAvailable(d.lastDonationDate)
+      ).length;
+      return { group, total: entry.count, available };
+    });
+  }, [bloodBankData]);
+
+  const totalDonors = stats.reduce((s, g) => s + g.total, 0);
+  const totalAvailable = stats.reduce((s, g) => s + g.available, 0);
 
   return (
-    <div className="container pt-2 mx-auto font-sans">
-      <h2 className="text-2xl font-semibold">Blood Bank</h2>
-      <div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 py-5">
-          {bloodGroupStats.map((stat, index) => (
-            <div
-              key={index}
-              className={`card shadow-md hover:shadow-lg transform transition duration-300 bg-gradient-to-r ${
-                gradients[index % gradients.length]
-              } text-white p-4 rounded-lg`}
-            >
-              <div className="flex flex-col items-center justify-center">
-                {/* Blood Group */}
-                <h3 className="text-3xl font-bold mb-2">{stat.group}</h3>
-
-                {/* Count with Hero Icon */}
-                <p className="flex items-center text-lg">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                    className="w-6 h-6 mr-2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 3.5v17m6-8.5H6"
-                    />
-                  </svg>
-                  {bloodBankData[stat.group]?.count || 0} Available
-                </p>
-              </div>
-            </div>
-          ))}
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Heart className="h-5 w-5 text-red-500 fill-red-500" />
+            <h1 className="text-2xl font-bold tracking-tight">Blood Bank</h1>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage and view blood donors across the hall
+          </p>
         </div>
 
-        {/* Blood Bank Table */}
-        <TableComponent donorData={bloodBankData} />
+        {/* Summary badges */}
+        {!loading && (
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="gap-1.5 py-1 px-3">
+              <Users className="h-3.5 w-3.5" />
+              {totalDonors} total donors
+            </Badge>
+            <Badge variant="success" className="gap-1.5 py-1 px-3">
+              <Droplets className="h-3.5 w-3.5" />
+              {totalAvailable} available
+            </Badge>
+          </div>
+        )}
       </div>
+
+      {/* Wing Tabs */}
+      {tabs.length > 1 && (
+        <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
+          {tabs.map((wing) => (
+            <button
+              key={wing}
+              onClick={() => setSelectedWing(wing)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                selectedWing === wing
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {WING_TABS[wing]?.label || wing}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <Separator />
+
+      {loading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {ALL_BLOOD_GROUPS.map((g) => (
+            <Card key={g} className="animate-pulse">
+              <CardContent className="p-4 h-20 bg-muted/30 rounded-lg" />
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <>
+          {/* Blood Group Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {stats.map((s) => (
+              <BloodStatCard
+                key={s.group}
+                group={s.group}
+                total={s.total}
+                available={s.available}
+              />
+            ))}
+          </div>
+
+          <Separator />
+
+          {/* Donor Table */}
+          <div>
+            <h2 className="text-base font-semibold mb-4">Donor List</h2>
+            <BloodDonorTable
+              wing={selectedWing}
+              showWing={selectedWing === "ALL"}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };

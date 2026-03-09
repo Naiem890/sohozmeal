@@ -8,7 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
-function WingSettings({ wing }) {
+function deriveCronTime(maleConfig, femaleConfig) {
+  const maleTotal = (maleConfig?.cutoffHour ?? 22) * 60 + (maleConfig?.cutoffMinute ?? 0);
+  const femaleTotal = (femaleConfig?.cutoffHour ?? 22) * 60 + (femaleConfig?.cutoffMinute ?? 0);
+  const minTotal = Math.min(maleTotal, femaleTotal);
+  const cronTotal = minTotal - 5;
+  const h = Math.floor(Math.abs(cronTotal) / 60) % 24;
+  const m = ((cronTotal % 60) + 60) % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function WingSettings({ wing, onSaved }) {
   const [cutoffHour, setCutoffHour] = useState(22);
   const [cutoffMinute, setCutoffMinute] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -33,6 +43,7 @@ function WingSettings({ wing }) {
           error: (err) => err?.response?.data?.error || "Failed to save.",
         }
       );
+      onSaved?.();
     } catch (e) {
       console.error(e);
     }
@@ -86,7 +97,46 @@ function WingSettings({ wing }) {
   );
 }
 
+function CronScheduleCard({ refreshTrigger }) {
+  const [cronTime, setCronTime] = useState(null);
+
+  useEffect(() => {
+    Promise.all([
+      Axios.get("/meal/config?wing=MALE").then((r) => r.data).catch(() => null),
+      Axios.get("/meal/config?wing=FEMALE").then((r) => r.data).catch(() => null),
+    ]).then(([male, female]) => {
+      setCronTime(deriveCronTime(male, female));
+    });
+  }, [refreshTrigger]);
+
+  return (
+    <Card className="border-dashed">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base">Meal Generation Schedule</CardTitle>
+            <CardDescription className="mt-1">
+              The cron job generates next-day meals automatically. It runs 5 minutes before
+              the earliest wing cutoff so students can immediately toggle the new day.
+            </CardDescription>
+          </div>
+          {cronTime && (
+            <Badge variant="secondary" className="text-sm px-3 py-1">
+              <Clock className="h-3.5 w-3.5 mr-1" />
+              {cronTime} daily
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+    </Card>
+  );
+}
+
 export default function Settings() {
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleSaved = () => setRefreshTrigger((n) => n + 1);
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -97,8 +147,9 @@ export default function Settings() {
       </div>
       <Separator />
       <div className="space-y-4">
-        <WingSettings wing="MALE" />
-        <WingSettings wing="FEMALE" />
+        <WingSettings wing="MALE" onSaved={handleSaved} />
+        <WingSettings wing="FEMALE" onSaved={handleSaved} />
+        <CronScheduleCard refreshTrigger={refreshTrigger} />
       </div>
     </div>
   );
