@@ -4,24 +4,28 @@ export const BASE_URL = import.meta.env.VITE_API_URL;
 
 export const Axios = axios.create({ baseURL: BASE_URL });
 
-// ─── Token helpers ────────────────────────────────────────────────────────────
+// ─── Cookie helpers ────────────────────────────────────────────────────────────
 
-export const auth = {
-  getAccessToken:  ()        => localStorage.getItem("_auth"),
-  getRefreshToken: ()        => localStorage.getItem("_refresh_token"),
-  setAccessToken:  (token)   => localStorage.setItem("_auth", token),
-  clearAll: () => {
-    localStorage.removeItem("_auth");
-    localStorage.removeItem("_auth_state");
-    localStorage.removeItem("_auth_type");
-    localStorage.removeItem("_refresh_token");
-  },
-};
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
-// ─── Request interceptor — attach access token ────────────────────────────────
+function deleteCookie(name) {
+  document.cookie = `${name}=; max-age=0; path=/`;
+}
+
+function clearAuth() {
+  deleteCookie("_auth");
+  deleteCookie("_auth_state");
+  deleteCookie("_auth_type");
+  localStorage.removeItem("_refresh_token");
+}
+
+// ─── Request interceptor — attach access token from cookie ────────────────────
 
 Axios.interceptors.request.use((config) => {
-  const token = auth.getAccessToken();
+  const token = getCookie("_auth");
   if (token) config.headers["Authorization"] = `Bearer ${token}`;
   if (!(config.data instanceof FormData)) {
     config.headers["Content-Type"] = "application/json";
@@ -29,67 +33,17 @@ Axios.interceptors.request.use((config) => {
   return config;
 });
 
-// ─── Refresh logic with request queue ────────────────────────────────────────
-// Multiple concurrent 401s → only one refresh call, others wait in queue.
-
-let isRefreshing = false;
-let waitQueue    = []; // { resolve, reject }[]
-
-function processQueue(error, token = null) {
-  waitQueue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve(token)));
-  waitQueue = [];
-}
-
-async function refreshAccessToken() {
-  const refreshToken = auth.getRefreshToken();
-  if (!refreshToken) throw new Error("No refresh token");
-
-  // Use plain axios to avoid triggering our interceptor again
-  const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
-  auth.setAccessToken(data.accessToken);
-  return data.accessToken;
-}
-
-// ─── Response interceptor — silent token refresh on 401 ───────────────────────
+// ─── Response interceptor — on 401 clear session and redirect to login ────────
+// Only redirects if the user had a valid session (cookie present), so that
+// a bad password on the login page itself is not mishandled.
 
 Axios.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const original = error.config;
-
-    // Only attempt refresh on 401, and only once per request
-    if (error.response?.status !== 401 || original._retry) {
-      return Promise.reject(error);
+  (error) => {
+    if (error.response?.status === 401 && getCookie("_auth")) {
+      clearAuth();
+      window.location.href = "/login";
     }
-
-    // If a refresh is already in progress, queue this request
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        waitQueue.push({
-          resolve: (token) => {
-            original.headers["Authorization"] = `Bearer ${token}`;
-            resolve(Axios(original));
-          },
-          reject,
-        });
-      });
-    }
-
-    original._retry  = true;
-    isRefreshing     = true;
-
-    try {
-      const newToken = await refreshAccessToken();
-      processQueue(null, newToken);
-      isRefreshing = false;
-      original.headers["Authorization"] = `Bearer ${newToken}`;
-      return Axios(original);
-    } catch (refreshError) {
-      processQueue(refreshError);
-      isRefreshing = false;
-      auth.clearAll();
-      window.location.href = "/";
-      return Promise.reject(refreshError);
-    }
+    return Promise.reject(error);
   }
 );
