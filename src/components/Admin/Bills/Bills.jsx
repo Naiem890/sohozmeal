@@ -29,13 +29,14 @@ export const Bills = () => {
   const [showModal, setShowModal] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [totalStudents, setTotalStudents] = useState(0);
 
   const fetchStudentData = useCallback(async () => {
     const toastId = toast.loading("Fetching student data...");
     const month = format(selectedDate, "MM");
     const year = format(selectedDate, "yyyy");
     try {
-      const params = new URLSearchParams({ month, year, wing });
+      const params = new URLSearchParams({ month, year, wing, page, limit: pageSize });
       if (debouncedSearch) params.set("search", debouncedSearch);
       const result = await Axios.get(`/cost/monthly/all?${params}`);
       // Merge studentMonthlyCosts + studentDetailsById into a flat array
@@ -45,11 +46,16 @@ export const Bills = () => {
         monthlyCost: result.data.studentMonthlyCosts[studentId],
       }));
       setStudents(merged);
-      setPage(1);
+      setTotalStudents(result.data.pagination?.total ?? merged.length);
       toast.success("Data fetched successfully!", { id: toastId });
     } catch (error) {
       toast.error("Error fetching student data", { id: toastId });
     }
+  }, [selectedDate, wing, debouncedSearch, page, pageSize]);
+
+  // Reset to page 1 when filters change (not when page/pageSize themselves change)
+  useEffect(() => {
+    setPage(1);
   }, [selectedDate, wing, debouncedSearch]);
 
   useEffect(() => {
@@ -84,24 +90,38 @@ export const Bills = () => {
       })
     : students;
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     const month = format(selectedDate, "MM");
     const year = format(selectedDate, "yyyy");
-    const data = students.map((s) => ({
-      studentId: s.studentId,
-      name: s.name,
-      department: s.department,
-      hallId: s.hallId || "N/A",
-      monthlyCost: s.monthlyCost.toFixed(2),
-    }));
-    const worksheet = XLSX.utils.json_to_sheet([]);
-    XLSX.utils.sheet_add_aoa(worksheet, [[`Student Monthly Bill (${month}-${year}) of Wing ${wing}`]], { origin: "A1" });
-    worksheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 1, c: 4 } }];
-    XLSX.utils.sheet_add_aoa(worksheet, [["Student ID", "Name", "Department", "Hall ID", "Monthly Cost"]], { origin: "A3" });
-    XLSX.utils.sheet_add_json(worksheet, data, { origin: "A4", skipHeader: true });
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Student Bill");
-    XLSX.writeFile(workbook, `Student_Bill_${month}_${year}.xlsx`);
+    const toastId = toast.loading("Preparing export…");
+    try {
+      const params = new URLSearchParams({ month, year, wing, page: 1, limit: 1000 });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      const result = await Axios.get(`/cost/monthly/all?${params}`);
+      const allStudents = Object.keys(result.data.studentMonthlyCosts || {}).map((studentId) => ({
+        studentId,
+        ...result.data.studentDetailsById[studentId],
+        monthlyCost: result.data.studentMonthlyCosts[studentId],
+      }));
+      const data = allStudents.map((s) => ({
+        studentId: s.studentId,
+        name: s.name,
+        department: s.department,
+        hallId: s.hallId || "N/A",
+        monthlyCost: s.monthlyCost.toFixed(2),
+      }));
+      const worksheet = XLSX.utils.json_to_sheet([]);
+      XLSX.utils.sheet_add_aoa(worksheet, [[`Student Monthly Bill (${month}-${year}) of Wing ${wing}`]], { origin: "A1" });
+      worksheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 1, c: 4 } }];
+      XLSX.utils.sheet_add_aoa(worksheet, [["Student ID", "Name", "Department", "Hall ID", "Monthly Cost"]], { origin: "A3" });
+      XLSX.utils.sheet_add_json(worksheet, data, { origin: "A4", skipHeader: true });
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Student Bill");
+      XLSX.writeFile(workbook, `Student_Bill_${month}_${year}.xlsx`);
+      toast.success("Exported successfully!", { id: toastId });
+    } catch {
+      toast.error("Export failed", { id: toastId });
+    }
   };
 
   const SortHead = ({ column, label }) => (
@@ -124,7 +144,7 @@ export const Bills = () => {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <h2 className="text-2xl font-bold tracking-tight">Monthly Bill</h2>
-          <span className="text-sm text-muted-foreground">({students.length} students)</span>
+          <span className="text-sm text-muted-foreground">({totalStudents} students)</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {auth.wing === "ALL" && (
@@ -170,9 +190,7 @@ export const Bills = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents
-                  .slice((page - 1) * pageSize, page * pageSize)
-                  .map((student) => (
+                {filteredStudents.map((student) => (
                     <TableRow
                       key={student.studentId}
                       className="cursor-pointer"
@@ -190,8 +208,8 @@ export const Bills = () => {
           </div>
           <Pagination
             page={page}
-            totalPages={Math.max(1, Math.ceil(filteredStudents.length / pageSize))}
-            total={filteredStudents.length}
+            totalPages={Math.max(1, Math.ceil(totalStudents / pageSize))}
+            total={totalStudents}
             pageSize={pageSize}
             onPageChange={setPage}
             onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
