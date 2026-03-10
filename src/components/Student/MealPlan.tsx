@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight, UtensilsCrossed, Users } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { UtensilsCrossed, Users } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
 import { dateToDayConverter } from "../../Utils/dateToDayConverter";
 import { dateToYYYYMMDD } from "../../Utils/dateToYYYYMMDD";
@@ -8,42 +8,67 @@ import { Axios } from "../../api/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Minus, Plus } from "lucide-react";
 
-const MEALS = ["breakfast", "lunch", "dinner"];
+const MEALS: MealType[] = ["breakfast", "lunch", "dinner"];
 
-const MEAL_META = {
+const MEAL_META: Record<MealType, { label: string; short: string; color: MealColor }> = {
   breakfast: { label: "Breakfast", short: "B", color: "amber"   },
   lunch:     { label: "Lunch",     short: "L", color: "emerald" },
   dinner:    { label: "Dinner",    short: "D", color: "indigo"  },
 };
 
-const ACTIVE_CLASSES = {
+const ACTIVE_CLASSES: Record<MealColor, string> = {
   amber:   "bg-amber-500   text-white border-amber-500   shadow-sm shadow-amber-200",
   emerald: "bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-200",
   indigo:  "bg-indigo-500  text-white border-indigo-500  shadow-sm shadow-indigo-200",
 };
 
-const INACTIVE_CLASSES = {
+const INACTIVE_CLASSES: Record<MealColor, string> = {
   amber:   "bg-background text-amber-600   border-amber-300   hover:bg-amber-50",
   emerald: "bg-background text-emerald-600 border-emerald-300 hover:bg-emerald-50",
   indigo:  "bg-background text-indigo-500  border-indigo-300  hover:bg-indigo-50",
 };
 
-const STAT_BG = {
+const STAT_BG: Record<MealColor, string> = {
   amber:   "bg-amber-500",
   emerald: "bg-emerald-500",
   indigo:  "bg-indigo-500",
 };
 
-const STAT_SOFT = {
+const STAT_SOFT: Record<MealColor, string> = {
   amber:   "bg-amber-100   text-amber-700   border border-amber-200",
   emerald: "bg-emerald-100 text-emerald-700 border border-emerald-200",
   indigo:  "bg-indigo-100  text-indigo-700  border border-indigo-200",
 };
 
-const MealToggle = ({ mealType, checked, onChange, disabled, size = "md" }) => {
+type MealColor = "amber" | "emerald" | "indigo";
+type MealType = "breakfast" | "lunch" | "dinner";
+
+interface MealData {
+  _id: string;
+  date: string;
+  meal: Record<MealType, boolean>;
+  guestMeal: Record<MealType, number>;
+}
+
+interface GuestMealCounts {
+  breakfast: number | "";
+  lunch: number | "";
+  dinner: number | "";
+}
+
+interface MealToggleProps {
+  mealType: MealType;
+  checked: boolean;
+  onChange: () => void;
+  disabled: boolean;
+  size?: "sm" | "md";
+}
+
+const MealToggle = ({ mealType, checked, onChange, disabled, size = "md" }: MealToggleProps) => {
   const { short, color } = MEAL_META[mealType];
   return (
     <button
@@ -66,11 +91,11 @@ const MealToggle = ({ mealType, checked, onChange, disabled, size = "md" }) => {
 
 export default function MealPlan() {
   const auth = useAuthUser()();
-  const [meals, setMeals] = useState([]);
-  const [distinctMonths, setDistinctMonths] = useState([]);
+  const [meals, setMeals] = useState<(MealData | null)[]>([]);
+  const [distinctMonths, setDistinctMonths] = useState<string[]>([]);
   const [selectedMonth, setSelectedMonth] = useState("");
-  const [guestMeal, setGuestMeal] = useState({ breakfast: 0, lunch: 0, dinner: 0 });
-  const [originalGuestMeal, setOriginalGuestMeal] = useState(null);
+  const [guestMeal, setGuestMeal] = useState<GuestMealCounts>({ breakfast: 0, lunch: 0, dinner: 0 });
+  const [originalGuestMeal, setOriginalGuestMeal] = useState<GuestMealCounts | null>(null);
   const [cutoffHour, setCutoffHour] = useState(22);
   const [cutoffMinute, setCutoffMinute] = useState(0);
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -87,7 +112,7 @@ export default function MealPlan() {
 
   const cutoffLabel = `${String(cutoffHour).padStart(2, "0")}:${String(cutoffMinute).padStart(2, "0")}`;
 
-  const handleMealUpdate = async (mealId, meal) => {
+  const handleMealUpdate = async (mealId: string, meal: Partial<Record<MealType, boolean>>) => {
     const oldMeal = meals.find((m) => m?._id === mealId)?.meal;
     setMeals((prev) =>
       prev.map((m) =>
@@ -115,23 +140,12 @@ export default function MealPlan() {
     }
   };
 
-  const handleMonthChange = useCallback(
-    (increment) => {
-      setSelectedMonth((prev) => {
-        const index = distinctMonths.indexOf(prev);
-        const next = index + increment;
-        return next >= 0 && next < distinctMonths.length ? distinctMonths[next] : prev;
-      });
-    },
-    [distinctMonths]
-  );
-
   const handleModalOpen = () => {
     setOriginalGuestMeal({ ...guestMeal });
     setShowGuestModal(true);
   };
 
-  const handleGuestCountChange = (e) => {
+  const handleGuestCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setGuestMeal((prev) => ({
       ...prev,
@@ -146,14 +160,13 @@ export default function MealPlan() {
 
   const handleSubmitGuestMeal = async () => {
     try {
-      const result = await toast.promise(
-        Axios.put("/meal/guest-meal", { date: validDate(), guestMeal }),
-        {
-          loading: "Submitting…",
-          success: ({ data }) => data.message || "Guest meal submitted!",
-          error: (error) => error?.response?.data?.message || "Failed to submit.",
-        }
-      );
+      const apiPromise = Axios.put("/meal/guest-meal", { date: validDate(), guestMeal });
+      toast.promise(apiPromise, {
+        loading: "Submitting…",
+        success: ({ data }) => data.message || "Guest meal submitted!",
+        error: (error) => error?.response?.data?.message || "Failed to submit.",
+      });
+      const result = await apiPromise;
       if (result.status === 200) {
         setMeals((prev) =>
           prev.map((m) => (m?.date === validDate() ? result?.data?.meal : m))
@@ -191,11 +204,15 @@ export default function MealPlan() {
       if (!selectedMonth) return;
       const [year, month] = selectedMonth.split("-");
       const res = await Axios.get(`/meal/plan?year=${year}&month=${month}`);
+      const { meals } = res.data;
+      if (!meals || meals.length === 0) {
+        setMeals([]);
+        return;
+      }
       if (res.status === 200) {
-        const guestData = res.data.meals.find((m) => m.date === validDate())?.guestMeal;
+        const guestData = meals.find((m: MealData) => m.date === validDate())?.guestMeal;
         setGuestMeal(guestData || { breakfast: 0, lunch: 0, dinner: 0 });
       }
-      const { meals } = res.data;
       const dayOffset = new Date(meals[0].date).getDay();
       meals.unshift(...Array(dayOffset).fill(null));
       setMeals(meals);
@@ -203,7 +220,7 @@ export default function MealPlan() {
     fetchMeals();
   }, [selectedMonth]);
 
-  const isMealEditable = (mealDate) => mealDate === validDate();
+  const isMealEditable = (mealDate: string) => mealDate === validDate();
 
   const mealCounts = MEALS.map((type) => ({
     type,
@@ -213,7 +230,7 @@ export default function MealPlan() {
   const editableDay = meals.find((m) => m && isMealEditable(m.date));
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-4xl mx-auto space-y-6">
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
@@ -294,30 +311,19 @@ export default function MealPlan() {
           })}
         </div>
 
-        {/* Month navigation */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            disabled={selectedMonth === distinctMonths[0]}
-            onClick={() => handleMonthChange(-1)}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-semibold min-w-[110px] text-center">
-            {formatDate(selectedMonth)}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            disabled={selectedMonth === distinctMonths.slice(-1)[0]}
-            onClick={() => handleMonthChange(1)}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* Month selector */}
+        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          <SelectTrigger className="w-[150px] h-8 text-sm font-semibold">
+            <SelectValue placeholder="Select month" />
+          </SelectTrigger>
+          <SelectContent>
+            {[...distinctMonths].reverse().map((month) => (
+              <SelectItem key={month} value={month}>
+                {formatDate(month)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* ── Desktop calendar ── */}
@@ -356,7 +362,7 @@ export default function MealPlan() {
       {/* ── Mobile list ── */}
       <div className="md:hidden rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
         {meals
-          .filter(Boolean)
+          .filter((m): m is MealData => m !== null)
           .map((meal) => (
             <MobileRow
               key={meal._id}
@@ -443,11 +449,11 @@ export default function MealPlan() {
             })}
 
             {/* Total summary */}
-            {(guestMeal.breakfast + guestMeal.lunch + guestMeal.dinner) > 0 && (
+            {(Number(guestMeal.breakfast) + Number(guestMeal.lunch) + Number(guestMeal.dinner)) > 0 && (
               <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
                 <span className="text-sm text-muted-foreground">Total guests</span>
                 <span className="text-base font-bold text-foreground">
-                  {guestMeal.breakfast + guestMeal.lunch + guestMeal.dinner}
+                  {Number(guestMeal.breakfast) + Number(guestMeal.lunch) + Number(guestMeal.dinner)}
                 </span>
               </div>
             )}
@@ -467,8 +473,14 @@ export default function MealPlan() {
   );
 }
 
+interface DayCellProps {
+  meal: MealData;
+  editable: boolean;
+  onToggle: (mealType: MealType) => void;
+}
+
 /* ── Desktop day cell ── */
-function DayCell({ meal, editable, onToggle }) {
+function DayCell({ meal, editable, onToggle }: DayCellProps) {
   const dayNum = meal.date.split("-")[2];
   return (
     <div
@@ -503,8 +515,14 @@ function DayCell({ meal, editable, onToggle }) {
   );
 }
 
+interface MobileRowProps {
+  meal: MealData;
+  editable: boolean;
+  onToggle: (mealType: MealType) => void;
+}
+
 /* ── Mobile row ── */
-function MobileRow({ meal, editable, onToggle }) {
+function MobileRow({ meal, editable, onToggle }: MobileRowProps) {
   return (
     <div
       className={cn(

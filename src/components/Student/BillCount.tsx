@@ -11,9 +11,18 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
-const fmt = (n) => Number(n).toFixed(2);
+interface MealBillEntry { status: boolean; perHeadCost: number }
+interface BillDataItem {
+  date: string;
+  guestMeal: { breakfast: number; lunch: number; dinner: number };
+  mealBill: { breakfast: MealBillEntry; lunch: MealBillEntry; dinner: MealBillEntry };
+}
+interface HallFeastItem { date: string; meal: string }
 
-function MealCol({ on, cost, gCost, g }) {
+const fmt = (n: number) => Number(n).toFixed(2);
+
+interface MealColProps { on: boolean; cost: number; gCost: number; g: number }
+function MealCol({ on, cost, gCost, g }: MealColProps) {
   if (!on && g === 0)
     return <span className="text-muted-foreground/30 text-xs">—</span>;
   return (
@@ -35,8 +44,8 @@ function MealCol({ on, cost, gCost, g }) {
 export default function BillCount() {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
-  const [mealBillData, setMealBillData] = useState([]);
-  const [hallFeasts,   setHallFeasts]   = useState([]);
+  const [mealBillData, setMealBillData] = useState<BillDataItem[]>([]);
+  const [hallFeasts,   setHallFeasts]   = useState<HallFeastItem[]>([]);
   const [wing] = useState("MALE");
 
   const year  = selectedMonth.getFullYear();
@@ -112,7 +121,7 @@ export default function BillCount() {
   }, [daysOfMonth, mealBillData, hallFeasts]);
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Mess Bill</h1>
@@ -245,7 +254,8 @@ export default function BillCount() {
   );
 }
 
-function MealPill({ label, on, cost, g, gCost }) {
+interface MealPillProps { label: string; on: boolean; cost: number; g: number; gCost: number }
+function MealPill({ label, on, cost, g, gCost }: MealPillProps) {
   if (!on && g === 0)
     return (
       <span className="text-muted-foreground/40">{label}: —</span>

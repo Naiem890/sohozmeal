@@ -7,10 +7,10 @@ const AddComplaint = () => {
     complaintType: "",
     description: "",
     residence: "",
-    images: [],
+    images: [] as string[],
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
@@ -18,8 +18,8 @@ const AddComplaint = () => {
     }));
   };
 
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
     const totalImages = formData.images.length + files.length;
 
     if (totalImages > 4) {
@@ -29,9 +29,9 @@ const AddComplaint = () => {
 
     const imagePreviews = files.map((file) => {
       const reader = new FileReader();
-      return new Promise((resolve) => {
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
+      return new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file as Blob);
       });
     });
 
@@ -43,14 +43,14 @@ const AddComplaint = () => {
     });
   };
 
-  const handleImageRemove = (index) => {
+  const handleImageRemove = (index: number) => {
     setFormData((prevData) => ({
       ...prevData,
       images: prevData.images.filter((_, i) => i !== index),
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Mock API call
@@ -68,7 +68,7 @@ const AddComplaint = () => {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold mb-6">Add New Complaint</h1>
       <form onSubmit={handleSubmit} className="grid gap-4">
         {/* Title */}
@@ -163,7 +163,7 @@ const AddComplaint = () => {
             onChange={handleChange}
             placeholder="Describe the issue"
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            rows="4"
+            rows={4}
             required
           ></textarea>
         </div>

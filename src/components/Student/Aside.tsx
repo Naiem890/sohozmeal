@@ -25,11 +25,16 @@ const navLinks = [
   { label: "Notice",       path: "/dashboard/notice",         icon: Bell },
 ];
 
-export default function Aside({ isOpen, onClose }) {
+interface AsideProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Aside({ isOpen, onClose }: AsideProps) {
   const signOut = useSignOut();
   const navigate = useNavigate();
   const location = useLocation();
-  const confirm = useConfirm();
+  const confirm = useConfirm()!;
 
   const handleSignOut = async () => {
     const ok = await confirm({
@@ -53,7 +58,7 @@ export default function Aside({ isOpen, onClose }) {
     }
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <aside

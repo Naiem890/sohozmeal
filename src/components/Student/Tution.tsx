@@ -6,20 +6,33 @@ const fixedInputClass = "w-full rounded-lg h-12 text-gray-900 shadow-sm ring-1 r
 const fixedButtonClass = "w-full rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 px-4 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-colors";
 import Select from "react-select";
 
+interface SelectOption { value: string; label: string }
+interface StudentTutorData {
+  studentId: string;
+  phoneNumber: string;
+  preferredBackground: SelectOption[];
+  preferredArea: SelectOption[];
+  preferredSubject: SelectOption[];
+  isTutorAvailable?: boolean;
+  profileImage?: { data: number[] };
+}
+
 export default function Tution() {
   const auth = useAuthUser();
-  const [student, setStudent] = useState({
+  const [student, setStudent] = useState<StudentTutorData>({
+    studentId: "",
+    phoneNumber: "",
     preferredBackground: [],
     preferredArea: [],
     preferredSubject: [],
   });
   const [isTutorAvailable, setIsTutorAvailable] = useState(false);
-  const [image, setImage] = useState(null);
-  const [imageFile, setImageFile] = useState(null);
-  const [prevImage, setPrevImage] = useState(null);
-  const fileInputRef = useRef(null);
+  const [image, setImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [prevImage, setPrevImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fileToBase64 = (file) => {
+  const fileToBase64 = (file: File) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -34,13 +47,13 @@ export default function Tution() {
     }
   };
 
-  const handleImageChange = async (e) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setPrevImage(image);
-    if (e.target.files.length > 0) {
+    if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       const base64Image = await fileToBase64(file);
       setImageFile(file);
-      setImage(base64Image);
+      setImage(base64Image as string);
     }
   };
 
@@ -63,17 +76,17 @@ export default function Tution() {
       setStudent({
         ...studentData,
         preferredBackground:
-          studentData?.preferredBackground?.map((bg) => ({
+          studentData?.preferredBackground?.map((bg: string) => ({
             value: bg,
             label: bg,
           })) || [],
         preferredArea:
-          studentData?.preferredArea?.map((area) => ({
+          studentData?.preferredArea?.map((area: string) => ({
             value: area,
             label: area,
           })) || [],
         preferredSubject:
-          studentData?.preferredSubject?.map((subject) => ({
+          studentData?.preferredSubject?.map((subject: string) => ({
             value: subject,
             label: subject,
           })) || [],
@@ -88,7 +101,7 @@ export default function Tution() {
     fetchStudentProfile();
   }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
@@ -116,7 +129,8 @@ export default function Tution() {
 
       toast.success(regularDataRes.data.message);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Something went wrong");
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e.response?.data?.message || "Something went wrong");
     }
   };
 
@@ -287,23 +301,23 @@ export default function Tution() {
   const areaOptions = areas.map((area) => ({ value: area, label: area }));
 
   const customStyles = {
-    control: (base) => ({
+    control: (base: object) => ({
       ...base,
       minHeight: "42px",
       border: "1px solid #e2e8f0",
       borderRadius: "0.375rem",
     }),
-    multiValue: (base) => ({
+    multiValue: (base: object) => ({
       ...base,
       backgroundColor: "#EBF4FF",
       borderRadius: "0.375rem",
     }),
-    multiValueLabel: (base) => ({
+    multiValueLabel: (base: object) => ({
       ...base,
       color: "#2563EB",
       padding: "2px 8px",
     }),
-    multiValueRemove: (base) => ({
+    multiValueRemove: (base: object) => ({
       ...base,
       color: "#2563EB",
       ":hover": {
@@ -314,7 +328,7 @@ export default function Tution() {
   };
 
   return (
-    <div className="mb-10 lg:my-10 px-5 lg:mr-12">
+    <div className="max-w-4xl mx-auto space-y-6">
       <h2 className="text-3xl font-semibold">Tuition Preferences</h2>
       <hr className="my-3 border-gray-200" />
 
@@ -331,7 +345,7 @@ export default function Tution() {
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <img
-                    src={image}
+                    src={image ?? undefined}
                     className="w-full h-full object-cover"
                     alt=""
                   />
@@ -395,7 +409,7 @@ export default function Tution() {
                     onChange={(selected) =>
                       setStudent({
                         ...student,
-                        preferredBackground: selected || [],
+                        preferredBackground: [...(selected || [])],
                       })
                     }
                     styles={customStyles}
@@ -428,7 +442,7 @@ export default function Tution() {
                   options={areaOptions}
                   value={student.preferredArea || []}
                   onChange={(selected) =>
-                    setStudent({ ...student, preferredArea: selected || [] })
+                    setStudent({ ...student, preferredArea: [...(selected || [])] })
                   }
                   styles={customStyles}
                   placeholder="Select areas..."
@@ -445,7 +459,7 @@ export default function Tution() {
                   options={subjectOptions}
                   value={student.preferredSubject || []}
                   onChange={(selected) =>
-                    setStudent({ ...student, preferredSubject: selected || [] })
+                    setStudent({ ...student, preferredSubject: [...(selected || [])] })
                   }
                   styles={customStyles}
                   placeholder="Select subjects..."

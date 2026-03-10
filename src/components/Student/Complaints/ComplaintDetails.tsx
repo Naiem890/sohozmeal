@@ -1,6 +1,23 @@
 import React from "react";
 
-const ComplaintDetails = ({ complaint }) => {
+interface ComplaintImage { url: string }
+interface ComplaintDetailData {
+  id?: string;
+  title: string;
+  complainedBy?: { name: string; id: string };
+  currentRoomNo: string;
+  complaintType: string;
+  description: string;
+  status: string;
+  adminConfirmed: boolean;
+  studentConfirmed: boolean;
+  residence: string;
+  images: ComplaintImage[];
+  createdAt: string;
+  adminMessage?: string;
+}
+
+const ComplaintDetails = ({ complaint }: { complaint?: ComplaintDetailData }) => {
   // Example complaint data for testing
   complaint = complaint || {
     id: "1",
@@ -26,7 +43,7 @@ const ComplaintDetails = ({ complaint }) => {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold mb-4">{complaint.title}</h1>
       <div className="grid gap-4">
         {/* Complaint Basic Info */}

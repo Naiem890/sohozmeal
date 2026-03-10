@@ -14,8 +14,9 @@ import { BG_COLORS, isDonorAvailable, DONATION_INTERVAL_DAYS } from "../Common/B
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const ALL_BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
-function BloodGroupPill({ group, selected, onClick }) {
-  const colors = BG_COLORS[group] || "bg-gray-100 text-gray-700 border-gray-200";
+interface BloodGroupPillProps { group: string; selected: boolean; onClick: (g: string) => void }
+function BloodGroupPill({ group, selected, onClick }: BloodGroupPillProps) {
+  const colors = (BG_COLORS as Record<string, string>)[group] || "bg-gray-100 text-gray-700 border-gray-200";
   return (
     <button
       type="button"
@@ -32,8 +33,9 @@ function BloodGroupPill({ group, selected, onClick }) {
 }
 
 
-function BloodGroupMiniCard({ group, total, available }) {
-  const colors = BG_COLORS[group] || "bg-gray-100 text-gray-700 border-gray-200";
+interface BloodGroupMiniCardProps { group: string; total: number; available: number }
+function BloodGroupMiniCard({ group, total, available }: BloodGroupMiniCardProps) {
+  const colors = (BG_COLORS as Record<string, string>)[group] || "bg-gray-100 text-gray-700 border-gray-200";
   return (
     <div className={`flex items-center justify-between px-3 py-2 rounded-lg border ${colors}`}>
       <span className="font-bold text-sm">{group}</span>
@@ -57,7 +59,7 @@ export default function BloodDonate() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ bloodGroup: "", isDonor: false, lastDonationDate: "" });
   const [saving, setSaving] = useState(false);
-  const [bloodBankData, setBloodBankData] = useState({});
+  const [bloodBankData, setBloodBankData] = useState<Record<string, { count: number; donors: { lastDonationDate: string | null }[] }>>({});
   const [loadingDonors, setLoadingDonors] = useState(true);
 
   const fetchProfile = async () => {
@@ -109,7 +111,8 @@ export default function BloodDonate() {
       setEditing(false);
       fetchProfile();
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Something went wrong");
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e?.response?.data?.message || "Something went wrong");
     } finally {
       setSaving(false);
     }
@@ -147,7 +150,7 @@ export default function BloodDonate() {
     differenceInDays(new Date(), new Date(form.lastDonationDate)) < DONATION_INTERVAL_DAYS;
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Page header */}
       <div className="flex items-center gap-2">
         <Heart className="h-5 w-5 text-red-500 fill-red-500" />
@@ -185,7 +188,7 @@ export default function BloodDonate() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Blood Group</span>
                     {profile.bloodGroup ? (
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border-2 text-sm font-bold ${BG_COLORS[profile.bloodGroup] || "bg-gray-100 text-gray-700"}`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border-2 text-sm font-bold ${(BG_COLORS as Record<string, string>)[profile.bloodGroup] || "bg-gray-100 text-gray-700"}`}>
                         {profile.bloodGroup}
                       </span>
                     ) : (

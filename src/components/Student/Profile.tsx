@@ -13,7 +13,20 @@ import {
 import { DEPARTMENTS } from "../../Utils/constant";
 import { User } from "lucide-react";
 
-const ReadonlyField = ({ label, value }) => (
+interface StudentProfile {
+  name: string;
+  studentId: string;
+  hallId: string;
+  phoneNumber: string;
+  batch: string;
+  roomNo: string;
+  residence: string;
+  gender: string;
+  department: string;
+  profileImage?: { data: number[] };
+}
+
+const ReadonlyField = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="space-y-1.5">
     <Label className="text-muted-foreground">{label}</Label>
     <Input value={value ?? ""} disabled className="bg-muted/40" readOnly />
@@ -22,10 +35,10 @@ const ReadonlyField = ({ label, value }) => (
 
 export default function Profile() {
   const auth = useAuthUser();
-  const [student, setStudent] = useState(null);
-  const [image, setImage] = useState(null);
+  const [student, setStudent] = useState<StudentProfile | null>(null);
+  const [image, setImage] = useState<string | null>(null);
 
-  const createObjectURL = (buffer) => {
+  const createObjectURL = (buffer: number[]) => {
     const blob = new Blob([new Uint8Array(buffer)], { type: "image/jpeg" });
     return URL.createObjectURL(blob);
   };
@@ -43,7 +56,7 @@ export default function Profile() {
   }, [student]);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
         <p className="text-sm text-muted-foreground mt-0.5">

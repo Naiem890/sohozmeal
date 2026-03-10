@@ -8,18 +8,26 @@ import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 
-const WING_STYLE = {
+const WING_STYLE: Record<string, string> = {
   MALE:   "bg-blue-100 text-blue-700 border-blue-200",
   FEMALE: "bg-pink-100 text-pink-700 border-pink-200",
   ALL:    "bg-violet-100 text-violet-700 border-violet-200",
 };
 
+interface NoticeItem {
+  _id: string;
+  title: string;
+  description: string;
+  noticeFor: string;
+  createdAt: string;
+}
+
 export default function Notice() {
-  const [wing,       setWing]       = useState(null);
-  const [notices,    setNotices]    = useState([]);
+  const [wing,       setWing]       = useState<string | null>(null);
+  const [notices,    setNotices]    = useState<NoticeItem[]>([]);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [page,       setPage]       = useState(1);
-  const [expanded,   setExpanded]   = useState({});
+  const [expanded,   setExpanded]   = useState<Record<string, boolean>>({});
   const [loading,    setLoading]    = useState(true);
 
   // Fetch student profile to get gender (students don't have wing in JWT)
@@ -47,10 +55,10 @@ export default function Notice() {
     fetchNotices(page);
   }, [page, fetchNotices]);
 
-  const toggleExpand = (id) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleExpand = (id: string) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
   return (
-    <div className="max-w-3xl space-y-4">
+    <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Notice Board</h1>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-const DAY_BN = {
+const DAY_BN: Record<string, string> = {
   SUNDAY:    "রবিবার",
   MONDAY:    "সোমবার",
   TUESDAY:   "মঙ্গলবার",
@@ -24,13 +24,21 @@ const DAY_BN = {
   SATURDAY:  "শনিবার",
 };
 
+interface RoutineItem {
+  _id: string;
+  day: string;
+  breakfast: string;
+  lunch: string;
+  dinner: string;
+}
+
 const currentDay = format(new Date(), "EEEE").toUpperCase();
 
 export default function MealRoutine() {
   const user = useAuthUser();
-  const [mealData, setMealData] = useState([]);
-  const [wing, setWing] = useState(user().wing || "MALE");
-  const printRef = useRef();
+  const [mealData, setMealData] = useState<RoutineItem[]>([]);
+  const [wing, setWing] = useState(user()?.wing || "MALE");
+  const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
@@ -44,7 +52,7 @@ export default function MealRoutine() {
   }, [wing]);
 
   return (
-    <div className="space-y-4 max-w-3xl">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Meal Routine</h1>

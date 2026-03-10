@@ -17,25 +17,32 @@ import { useConfirm } from "../Common/ConfirmDialog";
 import * as XLSX from "xlsx"; // Import xlsx for Excel file generation
 import { useAuthUser } from "react-auth-kit";
 
+interface RoutineRow {
+  day: string;
+  breakfast: string;
+  lunch: string;
+  dinner: string;
+}
+
 const MealRoutineAdmin = () => {
   const auth = useAuthUser()();
-  const confirm = useConfirm();
-  const [mealData, setMealData] = useState([]);
+  const confirm = useConfirm()!;
+  const [mealData, setMealData] = useState<RoutineRow[]>([]);
   const [selectedWing, setSelectedWing] = useState(
-    auth.wing === "ALL" ? "MALE" : auth.wing
+    auth?.wing === "ALL" ? "MALE" : (auth?.wing || "MALE")
   ); // Default to MALE wing
   const currentDay = format(new Date(), "EEEE").toUpperCase();
-  const mealRef = useRef();
+  const mealRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
-    content: () => mealRef.current,
+    content: () => mealRef.current as HTMLDivElement,
     documentTitle: "Meal Routine",
     onAfterPrint: () => {
       toast.success("Meal routine printed successfully!");
     },
   });
 
-  const dayNameMap = {
+  const dayNameMap: Record<string, string> = {
     SUNDAY: "রবিবার",
     MONDAY: "সোমবার",
     TUESDAY: "মঙ্গলবার",
@@ -66,17 +73,17 @@ const MealRoutineAdmin = () => {
   };
 
   // Sort meal data according to the day order
-  const sortMealData = (data) => {
+  const sortMealData = (data: RoutineRow[]) => {
     return data.sort(
       (a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)
     );
   };
 
-  const fetchMealRoutineData = async (wing) => {
+  const fetchMealRoutineData = async (wing: string) => {
     try {
       const response = await Axios.get("/meal/routine", { params: { wing } });
       const data =
-        response.data.length && response.data.some((item) => item !== null)
+        response.data.length && response.data.some((item: unknown) => item !== null)
           ? sortMealData(response.data) // Sort the data before setting state
           : defaultRoutine(); // Fallback to default routine if all values are null
       setMealData(data);
@@ -90,11 +97,11 @@ const MealRoutineAdmin = () => {
     fetchMealRoutineData(selectedWing); // Fetch data based on selected wing
   }, [selectedWing]);
 
-  const handleInputChange = (e, index, mealType) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number, mealType: keyof RoutineRow) => {
     const newValue = e.target.value;
     setMealData((prevData) => {
       const newData = [...prevData];
-      newData[index][mealType] = newValue;
+      newData[index] = { ...newData[index], [mealType]: newValue };
       return newData;
     });
   };
@@ -117,15 +124,16 @@ const MealRoutineAdmin = () => {
         toast.success(response.message);
         setMealData(sortMealData(response.routines)); // Sort the data before setting state
       } catch (error) {
+        const e = error as { response?: { data?: { message?: string } } };
         toast.error(
-          error.response?.data?.message || "Error updating meal routine."
+          e.response?.data?.message || "Error updating meal routine."
         );
         console.error("Error updating meal routine data:", error);
       }
     }
   };
 
-  const handleWingChange = (value) => {
+  const handleWingChange = (value: string) => {
     setSelectedWing(value);
   };
 
@@ -156,7 +164,7 @@ const MealRoutineAdmin = () => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Meal Routine</h2>
         {/* Wing Selection Dropdown */}
-        {auth.wing === "ALL" && (
+        {auth?.wing === "ALL" && (
           <Select value={selectedWing} onValueChange={handleWingChange}>
             <SelectTrigger className="w-36">
               <SelectValue placeholder="Wing" />

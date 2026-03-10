@@ -8,10 +8,21 @@ import Pagination from "../../Common/Pagination";
 
 const PAGE_SIZE = 15;
 
+interface ComplaintItem {
+  _id: string;
+  createdAt: string;
+  title: string;
+  currentRoomNo: string;
+  complaintType: string;
+  status: string;
+  adminConfirmed: boolean;
+  studentConfirmed: boolean;
+}
+
 const Complaints = () => {
   const navigate = useNavigate();
-  const confirm = useConfirm();
-  const [complaints,  setComplaints]  = useState([]);
+  const confirm = useConfirm()!;
+  const [complaints,  setComplaints]  = useState<ComplaintItem[]>([]);
   const [pagination,  setPagination]  = useState({ total: 0, totalPages: 1 });
   const [page,        setPage]        = useState(1);
 
@@ -19,7 +30,7 @@ const Complaints = () => {
     fetchComplaints(page);
   }, [page]);
 
-  const fetchComplaints = async (pg) => {
+  const fetchComplaints = async (pg: number) => {
     const toastId = toast.loading("Loading complaints...");
     try {
       const res = await Axios.get(`/complaint?page=${pg}&limit=${PAGE_SIZE}`);
@@ -31,7 +42,7 @@ const Complaints = () => {
     }
   };
 
-  const markAsCompleted = async (id) => {
+  const markAsCompleted = async (id: string) => {
     const ok = await confirm({
       title: "Mark as completed?",
       description: "Are you sure you want to mark this complaint as completed?",
@@ -48,12 +59,12 @@ const Complaints = () => {
     }
   };
 
-  const handleRowClick = (complaintId) => {
+  const handleRowClick = (complaintId: string) => {
     navigate(`complaint-details/${complaintId}`);
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">My Complaints</h1>
@@ -156,8 +167,8 @@ const Complaints = () => {
   );
 };
 
-const Tag = ({ status }) => {
-  const styles = {
+const Tag = ({ status }: { status: string }) => {
+  const styles: Record<string, string> = {
     COMPLETED: "bg-green-50 text-green-600",
     PENDING:   "bg-yellow-50 text-yellow-600",
   };
