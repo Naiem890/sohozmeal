@@ -1,9 +1,16 @@
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useSignIn } from "react-auth-kit";
 import { toast } from "sonner";
 import MISTImage from "../../assets/MIST.png";
 import { useNavigate } from "react-router-dom";
 import { Axios } from "../../api/api";
 import Logo from "../Common/Logo";
+import { staffLoginSchema } from "@/schemas/auth";
+import { z } from "zod";
+import type { AxiosError } from "axios";
+
+type StaffLoginForm = z.infer<typeof staffLoginSchema>;
 
 const REFRESH_TOKEN_DAYS = 7;
 
@@ -14,11 +21,13 @@ export default function StaffLogin() {
   const signIn   = useSignIn();
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const staffId  = e.target.staffId.value;
-    const password = e.target.password.value;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<StaffLoginForm>({ resolver: zodResolver(staffLoginSchema) });
 
+  const onSubmit = async ({ staffId, password }: StaffLoginForm) => {
     try {
       const result = await Axios.post("/auth/staff/login", { staffId, password }).then((r) => r.data);
 
@@ -37,7 +46,8 @@ export default function StaffLogin() {
 
       toast.success("Login successful");
       navigate("/staff/dashboard");
-    } catch (error) {
+    } catch (err) {
+      const error = err as AxiosError<{ error?: string }>;
       toast.error(error?.response?.data?.error || "Login failed");
     }
   };
@@ -48,20 +58,22 @@ export default function StaffLogin() {
         <Logo logo={MISTImage} alt="Osmany Hall" title="Sohoz Meal (MIST)" subTitle="Staff Portal" />
 
         <div className="mt-10">
-          <form className="flex flex-col gap-4" onSubmit={handleLogin}>
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
             <div>
               <label htmlFor="staffId" className="block text-sm font-medium leading-6 text-gray-600">
                 Staff ID
               </label>
               <input
                 id="staffId"
-                name="staffId"
                 type="text"
                 autoComplete="username"
                 placeholder="Staff ID"
-                required
                 className={`${fixedInputClass} mt-2`}
+                {...register("staffId")}
               />
+              {errors.staffId && (
+                <p className="mt-1 text-sm text-red-600">{errors.staffId.message}</p>
+              )}
             </div>
 
             <div>
@@ -70,17 +82,19 @@ export default function StaffLogin() {
               </label>
               <input
                 id="password"
-                name="password"
                 type="password"
                 autoComplete="current-password"
                 placeholder="••••••••"
-                required
                 className={`${fixedInputClass} mt-2 tracking-widest`}
+                {...register("password")}
               />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+              )}
             </div>
 
-            <button type="submit" className={`${fixedButtonClass} mt-4`}>
-              Login
+            <button type="submit" disabled={isSubmitting} className={`${fixedButtonClass} mt-4`}>
+              {isSubmitting ? "Logging in…" : "Login"}
             </button>
           </form>
         </div>

@@ -8,11 +8,16 @@ import MISTImage from "../../assets/MIST.png";
 import Logo from "../Common/Logo";
 import { cn } from "@/lib/utils";
 
-export default function StaffAside({ isOpen, onClose }) {
+interface StaffAsideProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function StaffAside({ isOpen, onClose }: StaffAsideProps) {
   const signOut = useSignOut();
   const navigate = useNavigate();
   const location = useLocation();
-  const confirm = useConfirm();
+  const confirm = useConfirm()!;
 
   const handleSignOut = async () => {
     const ok = await confirm({

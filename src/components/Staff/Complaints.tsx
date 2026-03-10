@@ -1,7 +1,20 @@
-import React, { useState } from "react";
-import { CheckIcon } from "@heroicons/react/24/outline"; // Heroicons for tick icon
+import { useState } from "react";
+import { CheckIcon } from "@heroicons/react/24/outline";
 
-const dummyComplaints = [
+interface DummyComplaint {
+  _id: string;
+  studentId: string;
+  roomNo: string;
+  complaintType: string;
+  description: string;
+  status: string;
+  staffConfirmed: boolean;
+  studentConfirmed: boolean;
+  completedAt: null;
+  images: string[];
+}
+
+const dummyComplaints: DummyComplaint[] = [
   {
     _id: "1",
     studentId: "John Doe",
@@ -41,36 +54,26 @@ const dummyComplaints = [
 ];
 
 const Complaints = () => {
-  const [complaints, setComplaints] = useState(dummyComplaints);
+  const [complaints, setComplaints] = useState<DummyComplaint[]>(dummyComplaints);
   const [filter, setFilter] = useState("all");
 
-  // Function to handle staff confirmation
-  const handleStaffConfirm = (id) => {
+  const handleStaffConfirm = (id: string) => {
     setComplaints((prev) =>
       prev.map((complaint) =>
-        complaint._id === id
-          ? { ...complaint, staffConfirmed: true }
-          : complaint
+        complaint._id === id ? { ...complaint, staffConfirmed: true } : complaint
       )
     );
   };
 
-  // Function to filter the complaints based on the selected filter
   const getFilteredComplaints = () => {
     if (filter === "completed") {
-      return complaints.filter(
-        (complaint) => complaint.staffConfirmed && complaint.studentConfirmed
-      );
+      return complaints.filter((c) => c.staffConfirmed && c.studentConfirmed);
     } else if (filter === "incomplete") {
-      return complaints.filter(
-        (complaint) => !complaint.staffConfirmed && !complaint.studentConfirmed
-      );
+      return complaints.filter((c) => !c.staffConfirmed && !c.studentConfirmed);
     } else if (filter === "awaitingStudentConfirmation") {
-      return complaints.filter(
-        (complaint) => complaint.staffConfirmed && !complaint.studentConfirmed
-      );
+      return complaints.filter((c) => c.staffConfirmed && !c.studentConfirmed);
     }
-    return complaints; // Return all if no specific filter is applied
+    return complaints;
   };
 
   const filteredComplaints = getFilteredComplaints();
@@ -81,63 +84,37 @@ const Complaints = () => {
         Complaints List
       </h1>
 
-      {/* Filter Buttons */}
       <div className="flex justify-center space-x-2 sm:space-x-4 mb-4">
-        <button
-          onClick={() => setFilter("all")}
-          className={`py-1 sm:py-2 px-2 sm:px-4 rounded-lg font-bold text-xs sm:text-base ${
-            filter === "all" ? "bg-emerald-500 text-white" : "bg-gray-200"
-          }`}
-        >
-          All
-        </button>
-        <button
-          onClick={() => setFilter("incomplete")}
-          className={`py-1 sm:py-2 px-2 sm:px-4 rounded-lg font-bold text-xs sm:text-base ${
-            filter === "incomplete"
-              ? "bg-emerald-500 text-white"
-              : "bg-gray-200"
-          }`}
-        >
-          Incomplete
-        </button>
-        <button
-          onClick={() => setFilter("completed")}
-          className={`py-1 sm:py-2 px-2 sm:px-4 rounded-lg font-bold text-xs sm:text-base ${
-            filter === "completed" ? "bg-emerald-500 text-white" : "bg-gray-200"
-          }`}
-        >
-          Completed
-        </button>
-        <button
-          onClick={() => setFilter("awaitingStudentConfirmation")}
-          className={`py-1 sm:py-2 px-2 sm:px-4 rounded-lg font-bold text-xs sm:text-base ${
-            filter === "awaitingStudentConfirmation"
-              ? "bg-emerald-500 text-white"
-              : "bg-gray-200"
-          }`}
-        >
-          Awaiting Student Confirmation
-        </button>
+        {[
+          { id: "all", label: "All" },
+          { id: "incomplete", label: "Incomplete" },
+          { id: "completed", label: "Completed" },
+          { id: "awaitingStudentConfirmation", label: "Awaiting Student Confirmation" },
+        ].map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setFilter(id)}
+            className={`py-1 sm:py-2 px-2 sm:px-4 rounded-lg font-bold text-xs sm:text-base ${
+              filter === id ? "bg-emerald-500 text-white" : "bg-gray-200"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Complaints Table */}
       <div className="overflow-x-auto">
         <table className="table w-full bg-white rounded-lg shadow-md">
           <thead className="bg-emerald-500 text-white">
             <tr>
-              <th className="py-2 px-2 text-xs sm:text-sm md:text-base text-center w-1/4">
-                Room No
-              </th>
-              <th className="py-2 px-2 text-xs sm:text-sm md:text-base text-center w-1/4">
-                Complaint Type
-              </th>
-              <th className="py-2 px-2 text-xs sm:text-sm md:text-base text-center w-1/2">
-                Description
-              </th>
-              <th className="py-2 px-2 text-xs sm:text-sm md:text-base text-center w-1/4">
-                Actions
-              </th>
+              {["Room No", "Complaint Type", "Description", "Actions"].map((h) => (
+                <th
+                  key={h}
+                  className="py-2 px-2 text-xs sm:text-sm md:text-base text-center w-1/4"
+                >
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -162,13 +139,11 @@ const Complaints = () => {
                         <CheckIcon className="h-5 w-5" />
                       </button>
                     )}
-
                     {complaint.studentConfirmed && (
                       <span className="flex items-center justify-center">
                         <CheckIcon className="h-5 w-5 text-blue-500" />
                       </span>
                     )}
-
                     {complaint.staffConfirmed && complaint.studentConfirmed && (
                       <span className="text-emerald-500 font-bold text-xs sm:text-sm md:text-base">
                         Completed
@@ -179,10 +154,7 @@ const Complaints = () => {
               ))
             ) : (
               <tr>
-                <td
-                  colSpan="4"
-                  className="text-center py-4 text-gray-500 text-xs sm:text-sm"
-                >
+                <td colSpan={4} className="text-center py-4 text-gray-500 text-xs sm:text-sm">
                   No complaints found.
                 </td>
               </tr>
