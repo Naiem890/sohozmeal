@@ -8,6 +8,7 @@ import Staff from '../models/staff';
 import RefreshToken from '../models/refreshToken';
 import { validateToken } from '../utils/validateToken';
 import { checkAdminRole } from '../utils/checkAdminRole';
+import { authRateLimiter } from '../app';
 
 const router = Router();
 
@@ -30,11 +31,11 @@ async function createRefreshToken(userId: string, role: string): Promise<string>
   return raw;
 }
 
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
   const { studentId, password } = req.body;
   try {
-    const student = await Student.findOne({ studentId });
-    if (!student || !bcrypt.compareSync(password, student.password)) {
+    const student = await Student.findOne({ studentId }).select('+password');
+    if (!student || !(await bcrypt.compare(password, student.password))) {
       return res.status(401).json({ message: 'Invalid studentId or password' });
     }
 
@@ -51,11 +52,11 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/admin/login', async (req: Request, res: Response) => {
+router.post('/admin/login', authRateLimiter, async (req: Request, res: Response) => {
   const { email, password } = req.body;
   try {
     const admin = await Admin.findOne({ email });
-    if (!admin || !bcrypt.compareSync(password, admin.password)) {
+    if (!admin || !(await bcrypt.compare(password, admin.password))) {
       return res.status(401).json({ message: 'Invalid admin email or password' });
     }
 
@@ -69,11 +70,11 @@ router.post('/admin/login', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/staff/login', async (req: Request, res: Response) => {
+router.post('/staff/login', authRateLimiter, async (req: Request, res: Response) => {
   try {
     const { staffId, password } = req.body;
     const staff = await Staff.findOne({ staffId });
-    if (!staff || !bcrypt.compareSync(password, staff.password)) {
+    if (!staff || !(await bcrypt.compare(password, staff.password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -83,7 +84,7 @@ router.post('/staff/login', async (req: Request, res: Response) => {
     res.status(200).json({ accessToken, refreshToken, staffId: staff.staffId, role: staff.role });
   } catch (error: any) {
     console.error(error);
-    res.status(500).json({ error: 'Error logging in', details: error.message });
+    res.status(500).json({ error: 'Error logging in' });
   }
 });
 
@@ -106,7 +107,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
     const { userId, role } = tokenDoc;
 
     if (role === 'student') {
-      const student = await Student.findOne({ studentId: userId });
+      const student = await Student.findOne({ studentId: userId }).select('+password');
       if (!student) return res.status(401).json({ message: 'User not found' });
       payload = { studentId: student.studentId, role: 'student', _id: student._id };
     } else if (role === 'admin') {
@@ -149,15 +150,15 @@ router.post('/change-password', validateToken, async (req: Request, res: Respons
   const { oldPassword, password } = req.body;
   const { studentId } = req.user;
   try {
-    const student = await Student.findOne({ studentId });
+    const student = await Student.findOne({ studentId }).select('+password');
     if (!student) return res.status(404).json({ message: 'Student not found' });
     if (student.studentId === password) {
       return res.status(400).json({ message: "Password can't be same as student id" });
     }
-    if (!bcrypt.compareSync(oldPassword, student.password)) {
+    if (!(await bcrypt.compare(oldPassword, student.password))) {
       return res.status(400).json({ message: 'Wrong credential!' });
     }
-    student.password = bcrypt.hashSync(password, 10);
+    student.password = password;
     student.firstTimeLogin = false;
     const result = await student.save();
     const resultObj = result.toObject() as any;
@@ -172,9 +173,9 @@ router.post('/change-password', validateToken, async (req: Request, res: Respons
 router.post('/password-reset', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   const { studentId } = req.body;
   try {
-    const student = await Student.findOne({ studentId });
+    const student = await Student.findOne({ studentId }).select('+password');
     if (!student) return res.status(404).json({ message: 'Student not found' });
-    student.password = bcrypt.hashSync(studentId, 10);
+    student.password = studentId;
     student.firstTimeLogin = true;
     const result = await student.save();
     const resultObj = result.toObject() as any;
@@ -186,13 +187,13 @@ router.post('/password-reset', validateToken, checkAdminRole, async (req: Reques
   }
 });
 
-router.post('/admin/register', async (req: Request, res: Response) => {
+router.post('/admin/register', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   const { email, password, wing } = req.body;
   if (!wing || !['MALE', 'FEMALE', 'ALL'].includes(wing)) {
     return res.status(400).json({ message: 'Invalid or missing wing. Must be MALE, FEMALE, or ALL.' });
   }
   try {
-    const existing = await Admin.findOne({ email: { $regex: new RegExp(email, 'i') } });
+    const existing = await Admin.findOne({ email: email.toLowerCase() });
     if (existing) return res.status(400).json({ message: 'Admin with this email already exists' });
     const newAdmin = new Admin({ email, password, wing });
     await newAdmin.save();
@@ -202,7 +203,7 @@ router.post('/admin/register', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/staff', async (req: Request, res: Response) => {
+router.post('/staff', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const { staffId, name, phoneNumber, role, password } = req.body;
     const newStaff = new Staff({ staffId, name, phoneNumber, role, password });
@@ -210,7 +211,7 @@ router.post('/staff', async (req: Request, res: Response) => {
     res.status(201).json({ message: 'Staff member created successfully', staff: saved });
   } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Error creating staff member', details: error.message });
+    res.status(500).json({ message: 'Error creating staff member' });
   }
 });
 

@@ -40,7 +40,7 @@ router.get('/routine', validateToken, async (req: Request, res: Response) => {
   }
 });
 
-router.post('/routine/initialize', async (req: Request, res: Response) => {
+router.post('/routine/initialize', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   const { wing } = req.body;
   if (!wing || !['MALE', 'FEMALE'].includes(wing.toUpperCase())) {
     return res.status(400).json({ error: 'Invalid or missing wing parameter' });
@@ -57,7 +57,7 @@ router.post('/routine/initialize', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/routine', async (req: Request, res: Response) => {
+router.put('/routine', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   const { wing } = req.query as { wing?: string };
   if (!wing || !['MALE', 'FEMALE'].includes(wing.toUpperCase())) {
     return res.status(400).json({ error: 'Invalid or missing wing parameter' });
@@ -66,7 +66,6 @@ router.put('/routine', async (req: Request, res: Response) => {
     const dataToUpdate = req.body;
     const queries = dataToUpdate.map(async (routineData: any) => {
       const { day, breakfast, lunch, dinner } = routineData;
-      console.log(routineData, 'jjs');
       let routine = await Routine.findOne({ day: day.toUpperCase(), wing: wing.toUpperCase() });
       if (routine) {
         routine.breakfast = breakfast;
@@ -147,12 +146,13 @@ router.put('/config', validateToken, checkAdminRole, async (req: Request, res: R
 router.get('/plan', validateToken, async (req: Request, res: Response) => {
   const { studentId } = req.user;
   const { year, month } = req.query as { year?: string; month?: string };
-  console.log(studentId, year, month, 'jjs');
 
   try {
     const filter: any = { studentId };
     if (year && month) {
-      filter.date = { $regex: new RegExp(`^${year}-${month.padStart(2, '0')}-\\d{1,2}`) };
+      const startDate = `${year}-${month.padStart(2, '0')}-01`;
+      const endDate = `${year}-${month.padStart(2, '0')}-31`;
+      filter.date = { $gte: startDate, $lte: endDate };
     }
 
     const meals = await Meal.aggregate([
@@ -256,7 +256,7 @@ router.put('/plan/:mealId', validateToken, async (req: Request, res: Response) =
   }
 });
 
-router.post('/generate-meal', async (req: Request, res: Response) => {
+router.post('/generate-meal', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   const { date } = req.body;
   const { studentId } = req.query as { studentId?: string };
 
@@ -306,7 +306,7 @@ router.post('/generate-meal', async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/plan', async (req: Request, res: Response) => {
+router.delete('/plan', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   const date = req.body.date;
   try {
     const deletedMeal = await Meal.deleteMany({ date });
@@ -326,7 +326,7 @@ const formatDate = (dateString: string): string => {
   return `${year}-${month}-${day}`;
 };
 
-router.get('/students', async (req: Request, res: Response) => {
+router.get('/students', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   const { date, wing, search, residence, page = 1, limit = 20 } = req.query as any;
   if (!date) return res.status(400).json({ error: 'Date parameter is required' });
   if (!wing) return res.status(400).json({ error: 'Wing parameter is required' });

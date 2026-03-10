@@ -9,7 +9,7 @@ export const validateToken = (req: Request, res: Response, next: NextFunction): 
   }
 
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET as string) as any;
+    req.user = jwt.verify(token, process.env.JWT_SECRET as string, { algorithms: ['HS256'] }) as any;
     next();
   } catch {
     res.status(401).json({ isValid: false, message: 'Unauthorized' });

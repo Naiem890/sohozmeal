@@ -101,7 +101,7 @@ router.post('/sync', validateToken, async (req: Request, res: Response) => {
     res.status(200).json({ message: 'Sync complete', affectedDates: Array.from(allAffectedDates).sort() });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'An error occurred during sync', error });
+    res.status(500).json({ message: 'An error occurred during sync' });
   }
 });
 
@@ -221,11 +221,12 @@ router.get('/monthly/all', validateToken, async (req: Request, res: Response) =>
 
     const studentFilter: any = { gender: wing.toUpperCase() };
     if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       studentFilter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { studentId: { $regex: search, $options: 'i' } },
-        { hallId: { $regex: search, $options: 'i' } },
-        { department: { $regex: search, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { studentId: { $regex: escaped, $options: 'i' } },
+        { hallId: { $regex: escaped, $options: 'i' } },
+        { department: { $regex: escaped, $options: 'i' } },
       ];
     }
 

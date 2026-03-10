@@ -15,11 +15,22 @@ const storage = multer.diskStorage({
     cb(null, uploadDirectory);
   },
   filename: function (req, file, cb) {
-    cb(null, file.originalname);
+    const ext = file.mimetype === 'image/png' ? '.png' : file.mimetype === 'image/webp' ? '.webp' : '.jpg';
+    const safeName = `upload_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
+    cb(null, safeName);
   },
 });
 
-const upload = multer({ storage });
+const imageFileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files (jpeg, jpg, png, webp) are allowed'));
+  }
+};
+
+const upload = multer({ storage, fileFilter: imageFileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 import sharp from 'sharp';
 import createMealForNextDay from '../utils/mealInitializer';
 import Meal from '../models/meal';
@@ -29,7 +40,6 @@ const router = Router();
 
 router.get('/', validateToken, async (req: Request, res: Response) => {
   const { studentId } = req.user;
-  console.log('studentId:', studentId);
   try {
     const student = await Student.findOne({ studentId }, { password: 0 });
     if (!student) {
@@ -38,7 +48,7 @@ router.get('/', validateToken, async (req: Request, res: Response) => {
       res.status(200).json({ student });
     }
   } catch (error) {
-    console.log('Error:', error);
+    console.error('Error:', error);
     res.status(500).json({ message: 'An error occurred' });
   }
 });
@@ -86,10 +96,11 @@ router.get('/all', validateToken, checkAdminRole, async (req: Request, res: Resp
 
     const query: any = {};
     if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { studentId: { $regex: search, $options: 'i' } },
-        { hallId: { $regex: search, $options: 'i' } },
-        { name: { $regex: search, $options: 'i' } },
+        { studentId: { $regex: escaped, $options: 'i' } },
+        { hallId: { $regex: escaped, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
       ];
     }
     if (department && department !== 'all') query.department = department;
@@ -157,7 +168,7 @@ router.put('/', validateToken, upload.single('profileImage'), async (req: Reques
     await student.save();
     res.status(200).json({ student, message: 'Profile updated successfully' });
   } catch (error) {
-    console.log('error:', error);
+    console.error('Error updating profile:', error);
     res.status(500).json({ message: 'An error occurred' });
   }
 });
@@ -229,7 +240,7 @@ router.post('/add', validateToken, checkAdminRole, upload.single('profileImage')
       else if (error.message.includes('hallId')) errorMessage = 'Duplicate hall ID';
       res.status(400).json({ message: errorMessage });
     } else {
-      res.status(500).json({ message: 'Error adding the student', error: error.message });
+      res.status(500).json({ message: 'Error adding the student' });
     }
   }
 });
@@ -246,7 +257,8 @@ router.get('/blood-bank/:gender', validateToken, async (req: Request, res: Respo
     if (bloodGroup && bloodGroup !== 'ALL') matchFilter.bloodGroup = bloodGroup;
 
     if (search && search.trim()) {
-      andConditions.push({ $or: [{ name: { $regex: search.trim(), $options: 'i' } }, { phoneNumber: { $regex: search.trim(), $options: 'i' } }, { studentId: { $regex: search.trim(), $options: 'i' } }] });
+      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      andConditions.push({ $or: [{ name: { $regex: escapedSearch, $options: 'i' } }, { phoneNumber: { $regex: escapedSearch, $options: 'i' } }, { studentId: { $regex: escapedSearch, $options: 'i' } }] });
     }
 
     const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
@@ -281,7 +293,7 @@ router.get('/blood-bank/:gender', validateToken, async (req: Request, res: Respo
     res.status(200).json(dashboard);
   } catch (error) {
     console.error('Error retrieving donor dashboard:', error);
-    res.status(500).json({ message: 'Error retrieving donor dashboard', error });
+    res.status(500).json({ message: 'Error retrieving donor dashboard' });
   }
 });
 

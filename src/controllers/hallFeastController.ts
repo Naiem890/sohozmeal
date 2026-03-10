@@ -3,6 +3,8 @@ import Cost from '../models/cost';
 import HallFeast from '../models/hallFeast';
 import Meal from '../models/meal';
 import Student from '../models/student';
+import { validateToken } from '../utils/validateToken';
+import { checkAdminRole } from '../utils/checkAdminRole';
 
 const router = Router();
 
@@ -48,7 +50,7 @@ async function updateBillStudentsCount(
   }
 }
 
-router.post('/check', async (req: Request, res: Response) => {
+router.post('/check', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const { date, meal, wing } = req.body;
     if (!wing || !['MALE', 'FEMALE'].includes(wing.toUpperCase())) {
@@ -61,11 +63,11 @@ router.post('/check', async (req: Request, res: Response) => {
       return res.status(200).json({ status: 'off', message: `${meal} is off for ${wing} wing on ${date}` });
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   const { date, meal, wing } = req.body;
   try {
     if (!wing || !['MALE', 'FEMALE'].includes(wing.toUpperCase())) {
@@ -76,51 +78,51 @@ router.post('/', async (req: Request, res: Response) => {
     await updateBillStudentsCount(date, meal, wing.toUpperCase(), true);
     res.status(201).json(hallFeast);
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: 'Error creating hall feast' });
   }
 });
 
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const hallFeasts = await HallFeast.find();
     res.status(200).json(hallFeasts);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const hallFeast = await HallFeast.findById(req.params.id);
     if (!hallFeast) return res.status(404).json({ error: 'HallFeast not found' });
     res.status(200).json(hallFeast);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const hallFeast = await HallFeast.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!hallFeast) return res.status(404).json({ error: 'HallFeast not found' });
     res.status(200).json(hallFeast);
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: 'Error updating hall feast' });
   }
 });
 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const hallFeast = await HallFeast.findByIdAndDelete(req.params.id);
     if (!hallFeast) return res.status(404).json({ error: 'HallFeast not found' });
     await updateBillStudentsCount(hallFeast.date, hallFeast.meal, hallFeast.wing, false);
     res.status(200).json({ message: 'HallFeast deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-router.get('/date/:date/wing/:wing', async (req: Request, res: Response) => {
+router.get('/date/:date/wing/:wing', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const date = req.params.date as string;
     const wing = req.params.wing as string;
@@ -136,7 +138,7 @@ router.get('/date/:date/wing/:wing', async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/date/:date/meal/:meal/wing/:wing', async (req: Request, res: Response) => {
+router.delete('/date/:date/meal/:meal/wing/:wing', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   const date = req.params.date as string;
   const meal = req.params.meal as string;
   const wing = req.params.wing as string;
@@ -155,11 +157,11 @@ router.delete('/date/:date/meal/:meal/wing/:wing', async (req: Request, res: Res
     await updateBillStudentsCount(date, meal, wing.toUpperCase(), false);
     res.status(200).json({ message: 'HallFeast deleted successfully', deletedHallFeast });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-router.get('/month/:year/:month/wing/:wing', async (req: Request, res: Response) => {
+router.get('/month/:year/:month/wing/:wing', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const year = req.params.year as string;
     const month = req.params.month as string;
@@ -179,7 +181,7 @@ router.get('/month/:year/:month/wing/:wing', async (req: Request, res: Response)
     }
     res.status(200).json(hallFeasts);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

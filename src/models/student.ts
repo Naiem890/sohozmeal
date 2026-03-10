@@ -31,9 +31,7 @@ const studentSchema = new Schema<IStudent>({
   name: { type: String, required: true },
   password: {
     type: String,
-    default: function (this: IStudent) {
-      return bcrypt.hashSync(this.studentId + '', 10);
-    },
+    select: false,
   },
   department: {
     type: String,
@@ -101,6 +99,17 @@ const studentSchema = new Schema<IStudent>({
   },
   isDonor: { type: Boolean, default: false },
   lastDonationDate: { type: Date, default: null },
+});
+
+studentSchema.pre('save', async function (next) {
+  // For new documents without a password set, default to studentId
+  if (this.isNew && !this.password) {
+    this.password = await bcrypt.hash(this.studentId + '', 10);
+    return next();
+  }
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
 
 studentSchema.index(

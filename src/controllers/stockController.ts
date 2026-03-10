@@ -64,7 +64,7 @@ router.delete('/item/:id', validateToken, async (req: Request, res: Response) =>
     if (associatedStock || associatedTransaction) {
       return res.status(400).json({ error: 'Cannot delete this item because it is associated with a stock or transactions.' });
     }
-    const deletedItem = await StockItem.findByIdAndRemove(itemId);
+    const deletedItem = await StockItem.findByIdAndDelete(itemId);
     if (!deletedItem) return res.status(404).json({ error: 'Stock item not found' });
     res.json({ message: 'Stock item deleted successfully' });
   } catch (error) {
@@ -148,7 +148,7 @@ router.put('/:id', validateToken, async (req: Request, res: Response) => {
 router.delete('/:id', validateToken, async (req: Request, res: Response) => {
   try {
     const stockId = req.params.id;
-    const deletedStock = await Stock.findByIdAndRemove(stockId);
+    const deletedStock = await Stock.findByIdAndDelete(stockId);
     if (!deletedStock) return res.status(404).json({ error: 'Stock not found' });
     res.json(deletedStock);
   } catch (error) {
