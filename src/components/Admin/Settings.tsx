@@ -49,8 +49,8 @@ function WingSettings({ wing, onSaved }: { wing: string; onSaved?: () => void })
         }
       );
       onSaved?.();
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // toast.promise already handles error display
     }
   };
 

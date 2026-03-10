@@ -223,7 +223,7 @@ export default function MealPlan() {
           )
         );
       }
-      console.error("Meal update error:", error);
+      void error;
     }
   };
 
@@ -262,7 +262,7 @@ export default function MealPlan() {
         setShowGuestModal(false);
       }
     } catch (error) {
-      console.error("Guest meal submit error:", error);
+      void error;
     }
   };
 
@@ -272,8 +272,8 @@ export default function MealPlan() {
         const res = await Axios.get(`/meal/config?wing=${auth?.wing || "MALE"}`);
         setCutoffHour(res.data.cutoffHour ?? 22);
         setCutoffMinute(res.data.cutoffMinute ?? 0);
-      } catch (e) {
-        console.error("Failed to fetch meal config:", e);
+      } catch {
+        // silently handled
       }
     };
     fetchCutoffConfig();

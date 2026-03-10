@@ -34,8 +34,8 @@ export default function TotalBill() {
         setStudent(res.data.student);
         setName(res.data.student.name);
       }
-    } catch (err) {
-      console.log("Error fetching student data:", err);
+    } catch {
+      // silently handled
     }
   };
 
@@ -59,8 +59,8 @@ export default function TotalBill() {
         try {
           const res = await Axios.get(`/cost/student?year=${year}&month=${month}`);
           setMealBillData(res.data.mealBillData);
-        } catch (err) {
-          console.log("Error fetching bill data:", err);
+        } catch {
+          // silently handled
         }
       }
     };

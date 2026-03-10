@@ -92,8 +92,8 @@ export default function Tution() {
           })) || [],
       });
       setIsTutorAvailable(studentData?.isTutorAvailable);
-    } catch (err) {
-      console.log(err);
+    } catch {
+      // silently handled
     }
   };
 

@@ -60,8 +60,8 @@ export default function BillCount() {
         ]);
         setMealBillData(billRes.data.mealBillData);
         setHallFeasts(feastRes.data);
-      } catch (err) {
-        console.error("Error fetching bill data:", err);
+      } catch {
+        // silently handled
       }
     };
     fetchBill();

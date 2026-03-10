@@ -38,20 +38,18 @@ export default function Profile() {
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [image, setImage] = useState<string | null>(null);
 
-  const createObjectURL = (buffer: number[]) => {
-    const blob = new Blob([new Uint8Array(buffer)], { type: "image/jpeg" });
-    return URL.createObjectURL(blob);
-  };
-
   useEffect(() => {
     Axios.get("/student")
       .then((res) => setStudent(res.data.student))
-      .catch((err) => console.error(err));
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (student?.profileImage) {
-      setImage(createObjectURL(student.profileImage.data));
+      const blob = new Blob([new Uint8Array(student.profileImage.data)], { type: "image/jpeg" });
+      const url = URL.createObjectURL(blob);
+      setImage(url);
+      return () => URL.revokeObjectURL(url);
     }
   }, [student]);
 

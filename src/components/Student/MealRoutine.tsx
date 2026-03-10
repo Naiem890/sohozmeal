@@ -48,7 +48,7 @@ export default function MealRoutine() {
   useEffect(() => {
     Axios.get("/meal/routine", { params: { wing } })
       .then((res) => setMealData(res.data))
-      .catch((err) => console.error(err));
+      .catch(() => {});
   }, [wing]);
 
   return (

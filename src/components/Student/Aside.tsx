@@ -52,8 +52,8 @@ export default function Aside({ isOpen, onClose }: AsideProps) {
         signOut();
         navigate("/");
         toast.success("Logged out successfully!");
-      } catch (error) {
-        console.error(error);
+      } catch {
+        // logout proceeds on frontend regardless
       }
     }
   };

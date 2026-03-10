@@ -204,8 +204,8 @@ export const Stock = () => {
       );
       setTransactions([]);
       setRefetch((p) => !p);
-    } catch (error) {
-      console.error(error);
+    } catch {
+      // toast.promise already handles error display
     }
   }, [transactions, wing]);
 

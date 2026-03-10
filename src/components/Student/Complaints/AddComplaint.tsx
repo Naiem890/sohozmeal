@@ -53,9 +53,6 @@ const AddComplaint = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Mock API call
-    console.log("Submitted Complaint Data:", formData);
-
     // Clear the form after submission
     setFormData({
       title: "",

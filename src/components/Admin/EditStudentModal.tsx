@@ -60,8 +60,9 @@ export const EditStudentModal = ({ showModal, setShowModal, student, setStudents
     });
 
   useEffect(() => {
+    let url: string | null = null;
     if (student?.profileImage) {
-      const url = URL.createObjectURL(
+      url = URL.createObjectURL(
         new Blob([new Uint8Array(student.profileImage.data)], { type: "image/jpeg" })
       );
       setImagePreview(url);
@@ -72,6 +73,7 @@ export const EditStudentModal = ({ showModal, setShowModal, student, setStudents
     }
     setImageFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    return () => { if (url) URL.revokeObjectURL(url); };
   }, [student]);
 
   const handleSubmit = async (e: React.FormEvent) => {

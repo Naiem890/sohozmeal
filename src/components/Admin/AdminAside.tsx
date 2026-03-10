@@ -67,8 +67,8 @@ export default function AdminAside({ isOpen, toggleDrawer, isCollapsed, toggleCo
         signOut();
         navigate("/");
         toast.success("Logged out successfully!");
-      } catch (error) {
-        console.error("Logout error:", error);
+      } catch {
+        // logout proceeds on frontend regardless
       }
     }
   };

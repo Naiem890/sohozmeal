@@ -36,8 +36,8 @@ export default function StaffAside({ isOpen, onClose }: StaffAsideProps) {
         signOut();
         navigate("/");
         toast.success("Logged out successfully!");
-      } catch (error) {
-        console.log(error);
+      } catch {
+        // logout proceeds on frontend regardless
       }
     }
   };

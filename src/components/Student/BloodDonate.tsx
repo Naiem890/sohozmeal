@@ -80,8 +80,8 @@ export default function BloodDonate() {
       };
       setProfile(data);
       setForm({ bloodGroup: data.bloodGroup, isDonor: data.isDonor, lastDonationDate: data.lastDonationDate, phoneNumber: data.phoneNumber });
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // silently handled
     }
   };
 

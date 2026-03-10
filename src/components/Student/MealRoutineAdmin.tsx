@@ -87,8 +87,7 @@ const MealRoutineAdmin = () => {
           ? sortMealData(response.data) // Sort the data before setting state
           : defaultRoutine(); // Fallback to default routine if all values are null
       setMealData(data);
-    } catch (error) {
-      console.error("Error fetching meal routine data:", error);
+    } catch {
       setMealData(defaultRoutine()); // Set default routine on error
     }
   };
@@ -129,7 +128,7 @@ const MealRoutineAdmin = () => {
         toast.error(
           e.response?.data?.message || "Error updating meal routine."
         );
-        console.error("Error updating meal routine data:", error);
+        void error;
       }
     }
   };
