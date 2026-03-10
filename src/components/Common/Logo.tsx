@@ -1,7 +1,13 @@
-import React from "react";
 import HeadingLogo from "./HeadingLogo";
 
-export default function Logo(props) {
+interface LogoProps {
+  logo?: string;
+  alt?: string;
+  title?: string;
+  subTitle?: string;
+}
+
+export default function Logo(props: LogoProps) {
   return (
     <div className="flex items-center gap-4 md:gap-5 flex-wrap">
       {props.logo && (

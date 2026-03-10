@@ -1,13 +1,25 @@
-import React from 'react';
-import Select from 'react-select';
+import Select, { type SingleValue } from "react-select";
 
-const TableFilters = ({ 
-  bloodGroups, 
-  selectedBloodGroup, 
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface TableFiltersProps {
+  bloodGroups: SelectOption[];
+  selectedBloodGroup: SingleValue<SelectOption>;
+  setSelectedBloodGroup: (value: SingleValue<SelectOption>) => void;
+  searchTerm: string;
+  setSearchTerm: (value: string) => void;
+}
+
+const TableFilters = ({
+  bloodGroups,
+  selectedBloodGroup,
   setSelectedBloodGroup,
   searchTerm,
-  setSearchTerm 
-}) => {
+  setSearchTerm,
+}: TableFiltersProps) => {
   return (
     <div className="mb-6 flex flex-col md:flex-row gap-4">
       <div className="w-full md:w-1/3">
@@ -24,11 +36,9 @@ const TableFilters = ({
           placeholder="Select Blood Group"
         />
       </div>
-      
+
       <div className="w-full md:w-1/3">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Search Donors
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Search Donors</label>
         <input
           type="text"
           value={searchTerm}

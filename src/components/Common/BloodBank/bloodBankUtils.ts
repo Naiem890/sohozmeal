@@ -1,8 +1,9 @@
 import { differenceInDays } from "date-fns";
+import type { BloodGroup } from "@/types";
 
 export const DONATION_INTERVAL_DAYS = 90;
 
-export const BG_COLORS = {
+export const BG_COLORS: Record<BloodGroup, string> = {
   "A+":  "bg-red-100 text-red-700 border-red-200",
   "A-":  "bg-red-50 text-red-600 border-red-200",
   "B+":  "bg-blue-100 text-blue-700 border-blue-200",
@@ -13,7 +14,7 @@ export const BG_COLORS = {
   "O-":  "bg-emerald-50 text-emerald-600 border-emerald-200",
 };
 
-export function isDonorAvailable(lastDonationDate) {
+export function isDonorAvailable(lastDonationDate: string | null | undefined): boolean {
   if (!lastDonationDate) return true;
   return differenceInDays(new Date(), new Date(lastDonationDate)) >= DONATION_INTERVAL_DAYS;
 }

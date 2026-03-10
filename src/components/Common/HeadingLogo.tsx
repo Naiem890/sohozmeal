@@ -1,4 +1,9 @@
-export default function HeadingLogo({ title, subTitle }) {
+interface HeadingLogoProps {
+  title?: string;
+  subTitle?: string;
+}
+
+export default function HeadingLogo({ title, subTitle }: HeadingLogoProps) {
   return (
     <div>
       <h2 className="uppercase text-center text-xl font-bold tracking-tight text-foreground">

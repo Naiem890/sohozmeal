@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,24 +7,37 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 
-const ConfirmContext = createContext(null);
+interface ConfirmOptions {
+  title?: string;
+  description?: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: ButtonProps["variant"];
+}
 
-export function ConfirmProvider({ children }) {
-  const [state, setState] = useState({ open: false, options: {} });
-  const resolveRef = useRef(null);
+type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
+
+const ConfirmContext = createContext<ConfirmFn | null>(null);
+
+export function ConfirmProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<{ open: boolean; options: ConfirmOptions }>({
+    open: false,
+    options: {},
+  });
+  const resolveRef = useRef<((value: boolean) => void) | null>(null);
 
   const confirm = useCallback(
-    (options) =>
-      new Promise((resolve) => {
+    (options: ConfirmOptions) =>
+      new Promise<boolean>((resolve) => {
         resolveRef.current = resolve;
         setState({ open: true, options });
       }),
     []
   );
 
-  const handle = (result) => {
+  const handle = (result: boolean) => {
     setState((s) => ({ ...s, open: false }));
     resolveRef.current?.(result);
     resolveRef.current = null;
@@ -79,4 +92,4 @@ export function ConfirmProvider({ children }) {
   );
 }
 
-export const useConfirm = () => useContext(ConfirmContext);
+export const useConfirm = (): ConfirmFn | null => useContext(ConfirmContext);

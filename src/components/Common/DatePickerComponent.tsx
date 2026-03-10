@@ -1,6 +1,11 @@
 import { MonthYearPicker } from "@/components/ui/date-picker";
 
-export default function DatePickerComponent({ selectedDate, onDateChange }) {
+interface DatePickerComponentProps {
+  selectedDate?: Date | null;
+  onDateChange?: (date: Date) => void;
+}
+
+export default function DatePickerComponent({ selectedDate, onDateChange }: DatePickerComponentProps) {
   const today = new Date();
   const maxDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 

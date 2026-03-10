@@ -23,10 +23,27 @@ import {
 import { Axios } from "../../../api/api";
 import { useDebounce } from "../../../Utils/useDebounce";
 import { BG_COLORS, isDonorAvailable, DONATION_INTERVAL_DAYS } from "./bloodBankUtils";
+import type { BloodGroup, Wing } from "@/types";
 
-const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const BLOOD_GROUPS: BloodGroup[] = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-export function BloodGroupBadge({ group, className = "" }) {
+interface Donor {
+  _id: string;
+  name: string;
+  phoneNumber: string;
+  lastDonationDate?: string | null;
+  residence?: string;
+  roomNo?: string;
+  gender: "MALE" | "FEMALE";
+  bloodGroup: BloodGroup;
+}
+
+interface BloodGroupBadgeProps {
+  group: BloodGroup;
+  className?: string;
+}
+
+export function BloodGroupBadge({ group, className = "" }: BloodGroupBadgeProps) {
   const color = BG_COLORS[group] || "bg-gray-100 text-gray-700 border-gray-200";
   return (
     <span
@@ -37,14 +54,18 @@ export function BloodGroupBadge({ group, className = "" }) {
   );
 }
 
+interface BloodDonorTableProps {
+  wing?: Exclude<Wing, "ALL"> | string;
+  showWing?: boolean;
+}
 
-const BloodDonorTable = ({ wing, showWing = false }) => {
+const BloodDonorTable = ({ wing, showWing = false }: BloodDonorTableProps) => {
   const [search, setSearch] = useState("");
   const [bloodGroupFilter, setBloodGroupFilter] = useState("ALL");
   const [availabilityFilter, setAvailabilityFilter] = useState("ALL");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [donors, setDonors] = useState([]);
+  const [donors, setDonors] = useState<Donor[]>([]);
   const [loading, setLoading] = useState(false);
 
   const debouncedSearch = useDebounce(search, 350);
@@ -63,8 +84,10 @@ const BloodDonorTable = ({ wing, showWing = false }) => {
     setLoading(true);
     Axios.get(`/student/blood-bank/${wing}?${params.toString()}`)
       .then((res) => {
-        const flat = Object.entries(res.data).flatMap(([bg, { donors: list = [] }]) =>
-          list.map((d) => ({ ...d, bloodGroup: bg }))
+        const flat = Object.entries(
+          res.data as Record<string, { donors?: Omit<Donor, "bloodGroup">[] }>
+        ).flatMap(([bg, { donors: list = [] }]) =>
+          list.map((d) => ({ ...d, bloodGroup: bg as BloodGroup }))
         );
         setDonors(flat);
       })
@@ -73,11 +96,7 @@ const BloodDonorTable = ({ wing, showWing = false }) => {
   }, [wing, debouncedSearch, bloodGroupFilter, availabilityFilter, dateFrom, dateTo]);
 
   const hasFilters =
-    search ||
-    bloodGroupFilter !== "ALL" ||
-    availabilityFilter !== "ALL" ||
-    dateFrom ||
-    dateTo;
+    search || bloodGroupFilter !== "ALL" || availabilityFilter !== "ALL" || dateFrom || dateTo;
 
   const resetFilters = () => {
     setSearch("");
@@ -96,9 +115,8 @@ const BloodDonorTable = ({ wing, showWing = false }) => {
 
   return (
     <div className="space-y-3">
-      {/* ── Filter row ── all items h-9, flex items-center, no stacked labels ── */}
+      {/* ── Filter row ── */}
       <div className="flex items-center gap-2 flex-wrap">
-        {/* Search */}
         <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
@@ -109,7 +127,6 @@ const BloodDonorTable = ({ wing, showWing = false }) => {
           />
         </div>
 
-        {/* Blood Group */}
         <Select value={bloodGroupFilter} onValueChange={setBloodGroupFilter}>
           <SelectTrigger className="w-36 h-9 text-sm shrink-0">
             <SelectValue placeholder="Blood Group" />
@@ -122,7 +139,6 @@ const BloodDonorTable = ({ wing, showWing = false }) => {
           </SelectContent>
         </Select>
 
-        {/* Availability */}
         <Select value={availabilityFilter} onValueChange={setAvailabilityFilter}>
           <SelectTrigger className="w-44 h-9 text-sm shrink-0">
             <SelectValue placeholder="Availability" />
@@ -134,7 +150,6 @@ const BloodDonorTable = ({ wing, showWing = false }) => {
           </SelectContent>
         </Select>
 
-        {/* Date range */}
         <DatePicker
           value={dateFrom}
           onChange={(d) => setDateFrom(format(d, "yyyy-MM-dd"))}
@@ -151,7 +166,6 @@ const BloodDonorTable = ({ wing, showWing = false }) => {
           className="w-36 shrink-0"
         />
 
-        {/* Clear */}
         {hasFilters && (
           <Button
             variant="ghost"
