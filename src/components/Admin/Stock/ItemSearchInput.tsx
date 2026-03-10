@@ -43,6 +43,7 @@ export const ItemSearchInput = forwardRef<HTMLInputElement, ItemSearchInputProps
 
     useEffect(() => {
       setQuery(value?.name || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value?._id]);
 
     useEffect(() => {

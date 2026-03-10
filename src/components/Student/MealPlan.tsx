@@ -277,6 +277,7 @@ export default function MealPlan() {
       }
     };
     fetchCutoffConfig();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -298,6 +299,7 @@ export default function MealPlan() {
       setMeals(meals);
     };
     fetchMeals();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth]);
 
   const isMealEditable = (mealDate: string) => mealDate === validDate();

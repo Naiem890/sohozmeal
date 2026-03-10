@@ -95,6 +95,7 @@ const MealRoutineAdmin = () => {
 
   useEffect(() => {
     fetchMealRoutineData(selectedWing); // Fetch data based on selected wing
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedWing]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number, mealType: keyof RoutineRow) => {

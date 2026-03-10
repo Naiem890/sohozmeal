@@ -10,6 +10,7 @@ import { useAuthUser } from "react-auth-kit";
 import { Loader2 } from "lucide-react";
 import Pagination from "../../Common/Pagination";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const formatMealDate = (date: Date | string) => {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
@@ -271,6 +272,7 @@ export const Meal = () => {
       setLoading(false);
       toast.error("Failed to generate meal");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formattedDate, gender, debouncedSearch, residence, page, pageSize]);
 
   // True when user is typing but debounce hasn't fired yet
