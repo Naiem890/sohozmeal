@@ -55,9 +55,9 @@ router.post('/generate-bills', validateToken, async (req: Request, res: Response
         Object.keys(attendanceOnDate).forEach((studentId) => {
           const studentMeals = attendanceOnDate[studentId];
           if (!studentInfo[studentId]) studentInfo[studentId] = { totalCost: 0 };
-          if (studentMeals.breakfast) studentInfo[studentId].totalCost += perHeadCosts.breakfast;
-          if (studentMeals.lunch) studentInfo[studentId].totalCost += perHeadCosts.lunch;
-          if (studentMeals.dinner) studentInfo[studentId].totalCost += perHeadCosts.dinner;
+          if (studentMeals.breakfast) studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + perHeadCosts.breakfast);
+          if (studentMeals.lunch) studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + perHeadCosts.lunch);
+          if (studentMeals.dinner) studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + perHeadCosts.dinner);
         });
       }
     });
@@ -304,12 +304,12 @@ router.get('/monthly/all', validateToken, async (req: Request, res: Response) =>
       studentIds.forEach((studentId) => {
         const mealStatus = mealStatusByStudent[studentId][formattedDate];
         const { guestMeal } = mealStatus;
-        if (guestMeal.breakfast > 0) studentMonthlyCosts[studentId] += guestMeal.breakfast * perHeadBreakfastCost;
-        if (guestMeal.lunch > 0) studentMonthlyCosts[studentId] += guestMeal.lunch * perHeadLunchCost;
-        if (guestMeal.dinner > 0) studentMonthlyCosts[studentId] += guestMeal.dinner * perHeadDinnerCost;
-        if (mealStatus?.breakfast) { studentMonthlyCosts[studentId] += perHeadBreakfastCost; mealStatus.perHeadCost.breakfast = perHeadBreakfastCost; }
-        if (mealStatus?.lunch) { studentMonthlyCosts[studentId] += perHeadLunchCost; mealStatus.perHeadCost.lunch = perHeadLunchCost; }
-        if (mealStatus?.dinner) { studentMonthlyCosts[studentId] += perHeadDinnerCost; mealStatus.perHeadCost.dinner = perHeadDinnerCost; }
+        if (guestMeal.breakfast > 0) studentMonthlyCosts[studentId] = r2(studentMonthlyCosts[studentId] + r2(guestMeal.breakfast * perHeadBreakfastCost));
+        if (guestMeal.lunch > 0) studentMonthlyCosts[studentId] = r2(studentMonthlyCosts[studentId] + r2(guestMeal.lunch * perHeadLunchCost));
+        if (guestMeal.dinner > 0) studentMonthlyCosts[studentId] = r2(studentMonthlyCosts[studentId] + r2(guestMeal.dinner * perHeadDinnerCost));
+        if (mealStatus?.breakfast) { studentMonthlyCosts[studentId] = r2(studentMonthlyCosts[studentId] + perHeadBreakfastCost); mealStatus.perHeadCost.breakfast = perHeadBreakfastCost; }
+        if (mealStatus?.lunch) { studentMonthlyCosts[studentId] = r2(studentMonthlyCosts[studentId] + perHeadLunchCost); mealStatus.perHeadCost.lunch = perHeadLunchCost; }
+        if (mealStatus?.dinner) { studentMonthlyCosts[studentId] = r2(studentMonthlyCosts[studentId] + perHeadDinnerCost); mealStatus.perHeadCost.dinner = perHeadDinnerCost; }
       });
     });
 
@@ -401,10 +401,10 @@ router.get('/monthly/student', validateToken, async (req: Request, res: Response
           const isFeast = hallFeastForDay[mealType];
           const guestMealCount = mealStatus.guestMeal[mealType];
           if (!isFeast && mealStatus[mealType]) {
-            totalMonthlyCost += (perHeadCosts as any)[mealType];
+            totalMonthlyCost = r2(totalMonthlyCost + (perHeadCosts as any)[mealType]);
             mealStatus.perHeadCost[mealType] = (perHeadCosts as any)[mealType];
           }
-          totalMonthlyCost += guestMealCount * (perHeadCosts as any)[mealType];
+          totalMonthlyCost = r2(totalMonthlyCost + r2(guestMealCount * (perHeadCosts as any)[mealType]));
         });
       }
     });

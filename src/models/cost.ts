@@ -40,21 +40,24 @@ const costSchema = new Schema<ICost>(
   }
 );
 
+/** Round to 4 decimal places — preserves precision for per-head costs used in further multiplication */
+const r4 = (v: number): number => Math.round(v * 10000) / 10000;
+
 costSchema.virtual('mealBill.breakfast.perHeadCost').get(function (this: ICost) {
   return this.mealBill.breakfast.totalStudent !== 0
-    ? this.mealBill.breakfast.totalCost / this.mealBill.breakfast.totalStudent
+    ? r4(this.mealBill.breakfast.totalCost / this.mealBill.breakfast.totalStudent)
     : 0;
 });
 
 costSchema.virtual('mealBill.lunch.perHeadCost').get(function (this: ICost) {
   return this.mealBill.lunch.totalStudent !== 0
-    ? this.mealBill.lunch.totalCost / this.mealBill.lunch.totalStudent
+    ? r4(this.mealBill.lunch.totalCost / this.mealBill.lunch.totalStudent)
     : 0;
 });
 
 costSchema.virtual('mealBill.dinner.perHeadCost').get(function (this: ICost) {
   return this.mealBill.dinner.totalStudent !== 0
-    ? this.mealBill.dinner.totalCost / this.mealBill.dinner.totalStudent
+    ? r4(this.mealBill.dinner.totalCost / this.mealBill.dinner.totalStudent)
     : 0;
 });
 
