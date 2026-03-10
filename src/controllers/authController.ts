@@ -8,7 +8,7 @@ import Staff from '../models/staff';
 import RefreshToken from '../models/refreshToken';
 import { validateToken } from '../utils/validateToken';
 import { checkAdminRole } from '../utils/checkAdminRole';
-import { authRateLimiter } from '../app';
+import { authRateLimiter } from '../utils/rateLimiter';
 
 const router = Router();
 

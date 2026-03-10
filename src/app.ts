@@ -1,11 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import logger from 'morgan';
 import cookieParser from 'cookie-parser';
 import dbConnect from './config/database';
 import apiRoutes from './routes/index';
+import { globalRateLimiter } from './utils/rateLimiter';
 
 require('dotenv').config();
 
@@ -17,24 +17,6 @@ app.use(helmet());
 
 // Restricted CORS
 app.use(cors({ origin: ['https://hall.mist.ac.bd', 'http://localhost:5173', 'http://localhost:3000'] }));
-
-// Global rate limiter: 100 requests per 15 minutes per IP
-export const globalRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later.' },
-});
-
-// Stricter rate limiter for auth routes: 20 requests per 15 minutes per IP
-export const authRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many authentication attempts, please try again later.' },
-});
 
 const middleware = [
   globalRateLimiter,
