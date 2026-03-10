@@ -5,7 +5,7 @@ import logger from 'morgan';
 import cookieParser from 'cookie-parser';
 import dbConnect from './config/database';
 import apiRoutes from './routes/index';
-import { globalRateLimiter } from './utils/rateLimiter';
+
 
 require('dotenv').config();
 
@@ -19,7 +19,6 @@ app.use(helmet());
 app.use(cors({ origin: ['https://hall.mist.ac.bd', 'http://localhost:5173', 'http://localhost:3000'] }));
 
 const middleware = [
-  globalRateLimiter,
   logger('dev'),
   cookieParser(),
   express.static('public'),

@@ -8,7 +8,7 @@ import Staff from '../models/staff';
 import RefreshToken from '../models/refreshToken';
 import { validateToken } from '../utils/validateToken';
 import { checkAdminRole } from '../utils/checkAdminRole';
-import { authRateLimiter } from '../utils/rateLimiter';
+
 
 const router = Router();
 
@@ -31,7 +31,7 @@ async function createRefreshToken(userId: string, role: string): Promise<string>
   return raw;
 }
 
-router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response) => {
   const { studentId, password } = req.body;
   try {
     const student = await Student.findOne({ studentId }).select('+password');
@@ -52,7 +52,7 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
   }
 });
 
-router.post('/admin/login', authRateLimiter, async (req: Request, res: Response) => {
+router.post('/admin/login', async (req: Request, res: Response) => {
   const { email, password } = req.body;
   try {
     const admin = await Admin.findOne({ email });
@@ -70,7 +70,7 @@ router.post('/admin/login', authRateLimiter, async (req: Request, res: Response)
   }
 });
 
-router.post('/staff/login', authRateLimiter, async (req: Request, res: Response) => {
+router.post('/staff/login', async (req: Request, res: Response) => {
   try {
     const { staffId, password } = req.body;
     const staff = await Staff.findOne({ staffId });
