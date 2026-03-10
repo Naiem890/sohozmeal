@@ -1,4 +1,4 @@
-import { UtensilsCrossed, Users } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, UtensilsCrossed, Users } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useAuthUser } from "react-auth-kit";
 import { dateToDayConverter } from "../../Utils/dateToDayConverter";
@@ -8,9 +8,94 @@ import { Axios } from "../../api/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Minus, Plus } from "lucide-react";
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MIN_YEAR = 2023;
+
+function MonthYearPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const now = new Date();
+  const [pickerYear, setPickerYear] = useState(() =>
+    value ? parseInt(value.split("-")[0]) : now.getFullYear()
+  );
+  const [open, setOpen] = useState(false);
+
+  const selYear = value ? parseInt(value.split("-")[0]) : null;
+  const selMonthIdx = value ? parseInt(value.split("-")[1]) - 1 : null;
+
+  const handleSelect = (idx: number) => {
+    onChange(`${pickerYear}-${String(idx + 1).padStart(2, "0")}`);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2 font-semibold min-w-[148px] justify-between">
+          <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="flex-1 text-left">{value ? formatDate(value) : "Select month"}</span>
+          <ChevronRight className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", open && "rotate-90")} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 p-3">
+        {/* Year navigation */}
+        <div className="flex items-center justify-between mb-3">
+          <button
+            type="button"
+            onClick={() => setPickerYear((y) => Math.max(MIN_YEAR, y - 1))}
+            disabled={pickerYear <= MIN_YEAR}
+            className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:pointer-events-none"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-sm font-bold tracking-wide">{pickerYear}</span>
+          <button
+            type="button"
+            onClick={() => setPickerYear((y) => Math.min(now.getFullYear(), y + 1))}
+            disabled={pickerYear >= now.getFullYear()}
+            className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:pointer-events-none"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Month grid */}
+        <div className="grid grid-cols-3 gap-1">
+          {MONTH_NAMES.map((name, idx) => {
+            const isFuture =
+              pickerYear > now.getFullYear() ||
+              (pickerYear === now.getFullYear() && idx > now.getMonth());
+            const isSelected = selYear === pickerYear && selMonthIdx === idx;
+            const isCurrent =
+              pickerYear === now.getFullYear() && idx === now.getMonth();
+
+            return (
+              <button
+                key={name}
+                type="button"
+                disabled={isFuture}
+                onClick={() => handleSelect(idx)}
+                className={cn(
+                  "rounded-lg py-2 text-sm font-medium transition-colors relative",
+                  isSelected
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : isFuture
+                    ? "text-muted-foreground/30 pointer-events-none"
+                    : "hover:bg-muted text-foreground",
+                  !isSelected && isCurrent && "ring-1 ring-primary/40 text-primary font-semibold"
+                )}
+              >
+                {name}
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 const MEALS: MealType[] = ["breakfast", "lunch", "dinner"];
 
@@ -92,8 +177,10 @@ const MealToggle = ({ mealType, checked, onChange, disabled, size = "md" }: Meal
 export default function MealPlan() {
   const auth = useAuthUser()();
   const [meals, setMeals] = useState<(MealData | null)[]>([]);
-  const [distinctMonths, setDistinctMonths] = useState<string[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [guestMeal, setGuestMeal] = useState<GuestMealCounts>({ breakfast: 0, lunch: 0, dinner: 0 });
   const [originalGuestMeal, setOriginalGuestMeal] = useState<GuestMealCounts | null>(null);
   const [cutoffHour, setCutoffHour] = useState(22);
@@ -189,14 +276,7 @@ export default function MealPlan() {
         console.error("Failed to fetch meal config:", e);
       }
     };
-    const fetchDistinctMonths = async () => {
-      const res = await Axios.get("/meal/months");
-      const months = res.data;
-      setDistinctMonths(months);
-      setSelectedMonth(months.slice(-1)[0]);
-    };
     fetchCutoffConfig();
-    fetchDistinctMonths();
   }, []);
 
   useEffect(() => {
@@ -311,19 +391,8 @@ export default function MealPlan() {
           })}
         </div>
 
-        {/* Month selector */}
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-[150px] h-8 text-sm font-semibold">
-            <SelectValue placeholder="Select month" />
-          </SelectTrigger>
-          <SelectContent>
-            {[...distinctMonths].reverse().map((month) => (
-              <SelectItem key={month} value={month}>
-                {formatDate(month)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Month / year picker */}
+        <MonthYearPicker value={selectedMonth} onChange={setSelectedMonth} />
       </div>
 
       {/* ── Desktop calendar ── */}
