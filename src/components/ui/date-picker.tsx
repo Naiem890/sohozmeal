@@ -4,28 +4,31 @@ import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-function toDate(value) {
+function toDate(value: Date | string | undefined | null): Date | undefined {
   if (!value) return undefined;
   if (value instanceof Date) return value;
-  if (typeof value === "string") return parseISO(value); // "YYYY-MM-DD" → local Date
+  if (typeof value === "string") return parseISO(value);
   return undefined;
 }
 
 // ── DatePicker ────────────────────────────────────────────────────────────────
-// Single-day picker. Accepts a Date or "YYYY-MM-DD" string for `value`.
-// `onChange` is called with a Date object.
-// ForwardRef goes to the trigger button so callers can call .focus() on it.
-// Any extra props (e.g. `onKeyDown`) are forwarded to the trigger button.
 
-const DatePicker = React.forwardRef(function DatePicker(
+export interface DatePickerProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onChange" | "value"> {
+  value?: Date | string | null;
+  onChange?: (date: Date) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  max?: Date | string;
+  min?: Date | string;
+  className?: string;
+  align?: "start" | "center" | "end";
+}
+
+const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(function DatePicker(
   {
     value,
     onChange,
@@ -45,7 +48,7 @@ const DatePicker = React.forwardRef(function DatePicker(
   const maxDate = toDate(max);
   const minDate = toDate(min);
 
-  const handleSelect = (selected) => {
+  const handleSelect = (selected: Date | undefined) => {
     if (selected) {
       onChange?.(selected);
       setOpen(false);
@@ -77,7 +80,7 @@ const DatePicker = React.forwardRef(function DatePicker(
           selected={date}
           onSelect={handleSelect}
           defaultMonth={date}
-          disabled={(d) => {
+          disabled={(d: Date) => {
             if (minDate && d < minDate) return true;
             if (maxDate && d > maxDate) return true;
             return false;
@@ -90,35 +93,40 @@ const DatePicker = React.forwardRef(function DatePicker(
 });
 
 // ── MonthYearPicker ───────────────────────────────────────────────────────────
-// Month + year picker for monthly views (bills, expenses, etc.).
-// `onChange` is called with a Date set to the 1st of the selected month.
-// Defaults to blocking future months.
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-function MonthYearPicker({ value, onChange, maxDate: maxDateProp, className }) {
+interface MonthYearPickerProps {
+  value?: Date | string | null;
+  onChange?: (date: Date) => void;
+  maxDate?: Date;
+  className?: string;
+}
+
+function MonthYearPicker({ value, onChange, maxDate: maxDateProp, className }: MonthYearPickerProps) {
   const [open, setOpen] = React.useState(false);
   const today = new Date();
 
-  const maxDate = maxDateProp instanceof Date
-    ? maxDateProp
-    : new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const maxDate =
+    maxDateProp instanceof Date
+      ? maxDateProp
+      : new Date(today.getFullYear(), today.getMonth() + 1, 0);
   const maxYear = maxDate.getFullYear();
   const maxMonth = maxDate.getMonth();
 
   const date = toDate(value);
   const [viewYear, setViewYear] = React.useState(date?.getFullYear() ?? today.getFullYear());
 
-  const isDisabled = (mi) =>
+  const isDisabled = (mi: number) =>
     viewYear > maxYear || (viewYear === maxYear && mi > maxMonth);
 
-  const isSelected = (mi) =>
+  const isSelected = (mi: number) =>
     !!date && date.getFullYear() === viewYear && date.getMonth() === mi;
 
-  const handleSelect = (mi) => {
+  const handleSelect = (mi: number) => {
     if (isDisabled(mi)) return;
     onChange?.(new Date(viewYear, mi, 1));
     setOpen(false);
