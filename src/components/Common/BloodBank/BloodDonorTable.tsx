@@ -260,7 +260,7 @@ const BloodDonorTable = ({ wing, showWing = false }: BloodDonorTableProps) => {
                     </TableCell>
                     <TableCell className="font-medium whitespace-nowrap">{donor.name}</TableCell>
                     <TableCell className="font-mono text-sm tracking-tight whitespace-nowrap">
-                      {donor.phoneNumber}
+                      {donor.phoneNumber || <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
                       {donor.lastDonationDate ? (

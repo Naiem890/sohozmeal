@@ -2,7 +2,8 @@ import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { format, addDays, differenceInDays } from "date-fns";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Heart, Droplets, Clock, Pencil, Check, X } from "lucide-react";
+import { Heart, Droplets, Clock, Pencil, Check, X, Phone } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Axios } from "../../api/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,9 +56,10 @@ export default function BloodDonate() {
     isDonor: false,
     lastDonationDate: "",
     gender: "",
+    phoneNumber: "",
   });
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ bloodGroup: "", isDonor: false, lastDonationDate: "" });
+  const [form, setForm] = useState({ bloodGroup: "", isDonor: false, lastDonationDate: "", phoneNumber: "" });
   const [saving, setSaving] = useState(false);
   const [bloodBankData, setBloodBankData] = useState<Record<string, { count: number; donors: { lastDonationDate: string | null }[] }>>({});
   const [loadingDonors, setLoadingDonors] = useState(true);
@@ -74,9 +76,10 @@ export default function BloodDonate() {
         isDonor: s?.isDonor || false,
         lastDonationDate: formatted,
         gender: s?.gender || "MALE",
+        phoneNumber: s?.phoneNumber || "",
       };
       setProfile(data);
-      setForm({ bloodGroup: data.bloodGroup, isDonor: data.isDonor, lastDonationDate: data.lastDonationDate });
+      setForm({ bloodGroup: data.bloodGroup, isDonor: data.isDonor, lastDonationDate: data.lastDonationDate, phoneNumber: data.phoneNumber });
     } catch (err) {
       console.error(err);
     }
@@ -106,6 +109,7 @@ export default function BloodDonate() {
         bloodGroup: form.bloodGroup,
         isDonor: form.isDonor,
         lastDonationDate: form.lastDonationDate,
+        phoneNumber: form.phoneNumber || null,
       });
       toast.success("Blood donation info updated!");
       setEditing(false);
@@ -119,7 +123,7 @@ export default function BloodDonate() {
   };
 
   const handleCancel = () => {
-    setForm({ bloodGroup: profile.bloodGroup, isDonor: profile.isDonor, lastDonationDate: profile.lastDonationDate });
+    setForm({ bloodGroup: profile.bloodGroup, isDonor: profile.isDonor, lastDonationDate: profile.lastDonationDate, phoneNumber: profile.phoneNumber });
     setEditing(false);
   };
 
@@ -202,6 +206,13 @@ export default function BloodDonate() {
                       {profile.lastDonationDate
                         ? format(new Date(profile.lastDonationDate), "dd MMM yyyy")
                         : <span className="text-muted-foreground italic">Never</span>}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Phone Number</span>
+                    <span className="text-sm font-medium font-mono">
+                      {profile.phoneNumber || <span className="text-muted-foreground italic">Not set</span>}
                     </span>
                   </div>
 
@@ -290,6 +301,23 @@ export default function BloodDonate() {
                         Wait at least 3 months between donations
                       </div>
                     )}
+                  </div>
+
+                  {/* Phone Number */}
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                        Phone Number
+                        <span className="text-muted-foreground font-normal">(for contact)</span>
+                      </span>
+                    </label>
+                    <Input
+                      value={form.phoneNumber}
+                      onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
+                      placeholder="01712345678"
+                      className="h-9 text-sm font-mono"
+                    />
                   </div>
 
                   {/* Actions */}

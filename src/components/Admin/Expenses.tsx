@@ -60,23 +60,12 @@ function StatCard({ label, value, sub, color }: StatCardProps) {
 
 export default function Expenses() {
   const auth = useAuthUser()() as AuthUser;
-  const [selectedMonth, setSelectedMonth] = useState("");
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  );
   const [mealBillData, setMealBillData]   = useState<MealBillEntry[]>([]);
   const [wing, setWing] = useState(auth.wing === "ALL" ? "MALE" : auth.wing);
-
-  useEffect(() => {
-    const fetchDistinctMonths = async () => {
-      const toastId = toast.loading("Loading available months...");
-      try {
-        const res = await Axios.get("/meal/months");
-        setSelectedMonth(res.data.slice(-1)[0]);
-        toast.success("Months loaded", { id: toastId });
-      } catch {
-        toast.error("Error loading months", { id: toastId });
-      }
-    };
-    fetchDistinctMonths();
-  }, []);
 
   useEffect(() => {
     if (!selectedMonth) return;
