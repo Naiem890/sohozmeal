@@ -55,14 +55,17 @@
     "@types/node-schedule": "^2.1.8",
     "@types/supertest": "^7.2.0",
     "eslint": "^8.48.0",
+    "exceljs": "^4.4.0",
     "jest": "^30.2.0",
     "mongodb-memory-server": "^11.0.1",
     "nodemon": "^3.0.1",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "xlsx": "^0.18.5"
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "tar": ">=7.5.10"
   },
   "jest": {
     "preset": "ts-jest",
