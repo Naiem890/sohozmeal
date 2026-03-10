@@ -1,12 +1,15 @@
-import axios from "axios";
+import axios, {
+  type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
+} from "axios";
 
-export const BASE_URL = import.meta.env.VITE_API_URL;
+export const BASE_URL = import.meta.env.VITE_API_URL as string;
 
 export const Axios = axios.create({ baseURL: BASE_URL });
 
 // ─── Cookie helpers ────────────────────────────────────────────────────────────
 
-function getCookie(name) {
+function getCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
 }
@@ -19,10 +22,10 @@ function getCookie(name) {
 // Instead, cache the refreshed token in memory. On page load the cookie provides
 // the initial token; after any refresh, the cache takes over until signOut().
 
-let cachedAccessToken = null;
+let cachedAccessToken: string | null = null;
 
 /** Call this on every logout/session-expiry so the cache doesn't outlive the session. */
-export function clearCachedToken() {
+export function clearCachedToken(): void {
   cachedAccessToken = null;
 }
 
@@ -33,7 +36,7 @@ export function clearCachedToken() {
 
 const LOGIN_PATHS = new Set(["/login", "/admin", "/staff"]);
 
-function signalSessionExpired() {
+function signalSessionExpired(): void {
   // Already on a login page — nothing to do (prevents re-firing after navigate)
   if (LOGIN_PATHS.has(window.location.pathname)) return;
   localStorage.removeItem("_refresh_token");
@@ -42,21 +45,26 @@ function signalSessionExpired() {
 
 // ─── Refresh token state ──────────────────────────────────────────────────────
 
-let isRefreshing = false;
-let pendingQueue = []; // { resolve, reject }[]
+interface QueueItem {
+  resolve: (token: string) => void;
+  reject: (err: unknown) => void;
+}
 
-function processQueue(error, token = null) {
+let isRefreshing = false;
+let pendingQueue: QueueItem[] = [];
+
+function processQueue(error: unknown, token: string | null = null): void {
   pendingQueue.forEach(({ resolve, reject }) => {
     if (error) reject(error);
-    else resolve(token);
+    else resolve(token as string);
   });
   pendingQueue = [];
 }
 
 // ─── Request interceptor — attach access token from cookie ────────────────────
 
-Axios.interceptors.request.use((config) => {
-  const token = cachedAccessToken || getCookie("_auth");
+Axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = cachedAccessToken ?? getCookie("_auth");
   if (token) config.headers["Authorization"] = `Bearer ${token}`;
   if (!(config.data instanceof FormData)) {
     config.headers["Content-Type"] = "application/json";
@@ -67,15 +75,19 @@ Axios.interceptors.request.use((config) => {
 // ─── Response interceptor — refresh on 401, no infinite loop ─────────────────
 // Skips interception for the refresh call itself and already-retried requests.
 
+interface RetryableRequestConfig extends AxiosRequestConfig {
+  _retry?: boolean;
+}
+
 Axios.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const original = error.config;
+    const original = error.config as RetryableRequestConfig;
 
     if (
       error.response?.status !== 401 ||
       original._retry ||
-      original.url?.includes("/auth/refresh")
+      (original.url as string | undefined)?.includes("/auth/refresh")
     ) {
       return Promise.reject(error);
     }
@@ -88,10 +100,10 @@ Axios.interceptors.response.use(
 
     // Queue concurrent 401s while a refresh is in progress
     if (isRefreshing) {
-      return new Promise((resolve, reject) => {
+      return new Promise<string>((resolve, reject) => {
         pendingQueue.push({ resolve, reject });
       }).then((token) => {
-        original.headers["Authorization"] = `Bearer ${token}`;
+        if (original.headers) original.headers["Authorization"] = `Bearer ${token}`;
         return Axios(original);
       });
     }
@@ -100,12 +112,15 @@ Axios.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
+      const { data } = await axios.post<{ accessToken: string }>(
+        `${BASE_URL}/auth/refresh`,
+        { refreshToken }
+      );
       const newToken = data.accessToken;
 
       cachedAccessToken = newToken;
       processQueue(null, newToken);
-      original.headers["Authorization"] = `Bearer ${newToken}`;
+      if (original.headers) original.headers["Authorization"] = `Bearer ${newToken}`;
       return Axios(original);
     } catch (refreshError) {
       processQueue(refreshError, null);

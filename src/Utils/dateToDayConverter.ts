@@ -1,4 +1,4 @@
-export const dateToDayConverter = (dateString) => {
+export const dateToDayConverter = (dateString: string): string => {
   const date = new Date(dateString);
 
   // Define an array of weekday names

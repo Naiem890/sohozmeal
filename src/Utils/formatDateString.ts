@@ -1,4 +1,4 @@
-export default function formatDate(inputDate) {
+export default function formatDate(inputDate: string): string {
   const [year, month] = inputDate.split("-");
   const monthNames = [
     "January",
@@ -18,7 +18,7 @@ export default function formatDate(inputDate) {
   return formattedDate;
 }
 
-export function formatDateTime(dateStr) {
+export function formatDateTime(dateStr: string): { date: string; time: string } {
   // Create a new Date object from the input string
   const dateObj = new Date(dateStr);
 

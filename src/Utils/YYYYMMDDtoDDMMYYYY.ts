@@ -1,4 +1,4 @@
-export default function convertToDDMMYYYY(dateString) {
+export default function convertToDDMMYYYY(dateString: string): string {
   // Split the input date string into an array [yyyy, mm, dd]
   const [year, month, day] = dateString.split("-");
 
