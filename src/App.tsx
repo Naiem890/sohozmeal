@@ -1,54 +1,65 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { useAuthUser, useSignOut } from "react-auth-kit";
 import { clearCachedToken } from "./api/api";
 
-// Auth guards
+// Auth guards — kept static (tiny, always needed)
 import PublicRoute          from "./components/Auth/PublicRoute";
 import RequiredAdminAuth    from "./components/Auth/RequiredAdminAuth";
 import RequiredStudentAuth  from "./components/Auth/RequiredStudentAuth";
 import RequiredStaffAuth    from "./components/Auth/RequireStaffAuth";
 
-// Auth pages
-import Login          from "./components/Auth/Login";
-import AdminLogin     from "./components/Auth/AdminLogin";
-import StaffLogin     from "./components/Staff/StaffLogin";
-import ChangePassword from "./components/Auth/ChangePassword";
-
-// Admin
-import AdminDashboard      from "./components/Admin/AdminDashboard";
-import { StudentList }     from "./components/Admin/StudentList";
-import { Meal }            from "./components/Admin/MealSheet/Meal";
-import { Stock }           from "./components/Admin/Stock/Stock";
-import Expenses            from "./components/Admin/Expenses";
-import { Bills }           from "./components/Admin/Bills/Bills";
-import Complaints          from "./components/Admin/Complaints/Complaints";
-import BloodBank           from "./components/Admin/BloodBank/BloodBank";
-import TotalBill           from "./components/Admin/TotalBill";
-import NoticeBoard         from "./components/Admin/NoticeBoard";
-import MealRoutineAdmin    from "./components/Student/MealRoutineAdmin";
-import TransactionHistory  from "./components/Admin/Transaction History/TransactionHistory";
-import Settings            from "./components/Admin/Settings";
-
-// Student
-import Dashboard           from "./components/Student/Dashboard";
-import MealPlan            from "./components/Student/MealPlan";
-import Profile             from "./components/Student/Profile";
-import Notice              from "./components/Student/Notice";
-import Tution              from "./components/Student/Tution";
-import BloodDonate         from "./components/Student/BloodDonate";
-import BillPayment         from "./components/Student/BillPayment";
-import BillCount           from "./components/Student/BillCount";
-import MealRoutine         from "./components/Student/MealRoutine";
-import StudentComplaints   from "./components/Student/Complaints/Complaints";
-import AddComplaint        from "./components/Student/Complaints/AddComplaint";
-import ComplaintDetails    from "./components/Student/Complaints/ComplaintDetails";
-
-// Staff
-import StaffDashboard from "./components/Staff/StaffDashboard";
-
 // Navbar (currently renders null — kept for compatibility)
 import Navbar from "./components/Common/Navbar";
+
+// ── Lazy-loaded route components ────────────────────────────────────────────
+
+// Auth pages
+const Login          = lazy(() => import("./components/Auth/Login"));
+const AdminLogin     = lazy(() => import("./components/Auth/AdminLogin"));
+const StaffLogin     = lazy(() => import("./components/Staff/StaffLogin"));
+const ChangePassword = lazy(() => import("./components/Auth/ChangePassword"));
+
+// Admin layout + pages
+const AdminDashboard     = lazy(() => import("./components/Admin/AdminDashboard"));
+const StudentList        = lazy(() => import("./components/Admin/StudentList").then(m => ({ default: m.StudentList })));
+const Meal               = lazy(() => import("./components/Admin/MealSheet/Meal").then(m => ({ default: m.Meal })));
+const Stock              = lazy(() => import("./components/Admin/Stock/Stock").then(m => ({ default: m.Stock })));
+const Expenses           = lazy(() => import("./components/Admin/Expenses"));
+const Bills              = lazy(() => import("./components/Admin/Bills/Bills").then(m => ({ default: m.Bills })));
+const AdminComplaints    = lazy(() => import("./components/Admin/Complaints/Complaints"));
+const BloodBank          = lazy(() => import("./components/Admin/BloodBank/BloodBank"));
+const TotalBill          = lazy(() => import("./components/Admin/TotalBill"));
+const NoticeBoard        = lazy(() => import("./components/Admin/NoticeBoard"));
+const MealRoutineAdmin   = lazy(() => import("./components/Student/MealRoutineAdmin"));
+const TransactionHistory = lazy(() => import("./components/Admin/Transaction History/TransactionHistory"));
+const Settings           = lazy(() => import("./components/Admin/Settings"));
+
+// Student layout + pages
+const Dashboard        = lazy(() => import("./components/Student/Dashboard"));
+const MealPlan         = lazy(() => import("./components/Student/MealPlan"));
+const Profile          = lazy(() => import("./components/Student/Profile"));
+const Notice           = lazy(() => import("./components/Student/Notice"));
+const Tution           = lazy(() => import("./components/Student/Tution"));
+const BloodDonate      = lazy(() => import("./components/Student/BloodDonate"));
+const BillPayment      = lazy(() => import("./components/Student/BillPayment"));
+const BillCount        = lazy(() => import("./components/Student/BillCount"));
+const MealRoutine      = lazy(() => import("./components/Student/MealRoutine"));
+const StudentComplaints = lazy(() => import("./components/Student/Complaints/Complaints"));
+const AddComplaint     = lazy(() => import("./components/Student/Complaints/AddComplaint"));
+const ComplaintDetails = lazy(() => import("./components/Student/Complaints/ComplaintDetails"));
+
+// Staff
+const StaffDashboard = lazy(() => import("./components/Staff/StaffDashboard"));
+
+// ── Loading fallback ─────────────────────────────────────────────────────────
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 const STAFF_ROLES = new Set(["MESS", "WIFI", "CLEANING", "REPAIR"]);
 
@@ -106,6 +117,7 @@ export default function App() {
     <>
       <SessionExpiryHandler />
       <Navbar />
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* ── Root ── */}
         <Route path="/" element={<RootRedirect />} />
@@ -143,7 +155,7 @@ export default function App() {
           <Route path="bills"            element={<Bills />} />
           <Route path="totalBill"        element={<TotalBill />} />
           <Route path="notice-board"     element={<NoticeBoard />} />
-          <Route path="complaints"       element={<Complaints />} />
+          <Route path="complaints"       element={<AdminComplaints />} />
           <Route path="blood-bank"       element={<BloodBank />} />
           <Route path="settings"         element={<Settings />} />
         </Route>
@@ -180,12 +192,13 @@ export default function App() {
             </RequiredStaffAuth>
           }
         >
-          <Route index element={<Complaints />} />
+          <Route index element={<AdminComplaints />} />
         </Route>
 
         {/* ── Catch-all ── */}
         <Route path="*" element={<CatchAll />} />
       </Routes>
+      </Suspense>
     </>
   );
 }
