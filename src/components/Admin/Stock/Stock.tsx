@@ -193,21 +193,54 @@ export const Stock = () => {
       toast.error("No transactions to submit.");
       return;
     }
+
+    // Pre-validate: check cumulative OUT quantities don't exceed available stock
+    const outByItem = new Map<string, { total: number; name: string }>();
+    for (const t of transactions) {
+      if (t.type === "OUT" && t.category !== "NON_STORED") {
+        const existing = outByItem.get(t.name) || { total: 0, name: t.name };
+        existing.total += t.quantity;
+        outByItem.set(t.name, existing);
+      }
+    }
+
+    // Account for pending IN transactions that increase stock
+    const inByName = new Map<string, number>();
+    for (const t of transactions) {
+      if (t.type === "IN") {
+        inByName.set(t.name, (inByName.get(t.name) || 0) + t.quantity);
+      }
+    }
+
+    for (const [itemName, { total }] of outByItem) {
+      const stockEntry = stocks.find((s) => s.item?.name === itemName);
+      const currentAvailable = stockEntry?.quantity ?? 0;
+      const pendingIn = inByName.get(itemName) ?? 0;
+      const effectiveAvailable = currentAvailable + pendingIn;
+
+      if (total > effectiveAvailable) {
+        toast.error(
+          `Insufficient stock for "${itemName}". Available: ${currentAvailable}${pendingIn > 0 ? ` + ${pendingIn} pending IN` : ""}, total OUT: ${total}`
+        );
+        return;
+      }
+    }
+
     try {
-      await toast.promise(
-        Axios.post("/stock/transaction/batch", { transactions, wing }),
-        {
-          loading: `Submitting ${transactions.length} transaction(s)...`,
-          success: `${transactions.length} transaction(s) saved!`,
-          error: "Error submitting transactions.",
-        }
-      );
+      const request = Axios.post("/stock/transaction/batch", { transactions, wing });
+      toast.promise(request, {
+        loading: `Submitting ${transactions.length} transaction(s)...`,
+        success: `${transactions.length} transaction(s) saved!`,
+        error: (err: { response?: { data?: { error?: string } } }) =>
+          err?.response?.data?.error || "Error submitting transactions.",
+      });
+      await request;
       setTransactions([]);
       setRefetch((p) => !p);
     } catch {
       // toast.promise already handles error display
     }
-  }, [transactions, wing]);
+  }, [transactions, wing, stocks]);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -316,6 +349,7 @@ export const Stock = () => {
                 childRef={childRef}
                 submitRef={submitRef}
                 stockOutSubmit={stockOutSubmit}
+                pendingTransactions={transactions}
               />
             )}
             {tab === "nonStock" && (
