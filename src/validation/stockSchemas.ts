@@ -7,12 +7,16 @@ const CATEGORIES = ['STORED', 'NON_STORED'] as const;
 const MEALS = ['BREAKFAST', 'LUNCH', 'DINNER'] as const;
 const MEAL_WITH_DASH = [...MEALS, '-'] as const;
 
+/** Round to 2 decimal places — prevents inputs like 9.9999999999 */
+const r2 = (v: number): number => Math.round(v * 100) / 100;
+
 const positiveNumber = (field: string) =>
   z.preprocess(
     (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
     z
       .number({ error: `${field} must be a number` })
       .positive({ message: `${field} must be greater than 0` })
+      .transform((v) => r2(v))
   );
 
 const dateString = z
@@ -76,7 +80,7 @@ export const stockOutSchema = z.object({
   price: z
     .preprocess(
       (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-      z.number().positive('Price must be greater than 0').optional()
+      z.number().positive('Price must be greater than 0').transform((v) => r2(v)).optional()
     )
     .optional(),
 });
@@ -86,7 +90,7 @@ export const editTransactionSchema = z.object({
   pricePerUnit: z
     .preprocess(
       (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-      z.number().positive('Price per unit must be greater than 0').optional()
+      z.number().positive('Price per unit must be greater than 0').transform((v) => r2(v)).optional()
     )
     .optional(),
   date: dateString.optional(),
@@ -99,24 +103,35 @@ export const editTransactionSchema = z.object({
     .optional(),
 });
 
-export const batchTransactionItemSchema = z.object({
-  type: z.enum(['IN', 'OUT'] as const, { error: 'Type must be IN or OUT' }),
-  name: z.string().trim().min(1, 'Item name is required'),
-  quantity: positiveNumber('Quantity'),
-  price: z
-    .preprocess(
-      (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-      z.number().positive('Price must be greater than 0').optional()
-    )
-    .optional(),
-  date: dateString,
-  meal: z
-    .string()
-    .transform((v) => v.toUpperCase())
-    .refine((v) => (MEAL_WITH_DASH as readonly string[]).includes(v), { message: 'Meal must be valid' })
-    .optional(),
-  category: z.enum(CATEGORIES, { error: 'Category must be STORED or NON_STORED' }).optional(),
-});
+export const batchTransactionItemSchema = z
+  .object({
+    type: z.enum(['IN', 'OUT'] as const, { error: 'Type must be IN or OUT' }),
+    name: z.string().trim().min(1, 'Item name is required'),
+    quantity: positiveNumber('Quantity'),
+    price: z
+      .preprocess(
+        (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+        z.number().positive('Price must be greater than 0').transform((v) => r2(v)).optional()
+      )
+      .optional(),
+    date: dateString,
+    meal: z
+      .string()
+      .transform((v) => v.toUpperCase())
+      .refine((v) => (MEAL_WITH_DASH as readonly string[]).includes(v), { message: 'Meal must be valid' })
+      .optional(),
+    category: z.enum(CATEGORIES, { error: 'Category must be STORED or NON_STORED' }).optional(),
+  })
+  .refine(
+    (data) => {
+      // IN transactions and NON_STORED OUT transactions require a price
+      if (data.type === 'IN' || data.category === 'NON_STORED') {
+        return data.price !== undefined && data.price > 0;
+      }
+      return true;
+    },
+    { message: 'Price is required for IN and NON_STORED transactions', path: ['price'] }
+  );
 
 export const batchTransactionSchema = z.object({
   wing: z
