@@ -254,6 +254,7 @@ router.get('/transactions', validateToken, async (req: Request, res: Response) =
       _id: t._id,
       item: { _id: (t.item as any)._id, name: (t.item as any).name, unit: (t.item as any).unit, category: (t.item as any).category },
       quantityChange: t.quantityChange,
+      unitPrice: t.unitPrice,
       date: t.date.toISOString(),
       type: t.type,
       category: (t.item as any).category,
