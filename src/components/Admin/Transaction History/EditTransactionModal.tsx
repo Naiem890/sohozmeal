@@ -23,7 +23,6 @@ interface Transaction {
   quantityChange: number;
   transactionAmount?: number;
   unitPrice?: number;
-  pricePerUnit?: number;
   meal?: string;
   item?: { name?: string; unit?: string; category?: string };
   [key: string]: unknown;
@@ -40,18 +39,20 @@ const EditTransactionModal = ({ visible, record, handleSave, handleCancel }: Edi
   const [formData, setFormData] = useState<Transaction>(record);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pricePerUnit, setPricePerUnit] = useState<number>(
-    record.transactionAmount != null && record.quantityChange
+    record.unitPrice ??
+    (record.transactionAmount != null && record.quantityChange
       ? record.transactionAmount / record.quantityChange
-      : 0
+      : 0)
   );
 
   useEffect(() => {
     if (record) {
       setFormData(record);
       setPricePerUnit(
-        record.transactionAmount != null && record.quantityChange
+        record.unitPrice ??
+        (record.transactionAmount != null && record.quantityChange
           ? record.transactionAmount / record.quantityChange
-          : 0
+          : 0)
       );
     }
   }, [record]);
