@@ -38,6 +38,9 @@ interface TransactionTableProps {
   onPageChange: (page: number) => void;
   pageSize: number;
   onPageSizeChange: (size: number) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onSelectAll: () => void;
 }
 
 const TransactionTable = ({
@@ -51,13 +54,28 @@ const TransactionTable = ({
   onPageChange,
   pageSize,
   onPageSizeChange,
+  selectedIds,
+  onToggleSelect,
+  onSelectAll,
 }: TransactionTableProps) => {
+  const allSelected = transactions.length > 0 && selectedIds.size === transactions.length;
+  const someSelected = selectedIds.size > 0 && !allSelected;
+
   return (
     <Card className="mt-4">
       <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30">
+              <TableHead className="w-10 text-center">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                  onChange={onSelectAll}
+                  className="h-4 w-4 rounded border-gray-300 cursor-pointer accent-primary"
+                />
+              </TableHead>
               <TableHead>Item</TableHead>
               <TableHead>Qty</TableHead>
               <TableHead>Type</TableHead>
@@ -65,12 +83,11 @@ const TransactionTable = ({
               <TableHead>Amount</TableHead>
               <TableHead className="cursor-pointer select-none" onClick={toggleSortOrder}>
                 <div className="flex items-center gap-1">
-                  Date
+                  Date / Created
                   <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">{sortOrder === "ASC" ? "↑" : "↓"}</span>
                 </div>
               </TableHead>
-              <TableHead>Created</TableHead>
               <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -88,6 +105,8 @@ const TransactionTable = ({
                   record={record}
                   showEditModal={showEditModal}
                   handleDelete={handleDelete}
+                  isSelected={selectedIds.has(record._id)}
+                  onToggleSelect={onToggleSelect}
                 />
               ))
             )}

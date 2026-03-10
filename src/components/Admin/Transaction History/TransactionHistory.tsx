@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import EditTransactionModal from "./EditTransactionModal";
 import DateFilters from "./DateFilters";
 import FilterOptions from "./FilterOptions";
 import TransactionTable from "./TransactionTable";
+import BulkActionBar from "./BulkActionBar";
 import { Axios } from "../../../api/api";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,16 +22,24 @@ interface Transaction {
   type: string;
   quantityChange: number;
   transactionAmount?: number;
-  item?: { name?: string; unit?: string };
+  item?: { name?: string; unit?: string; category?: string };
   meal?: string;
   date?: string;
+  createdAt?: string;
+  category?: string;
   [key: string]: unknown;
+}
+
+interface StockInfo {
+  available: number;
+  unit?: string;
 }
 
 const TransactionHistory = () => {
   const auth = useAuthUser()() as AuthUser;
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingRecord,   setEditingRecord]  = useState<Transaction | null>(null);
+  const [editStockInfo,   setEditStockInfo]  = useState<StockInfo | null>(null);
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pagination,   setPagination]   = useState({ page: 1, totalPages: 1, total: 0 });
@@ -46,6 +55,14 @@ const TransactionHistory = () => {
   const [transactionType,  setTransactionType]  = useState("BOTH");
   const [mealType,         setMealType]         = useState("ALL");
   const [sortOrder,        setSortOrder]        = useState("DESC");
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Clear selection when data changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [transactions]);
 
   const formatDate = (date: Date) => date.toISOString().split("T")[0];
 
@@ -91,8 +108,67 @@ const TransactionHistory = () => {
     setSortOrder((prev) => (prev === "ASC" ? "DESC" : "ASC"));
   };
 
-  const showEditModal = (record: Transaction) => {
+  // Selection handlers
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === transactions.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(transactions.map((t) => t._id)));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    const count = selectedIds.size;
+    toast.warning(`Delete ${count} transaction${count > 1 ? "s" : ""}?`, {
+      description: "This action cannot be undone. Bills will be recalculated.",
+      duration: Infinity,
+      action: {
+        label: "Delete All",
+        onClick: () => confirmBulkDelete(),
+      },
+      cancel: { label: "Cancel" } as unknown as { label: string; onClick: () => void },
+    });
+  };
+
+  const confirmBulkDelete = async () => {
+    const toastId = toast.loading(`Deleting ${selectedIds.size} transactions...`);
+    try {
+      await Axios.post("/stock/transactions/bulk-delete", { ids: Array.from(selectedIds) });
+      toast.success(`${selectedIds.size} transactions deleted`, { id: toastId });
+      setSelectedIds(new Set());
+      fetchTransactions(page);
+    } catch (error) {
+      const e = error as { response?: { data?: { error?: string } } };
+      toast.error(e.response?.data?.error || "Error deleting transactions", { id: toastId });
+    }
+  };
+
+  const showEditModal = async (record: Transaction) => {
     setEditingRecord(record);
+    setEditStockInfo(null);
+
+    if (record.item?.category === "STORED" || (!record.item?.category && record.type !== "NON_STORED")) {
+      try {
+        const res = await Axios.get(`/stock?wing=${selectedWing}`);
+        const stocks = res.data as Array<{ item?: { _id?: string; name?: string; unit?: string }; quantity?: number }>;
+        const itemStock = stocks.find((s) => s.item?.name === record.item?.name);
+        if (itemStock) {
+          setEditStockInfo({ available: itemStock.quantity ?? 0, unit: itemStock.item?.unit });
+        }
+      } catch {
+        // Non-critical
+      }
+    }
+
     setIsModalVisible(true);
   };
 
@@ -122,7 +198,6 @@ const TransactionHistory = () => {
   const exportToExcel = async () => {
     const toastId = toast.loading("Preparing export...");
     try {
-      // Fetch all data (no page/limit) for export
       const params = new URLSearchParams({
         fromDate:  formatDate(fromDate),
         toDate:    formatDate(toDate),
@@ -167,8 +242,9 @@ const TransactionHistory = () => {
       );
       setIsModalVisible(false);
       toast.success("Transaction updated successfully");
-    } catch {
-      toast.error("Failed to update transaction.");
+    } catch (error) {
+      const e = error as { response?: { data?: { error?: string } } };
+      toast.error(e.response?.data?.error || "Failed to update transaction.");
     }
   };
 
@@ -215,6 +291,14 @@ const TransactionHistory = () => {
         setMealType={setMealType}
       />
 
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        totalCount={transactions.length}
+        onSelectAll={handleSelectAll}
+        onBulkDelete={handleBulkDelete}
+        onClearSelection={() => setSelectedIds(new Set())}
+      />
+
       <TransactionTable
         transactions={transactions}
         sortOrder={sortOrder}
@@ -226,6 +310,9 @@ const TransactionHistory = () => {
         onPageChange={setPage}
         pageSize={pageSize}
         onPageSizeChange={(size: number) => { setPageSize(size); setPage(1); }}
+        selectedIds={selectedIds}
+        onToggleSelect={handleToggleSelect}
+        onSelectAll={handleSelectAll}
       />
 
       {editingRecord && (
@@ -234,6 +321,7 @@ const TransactionHistory = () => {
           record={editingRecord}
           handleSave={handleUpdateSave}
           handleCancel={() => setIsModalVisible(false)}
+          stockInfo={editStockInfo}
         />
       )}
     </div>

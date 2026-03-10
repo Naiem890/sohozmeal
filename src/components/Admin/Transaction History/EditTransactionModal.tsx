@@ -28,14 +28,20 @@ interface Transaction {
   [key: string]: unknown;
 }
 
+interface StockInfo {
+  available: number;
+  unit?: string;
+}
+
 interface EditTransactionModalProps {
   visible: boolean;
   record: Transaction;
   handleSave: (record: Transaction) => void;
   handleCancel: () => void;
+  stockInfo?: StockInfo | null;
 }
 
-const EditTransactionModal = ({ visible, record, handleSave, handleCancel }: EditTransactionModalProps) => {
+const EditTransactionModal = ({ visible, record, handleSave, handleCancel, stockInfo }: EditTransactionModalProps) => {
   const [formData, setFormData] = useState<Transaction>(record);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pricePerUnit, setPricePerUnit] = useState<number>(
@@ -61,6 +67,24 @@ const EditTransactionModal = ({ visible, record, handleSave, handleCancel }: Edi
     const e: Record<string, string> = {};
     if (formData.quantityChange <= 0) e.quantityChange = "Must be greater than zero";
     if (formData.type === "IN" && pricePerUnit <= 0) e.pricePerUnit = "Must be greater than zero";
+    if (formData.item?.category === "NON_STORED" && pricePerUnit <= 0) e.pricePerUnit = "Must be greater than zero";
+
+    // Stock availability check for STORED OUT transactions
+    if (formData.type === "OUT" && formData.item?.category === "STORED" && stockInfo) {
+      const qtyIncrease = formData.quantityChange - record.quantityChange;
+      if (qtyIncrease > 0 && qtyIncrease > stockInfo.available) {
+        e.quantityChange = `Exceeds available stock. Can increase by at most ${stockInfo.available} ${stockInfo.unit || ""}`.trim();
+      }
+    }
+
+    // Stock availability check when reducing STORED IN
+    if (formData.type === "IN" && formData.item?.category === "STORED" && stockInfo) {
+      const qtyDecrease = record.quantityChange - formData.quantityChange;
+      if (qtyDecrease > 0 && qtyDecrease > stockInfo.available) {
+        e.quantityChange = `Cannot reduce by ${qtyDecrease}. Only ${stockInfo.available} ${stockInfo.unit || ""} available in stock`.trim();
+      }
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
