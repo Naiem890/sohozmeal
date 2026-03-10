@@ -19,7 +19,9 @@ interface BillDataItem {
 }
 interface HallFeastItem { date: string; meal: string }
 
-const fmt = (n: number) => Number(n).toFixed(2);
+/** Round to 2 decimal places — prevents floating-point drift in accumulation */
+const r2 = (v: number): number => Math.round(v * 100) / 100;
+const fmt = (n: number) => r2(Number(n)).toFixed(2);
 
 interface MealColProps { on: boolean; cost: number; gCost: number; g: number }
 function MealCol({ on, cost, gCost, g }: MealColProps) {
@@ -97,12 +99,12 @@ export default function BillCount() {
       const gL = gm?.lunch     || 0;
       const gD = gm?.dinner    || 0;
 
-      const gBCost = gB * bCost;
-      const gLCost = gL * lCost;
-      const gDCost = gD * dCost;
+      const gBCost = r2(gB * bCost);
+      const gLCost = r2(gL * lCost);
+      const gDCost = r2(gD * dCost);
 
-      const daily = bCost + lCost + dCost + gBCost + gLCost + gDCost;
-      grand += daily;
+      const daily = r2(bCost + lCost + dCost + gBCost + gLCost + gDCost);
+      grand = r2(grand + daily);
 
       const date    = new Date(day + "T00:00:00");
       const weekday = date.toLocaleDateString("en-US", { weekday: "short" });

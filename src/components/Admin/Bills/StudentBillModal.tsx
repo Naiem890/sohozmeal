@@ -69,11 +69,14 @@ function initials(name = "") {
     .join("");
 }
 
+/** Round to 2 decimal places — prevents floating-point drift in accumulation */
+const r2 = (v: number): number => Math.round(v * 100) / 100;
+
 function dayCost(status: DayStatus) {
-  const b = (status.guestMeal.breakfast + (status.breakfast ? 1 : 0)) * status.perHeadCost.breakfast;
-  const l = (status.guestMeal.lunch    + (status.lunch    ? 1 : 0)) * status.perHeadCost.lunch;
-  const d = (status.guestMeal.dinner   + (status.dinner   ? 1 : 0)) * status.perHeadCost.dinner;
-  return { b, l, d, total: b + l + d };
+  const b = r2((status.guestMeal.breakfast + (status.breakfast ? 1 : 0)) * status.perHeadCost.breakfast);
+  const l = r2((status.guestMeal.lunch    + (status.lunch    ? 1 : 0)) * status.perHeadCost.lunch);
+  const d = r2((status.guestMeal.dinner   + (status.dinner   ? 1 : 0)) * status.perHeadCost.dinner);
+  return { b, l, d, total: r2(b + l + d) };
 }
 
 function friendlyDate(dateStr: string) {
@@ -142,14 +145,14 @@ function exportToExcel({ data, selectedDate, wing }: ExportParams) {
       "Date":               date,
       "Breakfast":          st.breakfast ? "✓" : "–",
       "Breakfast Guests":   st.guestMeal.breakfast || 0,
-      "Breakfast Cost":     parseFloat(c.b.toFixed(2)),
+      "Breakfast Cost":     c.b,
       "Lunch":              st.lunch ? "✓" : "–",
       "Lunch Guests":       st.guestMeal.lunch || 0,
-      "Lunch Cost":         parseFloat(c.l.toFixed(2)),
+      "Lunch Cost":         c.l,
       "Dinner":             st.dinner ? "✓" : "–",
       "Dinner Guests":      st.guestMeal.dinner || 0,
-      "Dinner Cost":        parseFloat(c.d.toFixed(2)),
-      "Day Total (৳)":      parseFloat(c.total.toFixed(2)),
+      "Dinner Cost":        c.d,
+      "Day Total (৳)":      c.total,
     };
   });
 
@@ -203,9 +206,9 @@ export const StudentBillModal = ({ open, onOpenChange, data, selectedDate, wing 
     let bCost  = 0, lCost  = 0, dCost  = 0;
     days.forEach(([, st]: [string, DayStatus]) => {
       const c = dayCost(st);
-      if (st.breakfast || st.guestMeal.breakfast > 0) { bCount++; bCost += c.b; }
-      if (st.lunch     || st.guestMeal.lunch     > 0) { lCount++; lCost += c.l; }
-      if (st.dinner    || st.guestMeal.dinner    > 0) { dCount++; dCost += c.d; }
+      if (st.breakfast || st.guestMeal.breakfast > 0) { bCount++; bCost = r2(bCost + c.b); }
+      if (st.lunch     || st.guestMeal.lunch     > 0) { lCount++; lCost = r2(lCost + c.l); }
+      if (st.dinner    || st.guestMeal.dinner    > 0) { dCount++; dCost = r2(dCost + c.d); }
     });
     return { bCount, lCount, dCount, bCost, lCost, dCost };
   }, [days]);
