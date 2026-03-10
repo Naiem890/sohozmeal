@@ -69,7 +69,7 @@ async function seedIN(itemId: any, qty: number, unitPrice: number, date = DATE) 
     meal: '-',
     date: new Date(date),
     unitPrice,
-    transactionAmount: parseFloat((qty * unitPrice).toFixed(4)),
+    transactionAmount: Math.round(qty * unitPrice * 100) / 100,
     wing: WING,
   });
   return tx;
@@ -84,7 +84,7 @@ async function seedOUT(itemId: any, qty: number, unitPrice: number, date = DATE,
     meal,
     date: new Date(date),
     unitPrice,
-    transactionAmount: parseFloat((qty * unitPrice).toFixed(4)),
+    transactionAmount: Math.round(qty * unitPrice * 100) / 100,
     wing: WING,
   });
   return tx;
@@ -960,7 +960,7 @@ describe('Batch Transactions', () => {
     expect(item).not.toBeNull();
   });
 
-  it('returns 500 when a STORED OUT has insufficient stock', async () => {
+  it('returns 400 when a STORED OUT has insufficient stock', async () => {
     const res = await request(app).post('/stock/transaction/batch').send({
       wing: WING,
       transactions: [
@@ -968,7 +968,8 @@ describe('Batch Transactions', () => {
         { type: 'OUT', name: 'Rice', quantity: 20, meal: 'LUNCH', date: DATE }, // more than available
       ],
     });
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/insufficient stock/i);
   });
 
   it('OUT uses weighted average price for STORED items in batch', async () => {
@@ -1048,7 +1049,7 @@ describe('computeRunningAvgAtDate', () => {
     expect(avg).toBeCloseTo(100); // FEMALE IN not included
   });
 
-  it('rounds to 4 decimal places', async () => {
+  it('rounds to 2 decimal places', async () => {
     const item = await seedItem();
     await seedIN(item._id, 3, 100, '2024-03-01'); // 300
     await seedIN(item._id, 3, 200, '2024-03-02'); // 600
@@ -1056,9 +1057,9 @@ describe('computeRunningAvgAtDate', () => {
     await StockTransaction.deleteMany({});
     await seedIN(item._id, 1, 100, '2024-03-01');
     await seedIN(item._id, 2, 200, '2024-03-02');
-    // avg = 500/3 = 166.6667
+    // avg = 500/3 = 166.67 (rounded to 2dp)
     const avg = await computeRunningAvgAtDate(item._id, WING, new Date('2024-03-03'));
-    expect(avg).toBe(Math.round((500 / 3) * 10000) / 10000);
+    expect(avg).toBe(Math.round((500 / 3) * 100) / 100); // 166.67
   });
 });
 
