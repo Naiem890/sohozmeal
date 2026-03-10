@@ -45,6 +45,13 @@ interface EditTransactionData {
   };
 }
 
+interface PendingTransaction {
+  type: string;
+  name: string;
+  quantity: number;
+  category?: string;
+}
+
 interface StockOutProps {
   stocks: StockEntry[];
   addTransaction: (t: object) => void;
@@ -54,6 +61,7 @@ interface StockOutProps {
   childRef?: React.MutableRefObject<HTMLButtonElement | null>;
   submitRef?: React.MutableRefObject<HTMLButtonElement | null>;
   stockOutSubmit?: React.MutableRefObject<HTMLButtonElement | null>;
+  pendingTransactions?: PendingTransaction[];
 }
 
 export const StockOut = ({
@@ -65,6 +73,7 @@ export const StockOut = ({
   childRef,
   submitRef,
   stockOutSubmit,
+  pendingTransactions = [],
 }: StockOutProps) => {
   const [selectedItem, setSelectedItem] = useState<StockItemOption | null>(null);
   const [quantity, setQuantity] = useState("");
@@ -124,11 +133,21 @@ export const StockOut = ({
       return;
     }
 
-    // Check available stock
+    // Check available stock (accounting for pending OUT transactions for same item)
     const { quantity: qty } = validation.data as { quantity: number };
-    const available = selectedItem?.available ?? 0;
-    if (qty > available) {
-      setErrors({ quantity: `Exceeds available stock (${available} ${selectedItem?.unit ?? ""})` });
+    const serverAvailable = selectedItem?.available ?? 0;
+    const pendingOutForItem = pendingTransactions
+      .filter((t) => t.type === "OUT" && t.category !== "NON_STORED" && t.name === selectedItem?.name)
+      .reduce((sum, t) => sum + t.quantity, 0);
+    const pendingInForItem = pendingTransactions
+      .filter((t) => t.type === "IN" && t.name === selectedItem?.name)
+      .reduce((sum, t) => sum + t.quantity, 0);
+    const effectiveAvailable = serverAvailable - pendingOutForItem + pendingInForItem;
+    if (qty > effectiveAvailable) {
+      const detail = pendingOutForItem > 0
+        ? ` (${serverAvailable} in stock - ${pendingOutForItem} pending out${pendingInForItem > 0 ? ` + ${pendingInForItem} pending in` : ""})`
+        : ` (${serverAvailable} ${selectedItem?.unit ?? ""})`;
+      setErrors({ quantity: `Exceeds available stock${detail}` });
       setTimeout(() => quantityRef.current?.focus(), 0);
       return;
     }

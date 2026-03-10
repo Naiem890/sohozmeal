@@ -5,12 +5,16 @@ export const UNITS = ["PCS", "KG", "LTR"] as const;
 export const CATEGORIES = ["STORED", "NON_STORED"] as const;
 export const MEALS = ["BREAKFAST", "LUNCH", "DINNER"] as const;
 
+/** Round to 2 decimal places — prevents inputs like 9.9999999999 */
+const r2 = (v: number): number => Math.round(v * 100) / 100;
+
 const positiveNumber = (field: string) =>
   z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? undefined : Number(v)),
     z
       .number({ error: `${field} must be a number` })
       .positive({ error: `${field} must be greater than 0` })
+      .transform((v) => r2(v))
   );
 
 const dateString = z
