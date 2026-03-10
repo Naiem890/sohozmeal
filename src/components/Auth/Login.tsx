@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useSignIn } from "react-auth-kit";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +11,11 @@ import { Axios } from "../../api/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { studentLoginSchema } from "@/schemas/auth";
+import { z } from "zod";
+import type { AxiosError } from "axios";
+
+type StudentLoginForm = z.infer<typeof studentLoginSchema>;
 
 const REFRESH_TOKEN_DAYS = 7;
 
@@ -16,13 +23,14 @@ export default function Login() {
   const signIn   = useSignIn();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading]           = useState(false);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const studentId = e.target.studentId.value;
-    const password  = e.target.password.value;
-    setLoading(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<StudentLoginForm>({ resolver: zodResolver(studentLoginSchema) });
+
+  const onSubmit = async ({ studentId, password }: StudentLoginForm) => {
     try {
       const result = await Axios.post("/auth/login", { studentId, password }).then((r) => r.data);
 
@@ -48,10 +56,9 @@ export default function Login() {
       } else {
         navigate("/dashboard/");
       }
-    } catch (error) {
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
       toast.error(error?.response?.data?.message || "Login failed");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -60,18 +67,20 @@ export default function Login() {
       <div className="w-full max-w-md bg-card rounded-2xl shadow-md border border-border p-8 space-y-8">
         <Logo logo={MISTImage} alt="Osmany Hall" title="Sohoz Meal (MIST)" subTitle="Student Portal" />
 
-        <form className="space-y-5" onSubmit={handleLogin}>
+        <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-1.5">
             <Label htmlFor="studentId">Student ID</Label>
             <Input
               id="studentId"
-              name="studentId"
               type="text"
               inputMode="numeric"
               placeholder="202014035"
               autoComplete="username"
-              required
+              {...register("studentId")}
             />
+            {errors.studentId && (
+              <p className="text-sm text-destructive">{errors.studentId.message}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -79,12 +88,11 @@ export default function Login() {
             <div className="relative">
               <Input
                 id="password"
-                name="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 autoComplete="current-password"
-                required
                 className="pr-10 tracking-widest"
+                {...register("password")}
               />
               <button
                 type="button"
@@ -95,10 +103,13 @@ export default function Login() {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            {errors.password && (
+              <p className="text-sm text-destructive">{errors.password.message}</p>
+            )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Signing in…" : "Sign In"}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Signing in…" : "Sign In"}
           </Button>
         </form>
 

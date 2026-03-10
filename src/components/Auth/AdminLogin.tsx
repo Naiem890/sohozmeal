@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useSignIn } from "react-auth-kit";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +11,11 @@ import { Axios } from "../../api/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { adminLoginSchema } from "@/schemas/auth";
+import { z } from "zod";
+import type { AxiosError } from "axios";
+
+type AdminLoginForm = z.infer<typeof adminLoginSchema>;
 
 const REFRESH_TOKEN_DAYS = 7;
 
@@ -16,13 +23,14 @@ export default function AdminLogin() {
   const signIn   = useSignIn();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading]           = useState(false);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const email    = e.target.email.value;
-    const password = e.target.password.value;
-    setLoading(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<AdminLoginForm>({ resolver: zodResolver(adminLoginSchema) });
+
+  const onSubmit = async ({ email, password }: AdminLoginForm) => {
     try {
       const result = await Axios.post("/auth/admin/login", { email, password }).then((r) => r.data);
 
@@ -43,10 +51,9 @@ export default function AdminLogin() {
 
       toast.success("Login successful");
       navigate("/admin/dashboard");
-    } catch (error) {
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
       toast.error(error?.response?.data?.message || "Login failed");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -55,17 +62,19 @@ export default function AdminLogin() {
       <div className="w-full max-w-md bg-card rounded-2xl shadow-md border border-border p-8 space-y-8">
         <Logo logo={MISTImage} alt="Osmany Hall" title="Sohoz Meal (MIST)" subTitle="Admin Portal" />
 
-        <form className="space-y-5" onSubmit={handleLogin}>
+        <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
-              name="email"
               type="email"
               placeholder="admin@mist.ac.bd"
               autoComplete="email"
-              required
+              {...register("email")}
             />
+            {errors.email && (
+              <p className="text-sm text-destructive">{errors.email.message}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -73,12 +82,11 @@ export default function AdminLogin() {
             <div className="relative">
               <Input
                 id="password"
-                name="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 autoComplete="current-password"
-                required
                 className="pr-10 tracking-widest"
+                {...register("password")}
               />
               <button
                 type="button"
@@ -89,10 +97,13 @@ export default function AdminLogin() {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            {errors.password && (
+              <p className="text-sm text-destructive">{errors.password.message}</p>
+            )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Signing in…" : "Sign In"}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Signing in…" : "Sign In"}
           </Button>
         </form>
       </div>

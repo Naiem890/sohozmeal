@@ -1,3 +1,4 @@
+import React from "react";
 import { useSignIn } from "react-auth-kit";
 import { toast } from "sonner";
 import MISTImage from "../../assets/MIST.png";
@@ -8,11 +9,12 @@ export default function AdminLogin() {
   const signIn = useSignIn();
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const email = e.target.email.value;
-    const password = e.target.password.value;
+    const form = e.currentTarget;
+    const email = (form.elements.namedItem("email") as HTMLInputElement)?.value ?? "";
+    const password = (form.elements.namedItem("password") as HTMLInputElement)?.value ?? "";
 
     try {
       const result = await Axios.post("/auth/admin/login", {
@@ -35,8 +37,9 @@ export default function AdminLogin() {
 
       navigate("/admin/dashboard");
     } catch (error) {
+      const e = error as { response?: { data?: { message?: string } } };
       console.log(error);
-      toast.error(error.response.data.message);
+      toast.error(e.response?.data?.message ?? "Login failed");
     }
   };
 
