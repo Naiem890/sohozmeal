@@ -2,14 +2,16 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Menu } from "lucide-react";
 import Aside from "./Aside";
+import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
     <div className="h-screen overflow-hidden bg-background flex">
       {/* Sidebar */}
-      <Aside isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      <Aside isOpen={isOpen} onClose={() => setIsOpen(false)} onCollapseChange={setIsCollapsed} />
 
       {/* Mobile overlay */}
       {isOpen && (
@@ -20,7 +22,7 @@ export default function Dashboard() {
       )}
 
       {/* Main column */}
-      <div className="flex-1 min-w-0 flex flex-col h-screen lg:pl-72">
+      <div className={cn("flex-1 min-w-0 flex flex-col h-screen transition-all duration-300", isCollapsed ? "lg:pl-[60px]" : "lg:pl-56")}>
         {/* Mobile topbar */}
         <header className="lg:hidden shrink-0 flex items-center gap-3 bg-card border-b border-border px-4 h-14">
           <button

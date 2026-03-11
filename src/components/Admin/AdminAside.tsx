@@ -24,17 +24,17 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const navLinks = [
-  { link: "Students", path: "/admin/dashboard/", icon: Users },
-  { link: "Meal Sheet", path: "/admin/dashboard/meal", icon: UtensilsCrossed },
-  { link: "Routine", path: "/admin/dashboard/meal-routine", icon: CalendarDays },
-  { link: "Stock", path: "/admin/dashboard/stock", icon: ShoppingBag },
-  { link: "Transactions", path: "/admin/dashboard/transaction-history", icon: ArrowLeftRight },
-  { link: "Expenses", path: "/admin/dashboard/expenses", icon: ShoppingCart },
-  { link: "Student Bill", path: "/admin/dashboard/bills", icon: FileText },
-  { link: "Notice Board", path: "/admin/dashboard/notice-board", icon: Bell },
-  { link: "Complaints", path: "/admin/dashboard/complaints", icon: MessageSquareWarning },
-  { link: "Blood Bank", path: "/admin/dashboard/blood-bank", icon: Heart },
-  { link: "Settings", path: "/admin/dashboard/settings", icon: Settings },
+  { link: "Students", path: "/admin/dashboard/", icon: Users, description: "Manage and view all students" },
+  { link: "Meal Sheet", path: "/admin/dashboard/meal", icon: UtensilsCrossed, description: "Daily meal attendance grid" },
+  { link: "Routine", path: "/admin/dashboard/meal-routine", icon: CalendarDays, description: "Configure weekly meal menu" },
+  { link: "Stock", path: "/admin/dashboard/stock", icon: ShoppingBag, description: "Manage inventory items" },
+  { link: "Transactions", path: "/admin/dashboard/transaction-history", icon: ArrowLeftRight, description: "Stock transaction history" },
+  { link: "Expenses", path: "/admin/dashboard/expenses", icon: ShoppingCart, description: "Track daily expenses" },
+  { link: "Student Bill", path: "/admin/dashboard/bills", icon: FileText, description: "Monthly billing summary" },
+  { link: "Notice Board", path: "/admin/dashboard/notice-board", icon: Bell, description: "Post announcements" },
+  { link: "Complaints", path: "/admin/dashboard/complaints", icon: MessageSquareWarning, description: "Handle student complaints" },
+  { link: "Blood Bank", path: "/admin/dashboard/blood-bank", icon: Heart, description: "Blood donation records" },
+  { link: "Settings", path: "/admin/dashboard/settings", icon: Settings, description: "Meal cutoff time & config" },
 ];
 
 interface AdminAsideProps {
@@ -105,7 +105,7 @@ export default function AdminAside({ isOpen, toggleDrawer, isCollapsed, toggleCo
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-          {navLinks.map(({ link, path, icon: Icon }) => {
+          {navLinks.map(({ link, path, icon: Icon, description }) => {
             const isActive = location.pathname === path;
             const item = (
               <Link
@@ -120,14 +120,15 @@ export default function AdminAside({ isOpen, toggleDrawer, isCollapsed, toggleCo
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
-                <Icon className={cn("flex-shrink-0", isActive ? "h-4 w-4" : "h-4 w-4")} />
+                <Icon className="h-4 w-4 flex-shrink-0" />
                 {!isCollapsed && <span className="truncate">{link}</span>}
               </Link>
             );
-            return isCollapsed ? (
+            const tooltipText = isCollapsed ? link : description;
+            return tooltipText ? (
               <Tooltip key={path}>
                 <TooltipTrigger asChild>{item}</TooltipTrigger>
-                <TooltipContent side="right">{link}</TooltipContent>
+                <TooltipContent side="right">{tooltipText}</TooltipContent>
               </Tooltip>
             ) : (
               item
