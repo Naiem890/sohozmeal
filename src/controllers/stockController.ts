@@ -499,7 +499,8 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
     const outTransactions: any[] = [];
     const nonStoredTransactions: any[] = [];
     const storedItemsWithNewIns = new Set<string>();
-    let transactionDate: string | null = null;
+    // Collect every transaction date upfront so all affected days get bill updates
+    const allAffectedDates = new Set<string>();
 
     transactions.forEach((transaction: any) => {
       if (transaction.type === 'IN') {
@@ -510,7 +511,7 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
       } else if (transaction.category === 'NON_STORED') {
         nonStoredTransactions.push(transaction);
       }
-      if (!transactionDate) transactionDate = transaction.date;
+      if (transaction.date) allAffectedDates.add(transaction.date);
     });
 
     // Validate all IN transactions have a valid price
@@ -636,7 +637,6 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
       }).save();
     }
 
-    const allAffectedDates = new Set<string>([transactionDate as string]);
     for (const itemIdStr of storedItemsWithNewIns) {
       const affected = await recomputeStockHistory(itemIdStr, wing);
       affected.forEach((d) => allAffectedDates.add(d));
