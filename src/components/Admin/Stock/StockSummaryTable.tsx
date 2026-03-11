@@ -23,7 +23,7 @@ export const StockSummaryTable = ({ stocks, summarySearch, setSummarySearch, onI
     : stocks;
 
   return (
-    <div className="flex flex-col h-full gap-2">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between shrink-0">
         <h2 className="text-base font-semibold">Stock Summary</h2>
         {onItemClick && (
@@ -40,7 +40,7 @@ export const StockSummaryTable = ({ stocks, summarySearch, setSummarySearch, onI
           className="flex h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
       </div>
-      <div className="flex-1 overflow-auto min-h-0 border rounded-md">
+      <div className="border rounded-md">
         <Table>
           <TableHeader className="sticky top-0 bg-background">
             <TableRow>

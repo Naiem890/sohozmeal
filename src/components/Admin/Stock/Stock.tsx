@@ -462,7 +462,7 @@ export const Stock = () => {
           </div>
 
           {/* Right: sticky stock summary */}
-          <div className="sticky top-6 self-start h-[calc(100vh-8rem)]">
+          <div className="sticky top-6 self-start">
             <StockSummaryTable
               stocks={stocks}
               summarySearch={summarySearch}
