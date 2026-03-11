@@ -25,6 +25,7 @@ interface TransactionRowProps {
 }
 
 const TransactionRow = ({ record, showEditModal, handleDelete, isSelected, onToggleSelect }: TransactionRowProps) => {
+  const amount = record.transactionAmount ?? (record.quantityChange * (record.unitPrice ?? 0));
   return (
     <TableRow
       className={`cursor-pointer hover:bg-muted/40 ${isSelected ? "bg-primary/5" : ""}`}
@@ -48,8 +49,8 @@ const TransactionRow = ({ record, showEditModal, handleDelete, isSelected, onTog
       </TableCell>
       <TableCell className="text-xs text-muted-foreground capitalize">{record.meal?.toLowerCase()}</TableCell>
       <TableCell className="font-medium">
-        {record.transactionAmount?.toFixed(2)} ৳
-        {record.unitPrice != null && (
+        {amount.toFixed(2)} ৳
+        {record.unitPrice != null && record.unitPrice > 0 && (
           <span className="ml-1 text-xs text-muted-foreground font-normal">
             ({record.unitPrice.toFixed(2)}/u)
           </span>
