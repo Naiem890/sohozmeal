@@ -29,6 +29,20 @@ export function clearCachedToken(): void {
   cachedAccessToken = null;
 }
 
+// ─── JWT expiry check ─────────────────────────────────────────────────────────
+// Decodes the JWT payload client-side (no verification) to read the `exp` claim.
+// A 10-second buffer handles clock skew and network latency so we refresh before
+// the backend would reject the token.
+
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return !payload.exp || payload.exp * 1000 < Date.now() + 10_000;
+  } catch {
+    return true;
+  }
+}
+
 // ─── Session expiry signal ────────────────────────────────────────────────────
 // Dispatches a custom DOM event so the React AuthEventHandler component can call
 // useSignOut() + navigate() — avoiding direct cookie manipulation which can miss
@@ -61,10 +75,64 @@ function processQueue(error: unknown, token: string | null = null): void {
   pendingQueue = [];
 }
 
-// ─── Request interceptor — attach access token from cookie ────────────────────
+// ─── Shared refresh logic ─────────────────────────────────────────────────────
+// Used by both the request interceptor (proactive) and the response interceptor
+// (fallback). Queues concurrent callers so only one refresh call goes out.
 
-Axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = cachedAccessToken ?? getCookie("_auth");
+async function refreshAndCache(): Promise<string | null> {
+  const refreshToken = localStorage.getItem("_refresh_token");
+  if (!refreshToken) {
+    signalSessionExpired();
+    return null;
+  }
+
+  // Another request is already refreshing — join the queue
+  if (isRefreshing) {
+    return new Promise<string>((resolve, reject) => {
+      pendingQueue.push({ resolve, reject });
+    }).catch(() => null);
+  }
+
+  isRefreshing = true;
+  try {
+    const { data } = await axios.post<{ accessToken: string }>(
+      `${BASE_URL}/auth/refresh`,
+      { refreshToken }
+    );
+    const newToken = data.accessToken;
+    cachedAccessToken = newToken;
+    processQueue(null, newToken);
+    return newToken;
+  } catch (err) {
+    processQueue(err, null);
+    signalSessionExpired();
+    return null;
+  } finally {
+    isRefreshing = false;
+  }
+}
+
+// ─── Request interceptor — proactively refresh expired token ──────────────────
+// On every request, read the cached token (or fall back to the cookie).
+// If the token is expired (or within 10 s of expiry), refresh it BEFORE the
+// request goes out — eliminating the 401 → refresh → retry cycle on page reload.
+
+Axios.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  // Never intercept the refresh call itself
+  if ((config.url as string | undefined)?.includes("/auth/refresh")) {
+    if (!(config.data instanceof FormData)) {
+      config.headers["Content-Type"] = "application/json";
+    }
+    return config;
+  }
+
+  let token = cachedAccessToken ?? getCookie("_auth");
+
+  if (token && isTokenExpired(token)) {
+    // Expired — refresh proactively so the actual request goes out fresh
+    token = await refreshAndCache();
+  }
+
   if (token) config.headers["Authorization"] = `Bearer ${token}`;
   if (!(config.data instanceof FormData)) {
     config.headers["Content-Type"] = "application/json";
@@ -72,8 +140,8 @@ Axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-// ─── Response interceptor — refresh on 401, no infinite loop ─────────────────
-// Skips interception for the refresh call itself and already-retried requests.
+// ─── Response interceptor — fallback for any unexpected 401s ─────────────────
+// Handles edge cases like server clock skew or tokens invalidated server-side.
 
 interface RetryableRequestConfig extends AxiosRequestConfig {
   _retry?: boolean;
@@ -92,42 +160,11 @@ Axios.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    const refreshToken = localStorage.getItem("_refresh_token");
-    if (!refreshToken) {
-      signalSessionExpired();
-      return Promise.reject(error);
-    }
-
-    // Queue concurrent 401s while a refresh is in progress
-    if (isRefreshing) {
-      return new Promise<string>((resolve, reject) => {
-        pendingQueue.push({ resolve, reject });
-      }).then((token) => {
-        if (original.headers) original.headers["Authorization"] = `Bearer ${token}`;
-        return Axios(original);
-      });
-    }
-
     original._retry = true;
-    isRefreshing = true;
+    const newToken = await refreshAndCache();
+    if (!newToken) return Promise.reject(error);
 
-    try {
-      const { data } = await axios.post<{ accessToken: string }>(
-        `${BASE_URL}/auth/refresh`,
-        { refreshToken }
-      );
-      const newToken = data.accessToken;
-
-      cachedAccessToken = newToken;
-      processQueue(null, newToken);
-      if (original.headers) original.headers["Authorization"] = `Bearer ${newToken}`;
-      return Axios(original);
-    } catch (refreshError) {
-      processQueue(refreshError, null);
-      signalSessionExpired();
-      return Promise.reject(refreshError);
-    } finally {
-      isRefreshing = false;
-    }
+    if (original.headers) original.headers["Authorization"] = `Bearer ${newToken}`;
+    return Axios(original);
   }
 );
