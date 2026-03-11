@@ -358,26 +358,26 @@ router.put('/transaction/:transactionId', validateToken, validate(editTransactio
     }
 
     if ((tx.item as any).category === 'STORED' && tx.type === 'OUT') {
-      // Check if increasing quantity would exceed available stock
+      // Validate new quantity against available stock at the (possibly new) transaction date.
+      // computeQuantityAtDate already subtracts the current OUT if its date <= newDate,
+      // so add it back to get the full capacity available for any OUT on that date.
+      const availableFromDB = await computeQuantityAtDate(itemId, wing, newDate);
+      const oldDateStr = tx.date.toISOString().split('T')[0];
+      const newDateStr = newDate.toISOString().split('T')[0];
+      const existingContribution = oldDateStr <= newDateStr ? tx.quantityChange : 0;
+      const available = r2(availableFromDB + existingContribution);
+      if (newQty > available) {
+        return res.status(400).json({
+          error: `Insufficient stock on ${newDateStr}. Available: ${available}, requested: ${newQty}`,
+        });
+      }
+
+      // Update the Stock snapshot so it stays consistent before recomputeStockHistory overwrites it.
       const qtyDiff = r2(newQty - tx.quantityChange);
-      if (qtyDiff > 0) {
+      if (qtyDiff !== 0) {
         const stock = await Stock.findOne({ item: itemId, wing });
-        const available = stock ? stock.quantity : 0;
-        if (qtyDiff > available) {
-          return res.status(400).json({
-            error: `Insufficient stock. Available: ${available}, additional needed: ${qtyDiff}`,
-          });
-        }
-        // Update stock quantity to reflect the increased OUT
         if (stock) {
           stock.quantity = r2(stock.quantity - qtyDiff);
-          await stock.save();
-        }
-      } else if (qtyDiff < 0) {
-        // Decreasing OUT quantity - return stock
-        const stock = await Stock.findOne({ item: itemId, wing });
-        if (stock) {
-          stock.quantity = r2(stock.quantity + Math.abs(qtyDiff));
           await stock.save();
         }
       }
