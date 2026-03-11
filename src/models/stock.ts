@@ -106,4 +106,7 @@ const stockTransactionSchema = new Schema<IStockTransaction>(
   { timestamps: true }
 );
 
+// Compound index covering all queries in stockRecompute.ts (item+wing+date range scans)
+stockTransactionSchema.index({ item: 1, wing: 1, date: 1 });
+
 export const StockTransaction = mongoose.model<IStockTransaction>('StockTransaction', stockTransactionSchema);
