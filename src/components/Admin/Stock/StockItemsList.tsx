@@ -1,4 +1,4 @@
-import { Pencil, Search, Trash2 } from "lucide-react";
+import { Pencil, Search, Trash2, Flame } from "lucide-react";
 import React, { useRef, useState } from "react";
 import { Axios } from "../../../api/api";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { stockItemSchema, validateSchema } from "@/validation/stockSchemas";
 
 const inputClass =
@@ -43,6 +44,9 @@ export const StockItemsList = ({
   const [editItemId, setEditItemId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const [forceDeleteItem, setForceDeleteItem] = useState<StockItem | null>(null);
+  const [forceDeleteInput, setForceDeleteInput] = useState("");
+  const [forceDeleting, setForceDeleting] = useState(false);
 
   const nameRef = useRef<HTMLInputElement | null>(null);
   const unitRef = useRef<HTMLSelectElement | null>(null);
@@ -117,6 +121,23 @@ export const StockItemsList = ({
         const e = error as { response?: { data?: { error?: string } } };
         toast.error(e.response?.data?.error ?? "Failed to delete item");
       }
+    }
+  };
+
+  const handleForceDelete = async () => {
+    if (!forceDeleteItem || forceDeleteInput.trim() !== forceDeleteItem.name) return;
+    setForceDeleting(true);
+    try {
+      const res = await Axios.delete(`/stock/item/${forceDeleteItem._id}/force?wing=${wing}`);
+      toast.success(res.data.message);
+      setForceDeleteItem(null);
+      setForceDeleteInput("");
+      refetchHandler();
+    } catch (error) {
+      const e = error as { response?: { data?: { error?: string } } };
+      toast.error(e.response?.data?.error ?? "Force delete failed");
+    } finally {
+      setForceDeleting(false);
     }
   };
 
@@ -195,6 +216,15 @@ export const StockItemsList = ({
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-orange-500 hover:text-orange-600 hover:bg-orange-50"
+                      onClick={() => { setForceDeleteItem(item); setForceDeleteInput(""); }}
+                      title="Force delete (removes all transactions)"
+                    >
+                      <Flame className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -264,6 +294,66 @@ export const StockItemsList = ({
           </div>
         </div>
       </form>
+
+      {/* Force-delete confirmation dialog */}
+      <Dialog
+        open={!!forceDeleteItem}
+        onOpenChange={(open) => { if (!open) { setForceDeleteItem(null); setForceDeleteInput(""); } }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Flame className="h-4 w-4" />
+              Force Delete Item
+            </DialogTitle>
+            <DialogDescription className="space-y-2 pt-1">
+              <span className="block">
+                This will permanently delete{" "}
+                <span className="font-semibold text-foreground">{forceDeleteItem?.name}</span>{" "}
+                along with <span className="font-semibold text-foreground">all its transactions and stock records</span>.
+                Bills for affected dates will be recalculated.
+              </span>
+              <span className="block text-destructive font-medium">This action cannot be undone.</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              Type <span className="font-semibold text-foreground">{forceDeleteItem?.name}</span> to confirm
+            </Label>
+            <input
+              autoFocus
+              type="text"
+              value={forceDeleteInput}
+              onChange={(e) => setForceDeleteInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && forceDeleteInput.trim() === forceDeleteItem?.name) handleForceDelete(); }}
+              placeholder={forceDeleteItem?.name}
+              className={inputClass + " w-full"}
+            />
+          </div>
+
+          <DialogFooter className="flex-row justify-end gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-w-20"
+              onClick={() => { setForceDeleteItem(null); setForceDeleteInput(""); }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="min-w-20 gap-1.5"
+              disabled={forceDeleteInput.trim() !== forceDeleteItem?.name || forceDeleting}
+              onClick={handleForceDelete}
+            >
+              <Flame className="h-3.5 w-3.5" />
+              {forceDeleting ? "Deleting…" : "Force Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
