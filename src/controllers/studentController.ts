@@ -107,7 +107,14 @@ router.get('/all', validateToken, checkAdminRole, async (req: Request, res: Resp
     if (gender && gender !== 'all') query.gender = gender;
     if (residence && residence !== 'all') {
       if (residence === 'NOT_SELECTED') {
-        query.$or = [{ residence: null }, { residence: 'NOT_SELECTED' }];
+        const residenceCondition = { $or: [{ residence: null }, { residence: 'NOT_SELECTED' }] };
+        // If search already set $or, wrap both in $and to avoid conflict
+        if (query.$or) {
+          query.$and = [{ $or: query.$or }, residenceCondition];
+          delete query.$or;
+        } else {
+          query.$or = residenceCondition.$or;
+        }
       } else {
         query.residence = residence;
       }
