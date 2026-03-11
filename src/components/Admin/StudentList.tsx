@@ -254,13 +254,14 @@ export const StudentList = () => {
                   <SortableHead column="department" label="Department" />
                   <SortableHead column="batch"      label="Batch" />
                   <TableHead>Gender</TableHead>
+                  <SortableHead column="residence"  label="Residence" />
                   <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {students.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                       No students found
                     </TableCell>
                   </TableRow>
@@ -278,6 +279,11 @@ export const StudentList = () => {
                         <Badge variant={s.gender === "MALE" ? "outline" : "success"}>
                           {s.gender}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {s.residence && s.residence !== "NOT_SELECTED"
+                          ? s.residence
+                          : <span className="italic text-muted-foreground/50">—</span>}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-center gap-1">
