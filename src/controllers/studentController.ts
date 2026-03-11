@@ -90,7 +90,7 @@ router.delete('/:studentId', validateToken, checkAdminRole, async (req: Request,
 
 router.get('/all', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 20, search, department, gender, sortBy, sortOrder } = req.query as any;
+    const { page = 1, limit = 20, search, department, gender, residence, sortBy, sortOrder } = req.query as any;
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
 
@@ -105,6 +105,7 @@ router.get('/all', validateToken, checkAdminRole, async (req: Request, res: Resp
     }
     if (department && department !== 'all') query.department = department;
     if (gender && gender !== 'all') query.gender = gender;
+    if (residence && residence !== 'all') query.residence = residence;
 
     const sort: any = {};
     if (sortBy) sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
