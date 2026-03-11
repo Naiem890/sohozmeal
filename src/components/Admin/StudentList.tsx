@@ -54,6 +54,8 @@ export const StudentList = () => {
   const debouncedSearch = useDebounce(search, 300);
   const [department, setDepartment] = useState("all");
   const [gender,     setGender]     = useState(auth.wing === "ALL" ? "all" : auth.wing);
+  const [residence,  setResidence]  = useState("all");
+  const [halls,      setHalls]      = useState<{ _id: string; name: string }[]>([]);
   const [sortBy,     setSortBy]     = useState("hallId");
   const [sortAsc,    setSortAsc]    = useState(true);
 
@@ -72,6 +74,10 @@ export const StudentList = () => {
   const [student,                 setStudent]                 = useState<Student | null>(null);
   const [refetchHallIdHandler,    setRefetchHallIdHandler]    = useState(false);
 
+  useEffect(() => {
+    Axios.get("/hall").then((r) => setHalls(r.data)).catch(() => {});
+  }, []);
+
   // Single fetch effect — all deps listed directly, no stale closures
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +90,7 @@ export const StudentList = () => {
     if (debouncedSearch)      params.set("search",     debouncedSearch);
     if (department !== "all") params.set("department", department);
     if (gender     !== "all") params.set("gender",     gender);
+    if (residence  !== "all") params.set("residence",  residence);
 
     Axios.get(`/student/all?${params}`)
       .then((res) => {
@@ -97,14 +104,14 @@ export const StudentList = () => {
       });
 
     return () => { cancelled = true; };
-  }, [page, pageSize, debouncedSearch, department, gender, sortBy, sortAsc, refetch]);
+  }, [page, pageSize, debouncedSearch, department, gender, residence, sortBy, sortAsc, refetch]);
 
   // Reset to page 1 when filters change (skip on mount)
   const isMounted = useRef(false);
   useEffect(() => {
     if (!isMounted.current) { isMounted.current = true; return; }
     setPage(1);
-  }, [debouncedSearch, department, gender, sortBy, sortAsc, pageSize]);
+  }, [debouncedSearch, department, gender, residence, sortBy, sortAsc, pageSize]);
 
   const handlePageSizeChange = (size: number) => setPageSize(size);
   const handlePageChange     = (p: number)    => setPage(p);
@@ -222,6 +229,18 @@ export const StudentList = () => {
                   </SelectContent>
                 </Select>
               )}
+              <Select value={residence} onValueChange={setResidence}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Residence" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Residences</SelectItem>
+                  <SelectItem value="NOT_SELECTED">Not Selected</SelectItem>
+                  {halls.map((h) => (
+                    <SelectItem key={h._id} value={h.name}>{h.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardHeader>
 
