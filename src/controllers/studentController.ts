@@ -105,7 +105,13 @@ router.get('/all', validateToken, checkAdminRole, async (req: Request, res: Resp
     }
     if (department && department !== 'all') query.department = department;
     if (gender && gender !== 'all') query.gender = gender;
-    if (residence && residence !== 'all') query.residence = residence;
+    if (residence && residence !== 'all') {
+      if (residence === 'NOT_SELECTED') {
+        query.$or = [{ residence: null }, { residence: 'NOT_SELECTED' }];
+      } else {
+        query.residence = residence;
+      }
+    }
 
     const sort: any = {};
     if (sortBy) sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
