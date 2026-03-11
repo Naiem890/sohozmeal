@@ -9,7 +9,7 @@ import { ItemSearchInput } from "./ItemSearchInput";
 import { stockInSchema, validateSchema } from "@/validation/stockSchemas";
 
 const inputClass =
-  "flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:cursor-not-allowed";
+  "flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:cursor-not-allowed";
 
 const errorClass = "text-xs text-red-500 mt-0.5";
 
@@ -144,19 +144,19 @@ export const StockIn = ({
 
   return (
     <form onSubmit={handleStockIn} className="mb-4" noValidate>
-      <div className="flex gap-2 flex-wrap items-start">
+      <div className="flex gap-4 flex-wrap items-start">
         <div>
-          <Label className="text-xs text-muted-foreground mb-1.5 block">Date</Label>
+          <Label className="text-sm text-muted-foreground mb-2 block">Date</Label>
           <DatePicker
             ref={dateRef}
             value={date}
             onChange={(d) => setDate(format(d, "yyyy-MM-dd"))}
             onKeyDown={(e) => handleKeyDown(e, itemRef, null)}
-            className="w-36"
+            className="w-40"
           />
         </div>
-        <div className="w-48">
-          <Label className="text-xs text-muted-foreground mb-1.5 block">Item</Label>
+        <div className="w-56">
+          <Label className="text-sm text-muted-foreground mb-2 block">Item</Label>
           <ItemSearchInput
             ref={itemRef}
             items={stockItems.filter((i) => i.category === "STORED")}
@@ -171,8 +171,8 @@ export const StockIn = ({
           />
           {errors.item && <p className={errorClass}>{errors.item}</p>}
         </div>
-        <div className="w-28">
-          <Label className="text-xs text-muted-foreground mb-1.5 block">Quantity</Label>
+        <div className="w-36">
+          <Label className="text-sm text-muted-foreground mb-2 block">Quantity</Label>
           <input
             ref={quantityRef}
             className={`${inputClass} w-full ${errors.quantity ? "border-red-500" : ""}`}
@@ -186,8 +186,8 @@ export const StockIn = ({
           />
           {errors.quantity && <p className={errorClass}>{errors.quantity}</p>}
         </div>
-        <div className="w-28">
-          <Label className="text-xs text-muted-foreground mb-1.5 block">Price Per Unit</Label>
+        <div className="w-36">
+          <Label className="text-sm text-muted-foreground mb-2 block">Price Per Unit</Label>
           <input
             ref={priceRef}
             className={`${inputClass} w-full ${errors.price ? "border-red-500" : ""}`}
@@ -206,8 +206,7 @@ export const StockIn = ({
         <Button
           ref={stockInSubmit}
           type="submit"
-          size="sm"
-          className="w-24"
+          className="w-28"
           onKeyDown={(e) => handleKeyDown(e, submitRef, priceRef)}
         >
           {editTransaction ? "Update" : "Stock In"}

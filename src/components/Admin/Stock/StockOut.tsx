@@ -16,7 +16,7 @@ import {
 import { stockOutSchema, validateSchema } from "@/validation/stockSchemas";
 
 const inputClass =
-  "flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:cursor-not-allowed";
+  "flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:cursor-not-allowed";
 
 const errorClass = "text-xs text-red-500 mt-0.5";
 
@@ -192,19 +192,19 @@ export const StockOut = ({
 
   return (
     <form onSubmit={handleStockOut} className="mb-4" noValidate>
-      <div className="flex gap-2 flex-wrap items-start">
+      <div className="flex gap-4 flex-wrap items-start">
         <div>
-          <Label className="text-xs text-muted-foreground mb-1.5 block">Date</Label>
+          <Label className="text-sm text-muted-foreground mb-2 block">Date</Label>
           <DatePicker
             ref={dateRef}
             value={date}
             onChange={(d) => setDate(format(d, "yyyy-MM-dd"))}
             onKeyDown={(e) => handleKeyDown(e, mealRef, null)}
-            className="w-36"
+            className="w-40"
           />
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground mb-1.5 block">Meal</Label>
+          <Label className="text-sm text-muted-foreground mb-2 block">Meal</Label>
           <Select
             value={meal}
             onValueChange={(v) => {
@@ -215,7 +215,7 @@ export const StockOut = ({
           >
             <SelectTrigger
               ref={mealRef}
-              className={`h-9 w-36 ${errors.meal ? "border-red-500" : ""}`}
+              className={`h-10 w-40 ${errors.meal ? "border-red-500" : ""}`}
               onKeyDown={(e) => handleKeyDown(e, itemRef, dateRef)}
             >
               <SelectValue placeholder="Meal" />
@@ -228,8 +228,8 @@ export const StockOut = ({
           </Select>
           {errors.meal && <p className={errorClass}>{errors.meal}</p>}
         </div>
-        <div className="w-48">
-          <Label className="text-xs text-muted-foreground mb-1.5 block">Item</Label>
+        <div className="w-56">
+          <Label className="text-sm text-muted-foreground mb-2 block">Item</Label>
           <ItemSearchInput
             ref={itemRef}
             items={stockItems}
@@ -245,8 +245,8 @@ export const StockOut = ({
           />
           {errors.item && <p className={errorClass}>{errors.item}</p>}
         </div>
-        <div>
-          <Label className="text-xs text-muted-foreground mb-1.5 block">
+        <div className="w-36">
+          <Label className="text-sm text-muted-foreground mb-2 block">
             Quantity
             {selectedItem && (
               <span className="ml-1 text-muted-foreground/70">
@@ -256,7 +256,7 @@ export const StockOut = ({
           </Label>
           <input
             ref={quantityRef}
-            className={`${inputClass} ${errors.quantity ? "border-red-500" : ""}`}
+            className={`${inputClass} w-full ${errors.quantity ? "border-red-500" : ""}`}
             type="number"
             step="any"
             min="0.001"
@@ -272,9 +272,8 @@ export const StockOut = ({
         <Button
           ref={stockOutSubmit}
           type="submit"
-          size="sm"
           variant="destructive"
-          className="w-24"
+          className="w-28"
           onKeyDown={(e) => handleKeyDown(e, submitRef, quantityRef)}
         >
           {editTransaction ? "Update" : "Stock Out"}
