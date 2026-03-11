@@ -1,6 +1,5 @@
 import React from "react";
 import { Search } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface StockEntry {
   _id?: string;
@@ -41,38 +40,38 @@ export const StockSummaryTable = ({ stocks, summarySearch, setSummarySearch, onI
         />
       </div>
       <div className="border rounded-md">
-        <Table>
-          <TableHeader className="sticky top-0 bg-background">
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Qty</TableHead>
-              <TableHead>Unit</TableHead>
-              <TableHead>Avg Price</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <table className="w-full caption-bottom text-sm">
+          <thead className="[&_tr]:border-b">
+            <tr className="border-b transition-colors">
+              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
+              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Qty</th>
+              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Unit</th>
+              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Avg Price</th>
+            </tr>
+          </thead>
+          <tbody className="[&_tr:last-child]:border-0">
             {filtered.length > 0 ? (
               filtered.map((stock: StockEntry) => (
-                <TableRow
+                <tr
                   key={stock._id}
                   onClick={() => onItemClick?.(stock.item)}
-                  className={onItemClick ? "cursor-pointer hover:bg-muted/60 transition-colors" : ""}
+                  className={`border-b transition-colors hover:bg-muted/50${onItemClick ? " cursor-pointer" : ""}`}
                 >
-                  <TableCell className="text-sm font-medium">{stock?.item?.name}</TableCell>
-                  <TableCell className="text-sm">{stock?.quantity?.toFixed(2)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{stock?.item?.unit}</TableCell>
-                  <TableCell className="text-sm">{stock?.price?.toFixed(2)}</TableCell>
-                </TableRow>
+                  <td className="px-4 py-3 align-middle text-sm font-medium">{stock?.item?.name}</td>
+                  <td className="px-4 py-3 align-middle text-sm">{stock?.quantity?.toFixed(2)}</td>
+                  <td className="px-4 py-3 align-middle text-sm text-muted-foreground">{stock?.item?.unit}</td>
+                  <td className="px-4 py-3 align-middle text-sm">{stock?.price?.toFixed(2)}</td>
+                </tr>
               ))
             ) : (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">
+              <tr>
+                <td colSpan={4} className="px-4 py-6 text-center text-sm text-muted-foreground">
                   {summarySearch ? "No items match your search" : "No stock data"}
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             )}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
     </div>
   );
