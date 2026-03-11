@@ -128,15 +128,12 @@ describe('StockItem CRUD', () => {
       expect(res.body.error).toMatch(/duplicate/i);
     });
 
-    // NOTE: stockItemSchema has both a bare unique:true on `name` AND a compound
-    // (name, wing) unique index.  The bare index takes precedence and prevents the
-    // same name in ANY wing — this is a known schema limitation.
-    it('rejects the same name even in a different wing (bare unique index on name)', async () => {
+    it('allows the same item name in a different wing', async () => {
       await request(app).post('/stock/item').send({ item: makeItem({ wing: 'MALE' }) });
       const res = await request(app)
         .post('/stock/item')
         .send({ item: makeItem({ wing: 'FEMALE' }) });
-      expect(res.status).toBe(400); // blocked by bare unique index
+      expect(res.status).toBe(201);
     });
 
     it('creates a NON_STORED item', async () => {

@@ -17,7 +17,6 @@ const stockItemSchema = new Schema<IStockItem>({
   name: {
     type: String,
     required: true,
-    unique: true,
     set: (value: string) => value.charAt(0).toUpperCase() + value.substring(1),
   },
   unit: {

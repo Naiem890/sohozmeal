@@ -66,7 +66,8 @@ export async function computeRunningAvgAtDate(
       poolValue += tx.quantityChange * tx.unitPrice;
       lastAvgPrice = poolValue / poolQty;
     } else if (tx.type === 'OUT') {
-      const avgPrice = poolQty > 0 ? poolValue / poolQty : lastAvgPrice;
+      // Round intermediate avgPrice to match recomputeStockHistory behaviour
+      const avgPrice = poolQty > 0 ? r2(poolValue / poolQty) : r2(lastAvgPrice);
       poolValue -= tx.quantityChange * avgPrice;
       poolQty -= tx.quantityChange;
       if (poolQty <= 0) {

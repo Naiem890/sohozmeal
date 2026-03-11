@@ -51,6 +51,7 @@ export async function createOrUpdateCostForMonth(
                 $lt: new Date(new Date(formattedDate).setDate(new Date(formattedDate).getDate() + 1)),
               },
               wing,
+              type: 'OUT',
             },
           },
           {

@@ -525,7 +525,6 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
     const outTransactions: any[] = [];
     const nonStoredTransactions: any[] = [];
     const storedItemsToRecompute = new Set<string>();
-    // Collect every transaction date upfront so all affected days get bill updates
     const allAffectedDates = new Set<string>();
 
     transactions.forEach((transaction: any) => {
@@ -540,7 +539,7 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
       if (transaction.date) allAffectedDates.add(transaction.date);
     });
 
-    // Validate all IN transactions have a valid price
+    // ── Phase 1: Validate all prices (no DB writes) ──────────────────────────
     for (const transaction of inTransactions) {
       const price = parseFloat(transaction.price);
       if (!price || isNaN(price) || price <= 0) {
@@ -548,7 +547,6 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
       }
     }
 
-    // Validate all NON_STORED transactions have a valid price
     for (const transaction of nonStoredTransactions) {
       const price = parseFloat(transaction.price);
       if (!price || isNaN(price) || price <= 0) {
@@ -556,6 +554,69 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
       }
     }
 
+    // ── Phase 2: Pre-validate OUT stock availability (no DB writes) ──────────
+    // Collect batch IN quantities by (name, date) so we can account for them
+    const batchInByName = new Map<string, Map<string, number>>();
+    for (const transaction of inTransactions) {
+      const { name, quantity, date } = transaction;
+      if (!batchInByName.has(name)) batchInByName.set(name, new Map());
+      const dateMap = batchInByName.get(name)!;
+      dateMap.set(date, r2((dateMap.get(date) || 0) + r2(parseFloat(quantity))));
+    }
+
+    // Group OUTs by item+date
+    const outByItemDate = new Map<string, Map<string, { total: number; name: string; itemId: string }>>();
+    for (const transaction of outTransactions) {
+      const { quantity, date, name } = transaction;
+      const stockItem = await StockItem.findOne({ name, wing });
+      if (!stockItem && !batchInByName.has(name)) {
+        return res.status(400).json({ error: `Stock item not found: ${name}` });
+      }
+      const itemId = stockItem ? stockItem._id.toString() : `pending:${name}`;
+      const qty = r2(parseFloat(quantity));
+      if (!outByItemDate.has(itemId)) outByItemDate.set(itemId, new Map());
+      const dateMap = outByItemDate.get(itemId)!;
+      const existing = dateMap.get(date) || { total: 0, name, itemId };
+      existing.total = r2(existing.total + qty);
+      dateMap.set(date, existing);
+    }
+
+    for (const [itemId, dateMap] of outByItemDate) {
+      const sortedDates = [...dateMap.keys()].sort();
+      let allocatedInBatch = 0;
+      const firstName = dateMap.values().next().value!.name;
+
+      for (const date of sortedDates) {
+        const { total, name } = dateMap.get(date)!;
+
+        // Existing DB quantity (0 for items that don't exist yet)
+        let availableFromDB = 0;
+        if (!itemId.startsWith('pending:')) {
+          availableFromDB = await computeQuantityAtDate(itemId, wing, new Date(date));
+        }
+
+        // Add batch IN quantities for this item with date <= OUT date
+        let pendingInQty = 0;
+        const batchIns = batchInByName.get(firstName);
+        if (batchIns) {
+          for (const [inDate, inQty] of batchIns) {
+            if (inDate <= date) pendingInQty += inQty;
+          }
+        }
+
+        const available = r2(availableFromDB + pendingInQty - allocatedInBatch);
+        if (total > available) {
+          return res.status(400).json({
+            error: `Insufficient stock for "${name}" on ${date}. Available: ${available}, requested: ${total}`,
+          });
+        }
+        allocatedInBatch = r2(allocatedInBatch + total);
+      }
+    }
+
+    // ── Phase 3: All validations passed — execute DB writes ──────────────────
+
+    // Save INs
     for (const transaction of inTransactions) {
       const { quantity, price, date, name } = transaction;
       let stockItem = await StockItem.findOne({ name, wing });
@@ -588,41 +649,7 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
       storedItemsToRecompute.add(stockItem._id.toString());
     }
 
-    // Pre-validate all OUT transactions have sufficient stock as of their transaction date.
-    // Group by (itemId, date) so multiple OUTs for the same item on the same date are checked together.
-    // Process dates in ascending order so earlier-date batch OUTs reduce what's available for later dates.
-    const outByItemDate = new Map<string, Map<string, { total: number; name: string; itemId: string }>>();
-    for (const transaction of outTransactions) {
-      const { quantity, date, name } = transaction;
-      const stockItem = await StockItem.findOne({ name, wing });
-      if (!stockItem) {
-        return res.status(400).json({ error: `Stock item not found: ${name}` });
-      }
-      const qty = r2(parseFloat(quantity));
-      const itemId = stockItem._id.toString();
-      if (!outByItemDate.has(itemId)) outByItemDate.set(itemId, new Map());
-      const dateMap = outByItemDate.get(itemId)!;
-      const existing = dateMap.get(date) || { total: 0, name, itemId };
-      existing.total = r2(existing.total + qty);
-      dateMap.set(date, existing);
-    }
-
-    for (const [itemId, dateMap] of outByItemDate) {
-      const sortedDates = [...dateMap.keys()].sort();
-      let allocatedInBatch = 0;
-      for (const date of sortedDates) {
-        const { total, name } = dateMap.get(date)!;
-        const availableFromDB = await computeQuantityAtDate(itemId, wing, new Date(date));
-        const available = r2(availableFromDB - allocatedInBatch);
-        if (total > available) {
-          return res.status(400).json({
-            error: `Insufficient stock for "${name}" on ${date}. Available: ${available}, requested: ${total}`,
-          });
-        }
-        allocatedInBatch = r2(allocatedInBatch + total);
-      }
-    }
-
+    // Save OUTs
     for (const transaction of outTransactions) {
       const { quantity, date, meal, name } = transaction;
       const stockItem = await StockItem.findOne({ name, wing });
@@ -652,6 +679,7 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
       storedItemsToRecompute.add(stockItem._id.toString());
     }
 
+    // Save NON_STORED
     for (const transaction of nonStoredTransactions) {
       const { quantity, price, date, meal, name } = transaction;
       let stockItem = await StockItem.findOne({ name, wing });
