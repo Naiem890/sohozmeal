@@ -3,6 +3,42 @@ import mongoose from 'mongoose';
 
 const r2 = (v: number): number => Math.round(v * 100) / 100;
 
+export async function computeQuantityAtDate(
+  itemId: mongoose.Types.ObjectId | string,
+  wing: string,
+  asOfDate: Date
+): Promise<number> {
+  const endOfDay = new Date(asOfDate);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const result = await StockTransaction.aggregate([
+    {
+      $match: {
+        item: new mongoose.Types.ObjectId(itemId.toString()),
+        wing,
+        type: { $in: ['IN', 'OUT'] },
+        date: { $lte: endOfDay },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        total: {
+          $sum: {
+            $cond: [
+              { $eq: ['$type', 'IN'] },
+              '$quantityChange',
+              { $multiply: ['$quantityChange', -1] },
+            ],
+          },
+        },
+      },
+    },
+  ]);
+
+  return result.length > 0 ? r2(result[0].total) : 0;
+}
+
 export async function computeRunningAvgAtDate(
   itemId: mongoose.Types.ObjectId | string,
   wing: string,

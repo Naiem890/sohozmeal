@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Stock, StockItem, StockTransaction } from '../models/stock';
 import { validateToken } from '../utils/validateToken';
 import { createOrUpdateBill } from '../utils/billService';
-import { computeRunningAvgAtDate, recomputeStockHistory } from '../utils/stockRecompute';
+import { computeQuantityAtDate, computeRunningAvgAtDate, recomputeStockHistory } from '../utils/stockRecompute';
 import {
   createStockItemSchema,
   updateStockItemSchema,
@@ -588,28 +588,38 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
       storedItemsToRecompute.add(stockItem._id.toString());
     }
 
-    // Pre-validate all OUT transactions have sufficient stock (accounting for cumulative deductions)
-    const outQtyByItem = new Map<string, { total: number; names: string }>();
+    // Pre-validate all OUT transactions have sufficient stock as of their transaction date.
+    // Group by (itemId, date) so multiple OUTs for the same item on the same date are checked together.
+    // Process dates in ascending order so earlier-date batch OUTs reduce what's available for later dates.
+    const outByItemDate = new Map<string, Map<string, { total: number; name: string; itemId: string }>>();
     for (const transaction of outTransactions) {
-      const { quantity, name } = transaction;
+      const { quantity, date, name } = transaction;
       const stockItem = await StockItem.findOne({ name, wing });
       if (!stockItem) {
         return res.status(400).json({ error: `Stock item not found: ${name}` });
       }
       const qty = r2(parseFloat(quantity));
-      const key = stockItem._id.toString();
-      const existing = outQtyByItem.get(key) || { total: 0, names: name };
+      const itemId = stockItem._id.toString();
+      if (!outByItemDate.has(itemId)) outByItemDate.set(itemId, new Map());
+      const dateMap = outByItemDate.get(itemId)!;
+      const existing = dateMap.get(date) || { total: 0, name, itemId };
       existing.total = r2(existing.total + qty);
-      outQtyByItem.set(key, existing);
+      dateMap.set(date, existing);
     }
 
-    for (const [itemId, { total, names }] of outQtyByItem) {
-      const stock = await Stock.findOne({ item: itemId, wing });
-      const available = stock ? stock.quantity : 0;
-      if (total > available) {
-        return res.status(400).json({
-          error: `Insufficient stock for "${names}". Available: ${available}, requested: ${total}`,
-        });
+    for (const [itemId, dateMap] of outByItemDate) {
+      const sortedDates = [...dateMap.keys()].sort();
+      let allocatedInBatch = 0;
+      for (const date of sortedDates) {
+        const { total, name } = dateMap.get(date)!;
+        const availableFromDB = await computeQuantityAtDate(itemId, wing, new Date(date));
+        const available = r2(availableFromDB - allocatedInBatch);
+        if (total > available) {
+          return res.status(400).json({
+            error: `Insufficient stock for "${name}" on ${date}. Available: ${available}, requested: ${total}`,
+          });
+        }
+        allocatedInBatch = r2(allocatedInBatch + total);
       }
     }
 
