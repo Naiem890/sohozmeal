@@ -524,7 +524,7 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
     const inTransactions: any[] = [];
     const outTransactions: any[] = [];
     const nonStoredTransactions: any[] = [];
-    const storedItemsWithNewIns = new Set<string>();
+    const storedItemsToRecompute = new Set<string>();
     // Collect every transaction date upfront so all affected days get bill updates
     const allAffectedDates = new Set<string>();
 
@@ -585,7 +585,7 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
         meal: '-',
         wing,
       }).save();
-      storedItemsWithNewIns.add(stockItem._id.toString());
+      storedItemsToRecompute.add(stockItem._id.toString());
     }
 
     // Pre-validate all OUT transactions have sufficient stock (accounting for cumulative deductions)
@@ -639,6 +639,7 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
         meal,
         wing,
       }).save();
+      storedItemsToRecompute.add(stockItem._id.toString());
     }
 
     for (const transaction of nonStoredTransactions) {
@@ -663,7 +664,7 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
       }).save();
     }
 
-    for (const itemIdStr of storedItemsWithNewIns) {
+    for (const itemIdStr of storedItemsToRecompute) {
       const affected = await recomputeStockHistory(itemIdStr, wing);
       affected.forEach((d) => allAffectedDates.add(d));
     }
