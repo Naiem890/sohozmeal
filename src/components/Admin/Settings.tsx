@@ -140,18 +140,18 @@ function CronScheduleCard({ refreshTrigger }: { refreshTrigger: number }) {
 const inputClass =
   "flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
-interface Hall { _id: string; name: string }
+interface Hall { _id: string; name: string; wing: string }
 
-function HallsSettings() {
+function HallsSettings({ wing }: { wing: "MALE" | "FEMALE" }) {
   const [halls, setHalls] = useState<Hall[]>([]);
   const [newName, setNewName] = useState("");
   const [adding, setAdding] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fetchHalls = () =>
-    Axios.get("/hall").then((r) => setHalls(r.data)).catch(() => {});
+    Axios.get(`/hall?wing=${wing}`).then((r) => setHalls(r.data)).catch(() => {});
 
-  useEffect(() => { fetchHalls(); }, []);
+  useEffect(() => { fetchHalls(); }, [wing]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,7 +159,7 @@ function HallsSettings() {
     if (!name) return;
     setAdding(true);
     try {
-      const { data } = await Axios.post("/hall", { name });
+      const { data } = await Axios.post("/hall", { name, wing });
       setHalls((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
       setNewName("");
       toast.success(`Hall "${data.name}" added`);
@@ -184,9 +184,9 @@ function HallsSettings() {
   return (
     <Card>
       <CardHeader className="pb-4">
-        <CardTitle className="text-base">Halls / Residences</CardTitle>
+        <CardTitle className="text-base">{wing === "MALE" ? "Male" : "Female"} Wing — Halls / Residences</CardTitle>
         <CardDescription>
-          Manage the residence options available when registering or editing a student.
+          Manage residence options for {wing === "MALE" ? "male" : "female"} students.
         </CardDescription>
       </CardHeader>
       <Separator />
@@ -212,9 +212,9 @@ function HallsSettings() {
         )}
         <form onSubmit={handleAdd} className="flex gap-2">
           <div className="flex-1">
-            <Label htmlFor="new-hall" className="sr-only">Hall name</Label>
+            <Label htmlFor={`new-hall-${wing}`} className="sr-only">Hall name</Label>
             <input
-              id="new-hall"
+              id={`new-hall-${wing}`}
               ref={inputRef}
               type="text"
               placeholder="Hall name, e.g. Osmany Hall"
@@ -251,7 +251,8 @@ export default function Settings() {
         <WingSettings wing="MALE" onSaved={handleSaved} />
         <WingSettings wing="FEMALE" onSaved={handleSaved} />
         <CronScheduleCard refreshTrigger={refreshTrigger} />
-        <HallsSettings />
+        <HallsSettings wing="MALE" />
+        <HallsSettings wing="FEMALE" />
       </div>
     </div>
   );

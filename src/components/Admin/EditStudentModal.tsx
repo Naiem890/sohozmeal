@@ -53,8 +53,9 @@ export const EditStudentModal = ({ showModal, setShowModal, student, setStudents
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    Axios.get("/hall").then((r) => setHalls(r.data)).catch(() => {});
-  }, []);
+    if (!student?.gender) return;
+    Axios.get(`/hall?wing=${student.gender}`).then((r) => setHalls(r.data)).catch(() => {});
+  }, [student?.gender]);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {

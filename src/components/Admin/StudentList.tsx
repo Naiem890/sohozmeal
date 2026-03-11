@@ -75,8 +75,9 @@ export const StudentList = () => {
   const [refetchHallIdHandler,    setRefetchHallIdHandler]    = useState(false);
 
   useEffect(() => {
-    Axios.get("/hall").then((r) => setHalls(r.data)).catch(() => {});
-  }, []);
+    const url = gender !== "all" ? `/hall?wing=${gender}` : "/hall";
+    Axios.get(url).then((r) => setHalls(r.data)).catch(() => {});
+  }, [gender]);
 
   // Single fetch effect — all deps listed directly, no stale closures
   useEffect(() => {
@@ -105,6 +106,15 @@ export const StudentList = () => {
 
     return () => { cancelled = true; };
   }, [page, pageSize, debouncedSearch, department, gender, residence, sortBy, sortAsc, refetch]);
+
+  // Reset residence when gender changes (halls are wing-specific)
+  const prevGender = useRef(gender);
+  useEffect(() => {
+    if (prevGender.current !== gender) {
+      prevGender.current = gender;
+      setResidence("all");
+    }
+  }, [gender]);
 
   // Reset to page 1 when filters change (skip on mount)
   const isMounted = useRef(false);

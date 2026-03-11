@@ -1,6 +1,5 @@
 import { useAuthUser } from "react-auth-kit";
 import { Loader2, Search, X } from "lucide-react";
-import { RESIDENCES } from "../../../Utils/constant";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -20,6 +19,7 @@ interface MealStatsProps {
   setGender: (v: string) => void;
   residence: string;
   setResidence: (v: string) => void;
+  residences: string[];
   search: string;
   setSearch: (v: string) => void;
   breakfastCount: number;
@@ -41,6 +41,7 @@ export const MealStats = ({
   setGender,
   residence,
   setResidence,
+  residences,
   search,
   setSearch,
   breakfastCount,
@@ -82,7 +83,7 @@ export const MealStats = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Residence</SelectItem>
-            {RESIDENCES.map((r) => (
+            {residences.map((r) => (
               <SelectItem key={r} value={r}>
                 {r.replace(/_/g, " ")}
               </SelectItem>

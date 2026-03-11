@@ -89,8 +89,8 @@ export const AddStudentModal = ({
   }, [gender, refetchHallIdHandler]);
 
   useEffect(() => {
-    Axios.get("/hall").then((r) => setHalls(r.data)).catch(() => {});
-  }, []);
+    Axios.get(`/hall?wing=${gender}`).then((r) => setHalls(r.data)).catch(() => {});
+  }, [gender]);
 
   const handleAddStudent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -171,7 +171,7 @@ export const AddStudentModal = ({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="phoneNumber">Phone Number</Label>
-                <Input id="phoneNumber" name="phoneNumber" placeholder="01712345678" />
+                <Input id="phoneNumber" name="phoneNumber" placeholder="01712345678" required />
               </div>
             </div>
           </div>

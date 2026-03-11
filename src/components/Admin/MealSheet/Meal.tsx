@@ -63,6 +63,7 @@ export const Meal = () => {
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [mealCounts, setMealCounts] = useState({ breakfast: 0, lunch: 0, dinner: 0 });
 
+  const [residences, setResidences] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -70,6 +71,14 @@ export const Meal = () => {
   });
 
   const formattedDate = useMemo(() => formatMealDate(fromDate), [fromDate]);
+
+  // Fetch distinct residences whenever wing changes; reset selected residence
+  useEffect(() => {
+    setResidence("");
+    Axios.get("/student/residences", { params: { wing: gender } })
+      .then((res) => setResidences(res.data ?? []))
+      .catch(() => setResidences([]));
+  }, [gender]);
 
   // Debounce search input — only fire API after 400ms idle
   useEffect(() => {
@@ -292,6 +301,7 @@ export const Meal = () => {
         setGender={setGender}
         residence={residence}
         setResidence={setResidence}
+        residences={residences}
         search={search}
         setSearch={setSearch}
         breakfastCount={counts.b}
