@@ -155,8 +155,8 @@ export const StockItemsList = ({
     : stockItems;
 
   return (
-    <div className="w-full max-w-max space-y-3">
-      <div className="relative">
+    <div className="w-full space-y-3">
+      <div className="relative max-w-sm">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
         <input
           type="text"
@@ -166,7 +166,7 @@ export const StockItemsList = ({
           className="flex h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
       </div>
-      <div className="overflow-auto max-h-64 border rounded-md">
+      <div className="overflow-auto border rounded-md" style={{ maxHeight: "calc(100vh - 16rem)" }}>
         <Table>
           <TableHeader className="sticky top-0 bg-background">
             <TableRow>
