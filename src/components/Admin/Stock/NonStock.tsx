@@ -105,8 +105,8 @@ export const NonStock = ({
       setErrors(validation.errors);
       if (validation.errors.meal) setTimeout(() => mealRef.current?.focus(), 0);
       else if (validation.errors.item) setTimeout(() => itemRef.current?.focus(), 0);
-      else if (validation.errors.price) setTimeout(() => priceRef.current?.focus(), 0);
       else if (validation.errors.quantity) setTimeout(() => quantityRef.current?.focus(), 0);
+      else if (validation.errors.price) setTimeout(() => priceRef.current?.focus(), 0);
       return;
     }
 
@@ -189,27 +189,12 @@ export const NonStock = ({
             onChange={(item) => {
               setSelectedItem(item);
               if (errors.item) setErrors((p) => ({ ...p, item: undefined }));
-              if (item) setTimeout(() => priceRef.current?.focus(), 0);
+              if (item) setTimeout(() => quantityRef.current?.focus(), 0);
             }}
-            onKeyDown={(e) => handleKeyDown(e, priceRef, mealRef)}
+            onKeyDown={(e) => handleKeyDown(e, quantityRef, mealRef)}
             placeholder="Search item..."
           />
           {errors.item && <p className={errorClass}>{errors.item}</p>}
-        </div>
-        <div className="w-28">
-          <Label className="text-xs text-muted-foreground mb-1.5 block">Price (per unit)</Label>
-          <input
-            ref={priceRef}
-            className={`${inputClass} w-full ${errors.price ? "border-red-500" : ""}`}
-            type="number"
-            step="any"
-            min="0.001"
-            placeholder="eg: 10"
-            value={price}
-            onChange={(e) => { setPrice(e.target.value); if (errors.price) setErrors((p) => ({ ...p, price: undefined })); }}
-            onKeyDown={(e) => handleKeyDown(e, quantityRef, itemRef)}
-          />
-          {errors.price && <p className={errorClass}>{errors.price}</p>}
         </div>
         <div className="w-28">
           <Label className="text-xs text-muted-foreground mb-1.5 block">Quantity</Label>
@@ -222,9 +207,24 @@ export const NonStock = ({
             placeholder="eg: 100"
             value={quantity}
             onChange={(e) => { setQuantity(e.target.value); if (errors.quantity) setErrors((p) => ({ ...p, quantity: undefined })); }}
-            onKeyDown={(e) => handleKeyDown(e, nonStockSubmit, priceRef)}
+            onKeyDown={(e) => handleKeyDown(e, priceRef, itemRef)}
           />
           {errors.quantity && <p className={errorClass}>{errors.quantity}</p>}
+        </div>
+        <div className="w-28">
+          <Label className="text-xs text-muted-foreground mb-1.5 block">Price (per unit)</Label>
+          <input
+            ref={priceRef}
+            className={`${inputClass} w-full ${errors.price ? "border-red-500" : ""}`}
+            type="number"
+            step="any"
+            min="0.001"
+            placeholder="eg: 10"
+            value={price}
+            onChange={(e) => { setPrice(e.target.value); if (errors.price) setErrors((p) => ({ ...p, price: undefined })); }}
+            onKeyDown={(e) => handleKeyDown(e, nonStockSubmit, quantityRef)}
+          />
+          {errors.price && <p className={errorClass}>{errors.price}</p>}
         </div>
       </div>
       <div className="mt-3">
@@ -233,7 +233,7 @@ export const NonStock = ({
           type="submit"
           size="sm"
           className="w-24 bg-amber-600 hover:bg-amber-700"
-          onKeyDown={(e) => handleKeyDown(e, submitRef, quantityRef)}
+          onKeyDown={(e) => handleKeyDown(e, submitRef, priceRef)}
         >
           {editTransaction ? "Update" : "Stock Out"}
         </Button>
