@@ -58,13 +58,15 @@ export async function computeRunningAvgAtDate(
 
   let poolQty = 0;
   let poolValue = 0;
+  let lastAvgPrice = 0;
 
   for (const tx of allTx) {
     if (tx.type === 'IN') {
       poolQty += tx.quantityChange;
       poolValue += tx.quantityChange * tx.unitPrice;
+      lastAvgPrice = poolValue / poolQty;
     } else if (tx.type === 'OUT') {
-      const avgPrice = poolQty > 0 ? poolValue / poolQty : 0;
+      const avgPrice = poolQty > 0 ? poolValue / poolQty : lastAvgPrice;
       poolValue -= tx.quantityChange * avgPrice;
       poolQty -= tx.quantityChange;
       if (poolQty <= 0) {
@@ -74,7 +76,7 @@ export async function computeRunningAvgAtDate(
     }
   }
 
-  return poolQty > 0 ? r2(poolValue / poolQty) : 0;
+  return poolQty > 0 ? r2(poolValue / poolQty) : r2(lastAvgPrice);
 }
 
 export async function recomputeStockHistory(
@@ -92,6 +94,7 @@ export async function recomputeStockHistory(
   let poolQty = 0;
   let poolValue = 0;
   let onHand = 0;
+  let lastAvgPrice = 0;
 
   const bulkOps: any[] = [];
   const affectedDates = new Set<string>();
@@ -100,9 +103,10 @@ export async function recomputeStockHistory(
     if (tx.type === 'IN') {
       poolQty += tx.quantityChange;
       poolValue += tx.quantityChange * tx.unitPrice;
+      lastAvgPrice = poolValue / poolQty;
       onHand += tx.quantityChange;
     } else if (tx.type === 'OUT' && tx.category === 'STORED') {
-      const avgPrice = poolQty > 0 ? r2(poolValue / poolQty) : 0;
+      const avgPrice = poolQty > 0 ? r2(poolValue / poolQty) : r2(lastAvgPrice);
       const newAmount = r2(tx.quantityChange * avgPrice);
 
       if (Math.abs((tx.transactionAmount || 0) - newAmount) > 0.0001) {
@@ -130,7 +134,7 @@ export async function recomputeStockHistory(
     await StockTransaction.bulkWrite(bulkOps);
   }
 
-  const currentAvg = poolQty > 0 ? r2(poolValue / poolQty) : 0;
+  const currentAvg = poolQty > 0 ? r2(poolValue / poolQty) : r2(lastAvgPrice);
   await Stock.findOneAndUpdate(
     { item: itemId, wing },
     { quantity: r2(Math.max(0, onHand)), price: currentAvg }
