@@ -59,6 +59,32 @@ router.put('/item/:id', validateToken, validate(updateStockItemSchema), async (r
   }
 });
 
+router.delete('/item/:id/force', validateToken, async (req: Request, res: Response) => {
+  try {
+    const itemId = req.params.id as string;
+    const wing = req.query.wing as string;
+    if (!wing) return res.status(400).json({ error: 'wing is required' });
+
+    const item = await StockItem.findById(itemId);
+    if (!item) return res.status(404).json({ error: 'Stock item not found' });
+
+    // Collect affected dates before deleting so bills can be recalculated
+    const txDocs = await StockTransaction.find({ item: itemId, wing }, { date: 1 }).lean();
+    const affectedDates = [...new Set(txDocs.map((t) => (t.date as Date).toISOString().split('T')[0]))];
+
+    await StockTransaction.deleteMany({ item: itemId, wing });
+    await Stock.deleteOne({ item: itemId, wing });
+    await StockItem.findByIdAndDelete(itemId);
+
+    // Recalculate bills for every date that had transactions for this item
+    await Promise.all(affectedDates.map((d) => createOrUpdateBill(d, wing)));
+
+    res.json({ message: `"${item.name}" and all associated transactions deleted successfully` });
+  } catch (error) {
+    res.status(500).json({ error: 'Error force deleting item' });
+  }
+});
+
 router.delete('/item/:id', validateToken, async (req: Request, res: Response) => {
   try {
     const itemId = req.params.id;
