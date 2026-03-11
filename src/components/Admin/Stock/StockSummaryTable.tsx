@@ -22,7 +22,7 @@ export const StockSummaryTable = ({ stocks, summarySearch, setSummarySearch, onI
     : stocks;
 
   return (
-    <div className="flex flex-col gap-2 max-h-[calc(100vh-8rem)]">
+    <div className="flex flex-col gap-2 h-full">
       <div className="flex items-center justify-between shrink-0">
         <h2 className="text-base font-semibold">Stock Summary</h2>
         {onItemClick && (

@@ -272,9 +272,9 @@ export const Stock = () => {
   }, [handleSubmit]);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full gap-4">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-2 shrink-0">
         <h2 className="text-2xl font-bold tracking-tight">Stock</h2>
         <div className="flex items-center gap-2">
           {auth.wing === "ALL" && (
@@ -304,7 +304,7 @@ export const Stock = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-0 border-b">
+      <div className="flex gap-0 border-b shrink-0">
         {TABS.map(({ key, label }, i) => (
           <button
             key={key}
@@ -323,9 +323,10 @@ export const Stock = () => {
       </div>
 
       {tab !== "items" && (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 items-start">
+        <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-3 gap-5">
           {/* Left: form + pending + guide */}
-          <div className="xl:col-span-2 space-y-4">
+          <div className="xl:col-span-2 overflow-y-auto min-h-0">
+          <div className="space-y-4">
             {tab === "stockIn" && (
               <StockIn
                 stockItems={stockItems}
@@ -460,9 +461,10 @@ export const Stock = () => {
             {/* Keyboard guide */}
             {showGuide && <KeyboardGuide />}
           </div>
+          </div>
 
-          {/* Right: sticky stock summary */}
-          <div className="sticky top-6 self-start">
+          {/* Right: stock summary */}
+          <div className="min-h-0">
             <StockSummaryTable
               stocks={stocks}
               summarySearch={summarySearch}
@@ -474,14 +476,16 @@ export const Stock = () => {
       )}
 
       {tab === "items" && (
-        <StockItemsList
-          categories={categories}
-          units={units}
-          stockItems={stockItems}
-          refetchHandler={() => setRefetch((p) => !p)}
-          wing={wing}
-          onItemClick={(item) => setHistoryItem(item as StockItem)}
-        />
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <StockItemsList
+            categories={categories}
+            units={units}
+            stockItems={stockItems}
+            refetchHandler={() => setRefetch((p) => !p)}
+            wing={wing}
+            onItemClick={(item) => setHistoryItem(item as StockItem)}
+          />
+        </div>
       )}
 
       <StockItemHistory
