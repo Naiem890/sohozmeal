@@ -14,7 +14,7 @@ export interface IStudent extends Document {
   firstTimeLogin: boolean;
   profileImage?: Buffer;
   roomNo?: string | null;
-  residence?: 'OSMANY_HALL' | 'EXT_D' | 'NOT_SELECTED' | null;
+  residence?: string | null;
   isTutorAvailable: boolean;
   preferredBackground?: string[];
   preferredArea?: string[];
@@ -49,11 +49,7 @@ const studentSchema = new Schema<IStudent>({
   firstTimeLogin: { type: Boolean, required: true, default: true },
   profileImage: { type: Buffer },
   roomNo: { type: String, default: null },
-  residence: {
-    type: String,
-    default: null,
-    enum: ['OSMANY_HALL', 'EXT_D', 'NOT_SELECTED', null],
-  },
+  residence: { type: String, default: null },
   isTutorAvailable: { type: Boolean, default: false },
   preferredBackground: {
     type: [String],
