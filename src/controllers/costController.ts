@@ -30,17 +30,29 @@ router.post('/generate-bills', validateToken, async (req: Request, res: Response
       return res.status(400).json({ error: 'Invalid or missing wing parameter' });
     }
 
-    const bills = await Cost.find({ date: { $gte: start, $lte: end }, wing: wing.toUpperCase() }).exec();
-    const meals = await Meal.find({ date: { $gte: startDate, $lte: endDate }, wing: wing.toUpperCase() } as any).exec();
+    const students = await Student.find({ gender: wing.toUpperCase() }, { profileImage: 0, password: 0, firstTimeLogin: 0, status: 0 }).exec();
+    const studentIds = students.map((s) => s.studentId);
+
+    const [bills, meals, hallFeasts] = await Promise.all([
+      Cost.find({ date: { $gte: start, $lte: end }, wing: wing.toUpperCase() }).exec(),
+      Meal.find({ date: { $gte: startDate, $lte: endDate }, studentId: { $in: studentIds } }).exec(),
+      HallFeast.find({ date: { $gte: start, $lte: end }, wing: wing.toUpperCase() }).exec(),
+    ]);
 
     const mealAttendanceMap: Record<string, Record<string, any>> = {};
     meals.forEach((meal) => {
       const mealDate = meal.date;
       if (!mealAttendanceMap[mealDate]) mealAttendanceMap[mealDate] = {};
-      mealAttendanceMap[mealDate][meal.studentId] = meal.meal;
+      mealAttendanceMap[mealDate][meal.studentId] = { meal: meal.meal, guestMeal: meal.guestMeal };
     });
 
-    const students = await Student.find({ gender: wing.toUpperCase() }, { profileImage: 0, password: 0, firstTimeLogin: 0, status: 0 }).exec();
+    const hallFeastMap: Record<string, Record<string, boolean>> = {};
+    hallFeasts.forEach((feast) => {
+      const feastDate = feast.date.toISOString().split('T')[0];
+      if (!hallFeastMap[feastDate]) hallFeastMap[feastDate] = {};
+      hallFeastMap[feastDate][feast.meal] = true;
+    });
+
     const studentInfo: Record<string, { totalCost: number }> = {};
 
     bills.forEach((bill) => {
@@ -50,16 +62,29 @@ router.post('/generate-bills', validateToken, async (req: Request, res: Response
         lunch: calculatePerHeadCost(bill.mealBill.lunch),
         dinner: calculatePerHeadCost(bill.mealBill.dinner),
       };
-      const attendanceOnDate = mealAttendanceMap[billDate];
-      if (attendanceOnDate) {
-        Object.keys(attendanceOnDate).forEach((studentId) => {
-          const studentMeals = attendanceOnDate[studentId];
-          if (!studentInfo[studentId]) studentInfo[studentId] = { totalCost: 0 };
-          if (studentMeals.breakfast) studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + perHeadCosts.breakfast);
-          if (studentMeals.lunch) studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + perHeadCosts.lunch);
-          if (studentMeals.dinner) studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + perHeadCosts.dinner);
-        });
-      }
+      const attendanceOnDate = mealAttendanceMap[billDate] || {};
+      const feastsOnDate = hallFeastMap[billDate] || {};
+
+      studentIds.forEach((studentId) => {
+        if (!studentInfo[studentId]) studentInfo[studentId] = { totalCost: 0 };
+        const studentData = attendanceOnDate[studentId];
+        const studentMeals = studentData?.meal || { breakfast: false, lunch: false, dinner: false };
+        const guestMeal = studentData?.guestMeal || { breakfast: 0, lunch: 0, dinner: 0 };
+
+        if (feastsOnDate.breakfast || studentMeals.breakfast)
+          studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + perHeadCosts.breakfast);
+        if (feastsOnDate.lunch || studentMeals.lunch)
+          studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + perHeadCosts.lunch);
+        if (feastsOnDate.dinner || studentMeals.dinner)
+          studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + perHeadCosts.dinner);
+
+        if (guestMeal.breakfast > 0)
+          studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + r2(guestMeal.breakfast * perHeadCosts.breakfast));
+        if (guestMeal.lunch > 0)
+          studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + r2(guestMeal.lunch * perHeadCosts.lunch));
+        if (guestMeal.dinner > 0)
+          studentInfo[studentId].totalCost = r2(studentInfo[studentId].totalCost + r2(guestMeal.dinner * perHeadCosts.dinner));
+      });
     });
 
     const result = students.map((student) => ({
@@ -400,7 +425,8 @@ router.get('/monthly/student', validateToken, async (req: Request, res: Response
         ['breakfast', 'lunch', 'dinner'].forEach((mealType) => {
           const isFeast = hallFeastForDay[mealType];
           const guestMealCount = mealStatus.guestMeal[mealType];
-          if (!isFeast && mealStatus[mealType]) {
+          if (isFeast) mealStatus[mealType] = true;
+          if (isFeast || mealStatus[mealType]) {
             totalMonthlyCost = r2(totalMonthlyCost + (perHeadCosts as any)[mealType]);
             mealStatus.perHeadCost[mealType] = (perHeadCosts as any)[mealType];
           }

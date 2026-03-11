@@ -11,52 +11,69 @@ export async function createOrUpdateBill(date: string | Date, wing: string): Pro
     const dateObj = new Date(date);
     const formattedDate = dateObj.toISOString().split('T')[0];
 
-    const hallFeasts = await HallFeast.find({ date: formattedDate });
+    const students = await Student.find({ gender: wing }, { studentId: 1 }).lean();
+    const studentIds = students.map((s) => s.studentId);
+    const totalStudents = studentIds.length;
+
+    const [
+      hallFeasts,
+      breakfastMealCount,
+      lunchMealCount,
+      dinnerMealCount,
+      mealCosts,
+      guestMealCounts,
+    ] = await Promise.all([
+      HallFeast.find({ date: formattedDate, wing }),
+      Meal.countDocuments({ 'meal.breakfast': true, date: formattedDate, studentId: { $in: studentIds } }),
+      Meal.countDocuments({ 'meal.lunch': true, date: formattedDate, studentId: { $in: studentIds } }),
+      Meal.countDocuments({ 'meal.dinner': true, date: formattedDate, studentId: { $in: studentIds } }),
+      StockTransaction.aggregate([
+        {
+          $match: {
+            date: {
+              $gte: new Date(formattedDate),
+              $lt: new Date(new Date(formattedDate).setDate(new Date(formattedDate).getDate() + 1)),
+            },
+            wing,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            breakfastCost: { $sum: { $cond: [{ $eq: ['$meal', 'BREAKFAST'] }, '$transactionAmount', 0] } },
+            lunchCost: { $sum: { $cond: [{ $eq: ['$meal', 'LUNCH'] }, '$transactionAmount', 0] } },
+            dinnerCost: { $sum: { $cond: [{ $eq: ['$meal', 'DINNER'] }, '$transactionAmount', 0] } },
+          },
+        },
+      ]),
+      Meal.aggregate([
+        { $match: { date: formattedDate, studentId: { $in: studentIds } } },
+        {
+          $group: {
+            _id: null,
+            breakfast: { $sum: '$guestMeal.breakfast' },
+            lunch: { $sum: '$guestMeal.lunch' },
+            dinner: { $sum: '$guestMeal.dinner' },
+          },
+        },
+      ]),
+    ]);
+
+    const guestBreakfast = guestMealCounts[0]?.breakfast || 0;
+    const guestLunch = guestMealCounts[0]?.lunch || 0;
+    const guestDinner = guestMealCounts[0]?.dinner || 0;
+
+    const totalBreakfastCount = breakfastMealCount + guestBreakfast;
+    const totalLunchCount = lunchMealCount + guestLunch;
+    const totalDinnerCount = dinnerMealCount + guestDinner;
 
     const breakfastFeastExists = hallFeasts.some((feast) => feast.meal === 'breakfast');
     const lunchFeastExists = hallFeasts.some((feast) => feast.meal === 'lunch');
     const dinnerFeastExists = hallFeasts.some((feast) => feast.meal === 'dinner');
 
-    let breakfastCount: number, lunchCount: number, dinnerCount: number;
-    const totalStudents = await Student.countDocuments({ wing });
-
-    if (breakfastFeastExists) {
-      breakfastCount = totalStudents;
-    } else {
-      breakfastCount = await Meal.countDocuments({ 'meal.breakfast': true, date: formattedDate, wing });
-    }
-
-    if (lunchFeastExists) {
-      lunchCount = totalStudents;
-    } else {
-      lunchCount = await Meal.countDocuments({ 'meal.lunch': true, date: formattedDate, wing });
-    }
-
-    if (dinnerFeastExists) {
-      dinnerCount = totalStudents;
-    } else {
-      dinnerCount = await Meal.countDocuments({ 'meal.dinner': true, date: formattedDate, wing });
-    }
-
-    const mealCosts = await StockTransaction.aggregate([
-      {
-        $match: {
-          date: {
-            $gte: new Date(formattedDate),
-            $lt: new Date(new Date(formattedDate).setDate(new Date(formattedDate).getDate() + 1)),
-          },
-          wing,
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          breakfastCost: { $sum: { $cond: [{ $eq: ['$meal', 'BREAKFAST'] }, '$transactionAmount', 0] } },
-          lunchCost: { $sum: { $cond: [{ $eq: ['$meal', 'LUNCH'] }, '$transactionAmount', 0] } },
-          dinnerCost: { $sum: { $cond: [{ $eq: ['$meal', 'DINNER'] }, '$transactionAmount', 0] } },
-        },
-      },
-    ]);
+    const breakfastCount = breakfastFeastExists ? totalStudents : totalBreakfastCount;
+    const lunchCount = lunchFeastExists ? totalStudents : totalLunchCount;
+    const dinnerCount = dinnerFeastExists ? totalStudents : totalDinnerCount;
 
     const breakfastCost = r2(mealCosts[0]?.breakfastCost || 0);
     const lunchCost = r2(mealCosts[0]?.lunchCost || 0);

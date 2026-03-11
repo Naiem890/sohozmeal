@@ -8,11 +8,9 @@ const r2 = (v: number): number => Math.round(v * 100) / 100;
 
 function generateDateRange(year: number, month: number): Date[] {
   const dates: Date[] = [];
-  const lastDay = new Date(year, month, 0).getDate();
-  for (let i = 2; i <= lastDay + 1; i++) {
-    const date = new Date(year, month - 1, i);
-    date.setHours(0, 0, 0, 0);
-    dates.push(date);
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  for (let i = 1; i <= lastDay; i++) {
+    dates.push(new Date(Date.UTC(year, month - 1, i)));
   }
   return dates;
 }
@@ -40,7 +38,7 @@ export async function createOrUpdateCostForMonth(
         mealCosts,
         guestMealCounts,
       ] = await Promise.all([
-        HallFeast.find({ date: formattedDate }).lean(),
+        HallFeast.find({ date: formattedDate, wing }).lean(),
         Student.countDocuments({ gender: wing }),
         Meal.countDocuments({ 'meal.breakfast': true, date: formattedDate, studentId: { $in: studentIds } }),
         Meal.countDocuments({ 'meal.lunch': true, date: formattedDate, studentId: { $in: studentIds } }),
