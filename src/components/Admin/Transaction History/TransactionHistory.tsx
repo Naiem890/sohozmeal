@@ -236,9 +236,12 @@ const TransactionHistory = () => {
   const handleUpdateSave = async (updatedRecord: Transaction) => {
     try {
       const res = await Axios.put(`/stock/transaction/${updatedRecord._id}`, updatedRecord);
-      const updated = res.data.updatedTransaction as Transaction;
+      const serverData = res.data.updatedTransaction as Transaction;
+      // Backend returns the raw document (item is unpopulated ObjectId).
+      // Preserve the populated item from the local record so the row renders immediately.
+      const merged: Transaction = { ...serverData, item: updatedRecord.item };
       setTransactions((prev) =>
-        prev.map((t) => (t._id === updated._id ? updated : t))
+        prev.map((t) => (t._id === merged._id ? merged : t))
       );
       setIsModalVisible(false);
       toast.success("Transaction updated successfully");
