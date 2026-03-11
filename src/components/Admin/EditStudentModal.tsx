@@ -49,7 +49,12 @@ export const EditStudentModal = ({ showModal, setShowModal, student, setStudents
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [prevImagePreview, setPrevImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [halls, setHalls] = useState<{ _id: string; name: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    Axios.get("/hall").then((r) => setHalls(r.data)).catch(() => {});
+  }, []);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -233,9 +238,10 @@ export const EditStudentModal = ({ showModal, setShowModal, student, setStudents
                   <SelectValue placeholder="Select residence" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="OSMANY_HALL">Osmany Hall</SelectItem>
-                  <SelectItem value="EXT_D">Ext D</SelectItem>
                   <SelectItem value="NOT_SELECTED">Not Selected</SelectItem>
+                  {halls.map((h) => (
+                    <SelectItem key={h._id} value={h.name}>{h.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -49,6 +49,7 @@ export const AddStudentModal = ({
   const [suggestedHallId, setSuggestedHallId] = useState("");
   const [roomNo, setRoomNo] = useState("");
   const [residence, setResidence] = useState("NOT_SELECTED");
+  const [halls, setHalls] = useState<{ _id: string; name: string }[]>([]);
   const [gender, setGender] = useState(auth.wing === "ALL" ? "MALE" : auth.wing);
   const [department, setDepartment] = useState("");
   const [isHallIdAvailable, setIsHallIdAvailable] = useState<boolean | null>(null);
@@ -86,6 +87,10 @@ export const AddStudentModal = ({
   useEffect(() => {
     getHallId(gender);
   }, [gender, refetchHallIdHandler]);
+
+  useEffect(() => {
+    Axios.get("/hall").then((r) => setHalls(r.data)).catch(() => {});
+  }, []);
 
   const handleAddStudent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -250,9 +255,10 @@ export const AddStudentModal = ({
                   <SelectValue placeholder="Select residence" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="OSMANY_HALL">Osmany Hall</SelectItem>
-                  <SelectItem value="EXT_D">Ext D</SelectItem>
                   <SelectItem value="NOT_SELECTED">Not Selected</SelectItem>
+                  {halls.map((h) => (
+                    <SelectItem key={h._id} value={h.name}>{h.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

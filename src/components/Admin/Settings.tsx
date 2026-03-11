@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Clock } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Clock, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Axios } from "../../api/api";
 import { Button } from "@/components/ui/button";
@@ -137,6 +137,102 @@ function CronScheduleCard({ refreshTrigger }: { refreshTrigger: number }) {
   );
 }
 
+const inputClass =
+  "flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
+interface Hall { _id: string; name: string }
+
+function HallsSettings() {
+  const [halls, setHalls] = useState<Hall[]>([]);
+  const [newName, setNewName] = useState("");
+  const [adding, setAdding] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const fetchHalls = () =>
+    Axios.get("/hall").then((r) => setHalls(r.data)).catch(() => {});
+
+  useEffect(() => { fetchHalls(); }, []);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newName.trim();
+    if (!name) return;
+    setAdding(true);
+    try {
+      const { data } = await Axios.post("/hall", { name });
+      setHalls((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewName("");
+      toast.success(`Hall "${data.name}" added`);
+      inputRef.current?.focus();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? "Failed to add hall");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDelete = async (hall: Hall) => {
+    try {
+      await Axios.delete(`/hall/${hall._id}`);
+      setHalls((prev) => prev.filter((h) => h._id !== hall._id));
+      toast.success(`Hall "${hall.name}" deleted`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? "Failed to delete hall");
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-base">Halls / Residences</CardTitle>
+        <CardDescription>
+          Manage the residence options available when registering or editing a student.
+        </CardDescription>
+      </CardHeader>
+      <Separator />
+      <CardContent className="pt-5 space-y-4">
+        {halls.length > 0 ? (
+          <ul className="space-y-1.5">
+            {halls.map((hall) => (
+              <li key={hall._id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                <span className="font-medium">{hall.name}</span>
+                <Button
+                  variant="ghost" size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-red-50"
+                  onClick={() => handleDelete(hall)}
+                  title="Delete hall"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">No halls added yet.</p>
+        )}
+        <form onSubmit={handleAdd} className="flex gap-2">
+          <div className="flex-1">
+            <Label htmlFor="new-hall" className="sr-only">Hall name</Label>
+            <input
+              id="new-hall"
+              ref={inputRef}
+              type="text"
+              placeholder="Hall name, e.g. Osmany Hall"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className={inputClass + " w-full"}
+            />
+          </div>
+          <Button type="submit" size="sm" className="gap-1.5 shrink-0" disabled={adding || !newName.trim()}>
+            <Plus className="h-3.5 w-3.5" />
+            Add
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Settings() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -155,6 +251,7 @@ export default function Settings() {
         <WingSettings wing="MALE" onSaved={handleSaved} />
         <WingSettings wing="FEMALE" onSaved={handleSaved} />
         <CronScheduleCard refreshTrigger={refreshTrigger} />
+        <HallsSettings />
       </div>
     </div>
   );
