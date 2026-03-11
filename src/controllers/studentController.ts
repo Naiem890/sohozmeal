@@ -150,7 +150,7 @@ router.put('/', validateToken, upload.single('profileImage'), async (req: Reques
     const student = await Student.findOne({ studentId }, { password: 0 });
     if (!student) return res.status(404).json({ message: 'Student not found' });
 
-    if (phoneNumber !== undefined) student.phoneNumber = phoneNumber;
+    if (phoneNumber !== undefined) student.phoneNumber = phoneNumber || null;
     if (department !== undefined) student.department = department.toUpperCase();
     if (batch !== undefined) student.batch = batch;
     if (roomNo !== undefined) student.roomNo = roomNo;
@@ -181,9 +181,31 @@ router.put('/', validateToken, upload.single('profileImage'), async (req: Reques
 
     await student.save();
     res.status(200).json({ student, message: 'Profile updated successfully' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating profile:', error);
+    if (error.name === 'MongoServerError' && error.code === 11000) {
+      if (error.message.includes('phoneNumber')) return res.status(400).json({ message: 'Phone number already in use' });
+      if (error.message.includes('hallId')) return res.status(400).json({ message: 'Hall ID already in use' });
+      if (error.message.includes('studentId')) return res.status(400).json({ message: 'Student ID already in use' });
+    }
     res.status(500).json({ message: 'An error occurred' });
+  }
+});
+
+router.get('/residences', validateToken, checkAdminRole, async (req: Request, res: Response) => {
+  const { wing } = req.query as any;
+  if (!wing || !['MALE', 'FEMALE'].includes(wing.toUpperCase())) {
+    return res.status(400).json({ message: 'Invalid wing. Must be MALE or FEMALE.' });
+  }
+  try {
+    const residences = await Student.distinct('residence', {
+      gender: wing.toUpperCase(),
+      residence: { $nin: [null, ''] },
+    });
+    res.status(200).json(residences.sort());
+  } catch (error) {
+    console.error('Error fetching residences:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
@@ -228,7 +250,7 @@ router.post('/add', validateToken, checkAdminRole, upload.single('profileImage')
   try {
     const { studentId, phoneNumber, hallId, name, department, gender, batch, roomNo, residence } = req.body;
     const profileImage = req.file;
-    const studentData: any = { studentId, phoneNumber, hallId, name, department: department.toUpperCase(), gender: gender.toUpperCase(), batch, roomNo, residence };
+    const studentData: any = { studentId, phoneNumber: phoneNumber || null, hallId, name, department: department.toUpperCase(), gender: gender.toUpperCase(), batch, roomNo, residence };
 
     if (profileImage) {
       const compressedImage = await sharp(profileImage.path).resize({ width: 300 }).jpeg({ quality: 30 }).toBuffer();

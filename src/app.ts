@@ -5,6 +5,7 @@ import logger from 'morgan';
 import cookieParser from 'cookie-parser';
 import dbConnect from './config/database';
 import apiRoutes from './routes/index';
+import { migrateHalls } from './migrations/hallMigration';
 
 
 require('dotenv').config();
@@ -45,6 +46,7 @@ const { initializeCronFromConfig } = require('../cron/mealGenerate');
 async function startServer(): Promise<void> {
   try {
     await dbConnect();
+    await migrateHalls();
   } catch (error) {
     console.error('Database connection error: ', error);
   }
