@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
+import multer from 'multer';
 import { Stock, StockItem, StockTransaction } from '../models/stock';
+import Cost from '../models/cost';
 import { validateToken } from '../utils/validateToken';
+import { checkAdminRole } from '../utils/checkAdminRole';
 import { createOrUpdateBill } from '../utils/billService';
 import { computeQuantityAtDate, computeRunningAvgAtDate, recomputeStockHistory } from '../utils/stockRecompute';
 import {
@@ -100,6 +103,234 @@ router.delete('/item/:id', validateToken, async (req: Request, res: Response) =>
     res.status(500).json({ error: 'Error deleting stock item' });
   }
 });
+
+// ── Data Management: Backup / Restore / Purge ──────────────────────────────
+// These MUST be registered before /:id routes to avoid Express matching "backup" as an :id param.
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100 MB max
+
+/**
+ * GET /backup/stats?wing=MALE
+ * Returns counts of stock-related documents for a wing.
+ */
+router.get('/backup/stats', validateToken, checkAdminRole, async (req: Request, res: Response) => {
+  try {
+    const wing = req.query.wing as string;
+    if (!wing || !['MALE', 'FEMALE'].includes(wing)) {
+      return res.status(400).json({ error: 'wing query parameter is required (MALE or FEMALE)' });
+    }
+
+    const [stockItems, stocks, stockTransactions, costs] = await Promise.all([
+      StockItem.countDocuments({ wing }),
+      Stock.countDocuments({ wing }),
+      StockTransaction.countDocuments({ wing }),
+      Cost.countDocuments({ wing }),
+    ]);
+
+    // Get date range of transactions
+    const [oldest, newest] = await Promise.all([
+      StockTransaction.findOne({ wing }).sort({ date: 1 }).select('date').lean(),
+      StockTransaction.findOne({ wing }).sort({ date: -1 }).select('date').lean(),
+    ]);
+
+    res.json({
+      stockItems,
+      stocks,
+      stockTransactions,
+      costs,
+      dateRange: oldest && newest
+        ? { from: (oldest.date as Date).toISOString().split('T')[0], to: (newest.date as Date).toISOString().split('T')[0] }
+        : null,
+    });
+  } catch (error) {
+    console.error('Error fetching backup stats:', error);
+    res.status(500).json({ error: 'Error fetching stats' });
+  }
+});
+
+/**
+ * GET /backup?wing=MALE
+ * Downloads a JSON backup of all stock-related data for a wing.
+ */
+router.get('/backup', validateToken, checkAdminRole, async (req: Request, res: Response) => {
+  try {
+    const wing = req.query.wing as string;
+    if (!wing || !['MALE', 'FEMALE'].includes(wing)) {
+      return res.status(400).json({ error: 'wing query parameter is required (MALE or FEMALE)' });
+    }
+
+    const [stockItems, stocks, stockTransactions, costs] = await Promise.all([
+      StockItem.find({ wing }).lean(),
+      Stock.find({ wing }).lean(),
+      StockTransaction.find({ wing }).lean(),
+      Cost.find({ wing }).lean(),
+    ]);
+
+    const backup = {
+      version: 1,
+      createdAt: new Date().toISOString(),
+      wing,
+      counts: {
+        stockItems: stockItems.length,
+        stocks: stocks.length,
+        stockTransactions: stockTransactions.length,
+        costs: costs.length,
+      },
+      data: { stockItems, stocks, stockTransactions, costs },
+    };
+
+    const filename = `sohozmeal-backup-${wing.toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/json');
+    res.json(backup);
+  } catch (error) {
+    console.error('Error creating backup:', error);
+    res.status(500).json({ error: 'Error creating backup' });
+  }
+});
+
+/**
+ * POST /restore
+ * Restores stock data from a JSON backup file.
+ */
+router.post('/restore', validateToken, checkAdminRole, upload.single('backup'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No backup file provided' });
+
+    let backup: any;
+    try {
+      backup = JSON.parse(req.file.buffer.toString('utf-8'));
+    } catch {
+      return res.status(400).json({ error: 'Invalid JSON file' });
+    }
+
+    if (!backup.version || !backup.wing || !backup.data) {
+      return res.status(400).json({ error: 'Invalid backup format. Missing version, wing, or data.' });
+    }
+
+    const wing = backup.wing;
+    if (!['MALE', 'FEMALE'].includes(wing)) {
+      return res.status(400).json({ error: 'Invalid wing in backup file' });
+    }
+
+    const { stockItems = [], stocks = [], stockTransactions = [], costs = [] } = backup.data;
+    const mode = (req.query.mode as string) || 'replace';
+
+    if (mode === 'replace') {
+      await Promise.all([
+        StockTransaction.deleteMany({ wing }),
+        Stock.deleteMany({ wing }),
+        Cost.deleteMany({ wing }),
+      ]);
+      await StockItem.deleteMany({ wing });
+    }
+
+    const results: Record<string, number> = { stockItems: 0, stocks: 0, stockTransactions: 0, costs: 0 };
+
+    if (stockItems.length > 0) {
+      const idMap = new Map<string, any>();
+      const itemDocs = stockItems.map((item: any) => {
+        const oldId = item._id;
+        const doc = { name: item.name, unit: item.unit, category: item.category, wing: item.wing };
+        return { oldId, doc };
+      });
+
+      for (const { oldId, doc } of itemDocs) {
+        try {
+          const saved = await StockItem.create(doc);
+          idMap.set(oldId.toString(), saved._id);
+          results.stockItems++;
+        } catch (err: any) {
+          if (err.code === 11000) {
+            const existing = await StockItem.findOne({ name: doc.name, wing: doc.wing });
+            if (existing) idMap.set(oldId.toString(), existing._id);
+          }
+        }
+      }
+
+      for (const stock of stocks) {
+        const newItemId = idMap.get((stock.item?.toString?.() || stock.item));
+        if (!newItemId) continue;
+        try {
+          await Stock.create({ quantity: stock.quantity, price: stock.price, item: newItemId, wing: stock.wing });
+          results.stocks++;
+        } catch {
+          // Skip duplicates
+        }
+      }
+
+      for (const tx of stockTransactions) {
+        const newItemId = idMap.get((tx.item?.toString?.() || tx.item));
+        if (!newItemId) continue;
+        try {
+          await StockTransaction.create({
+            item: newItemId,
+            quantityChange: tx.quantityChange,
+            unitPrice: tx.unitPrice,
+            date: new Date(tx.date),
+            type: tx.type,
+            category: tx.category,
+            meal: tx.meal,
+            wing: tx.wing,
+            transactionAmount: tx.transactionAmount,
+          });
+          results.stockTransactions++;
+        } catch {
+          // Skip errors
+        }
+      }
+    }
+
+    for (const cost of costs) {
+      try {
+        await Cost.create({ date: new Date(cost.date), wing: cost.wing, mealBill: cost.mealBill });
+        results.costs++;
+      } catch {
+        // Skip duplicates
+      }
+    }
+
+    res.json({ message: `Restore completed (${mode} mode)`, restored: results, wing });
+  } catch (error) {
+    console.error('Error restoring backup:', error);
+    res.status(500).json({ error: 'Error restoring backup' });
+  }
+});
+
+/**
+ * DELETE /purge?wing=MALE
+ * Deletes all stock-related data for a wing. Student data is NOT touched.
+ */
+router.delete('/purge', validateToken, checkAdminRole, async (req: Request, res: Response) => {
+  try {
+    const wing = req.query.wing as string;
+    if (!wing || !['MALE', 'FEMALE'].includes(wing)) {
+      return res.status(400).json({ error: 'wing query parameter is required (MALE or FEMALE)' });
+    }
+
+    const [txResult, stockResult, costResult] = await Promise.all([
+      StockTransaction.deleteMany({ wing }),
+      Stock.deleteMany({ wing }),
+      Cost.deleteMany({ wing }),
+    ]);
+    const itemResult = await StockItem.deleteMany({ wing });
+
+    res.json({
+      message: `All stock data for ${wing} wing purged successfully`,
+      deleted: {
+        stockItems: itemResult.deletedCount,
+        stocks: stockResult.deletedCount,
+        stockTransactions: txResult.deletedCount,
+        costs: costResult.deletedCount,
+      },
+    });
+  } catch (error) {
+    console.error('Error purging data:', error);
+    res.status(500).json({ error: 'Error purging data' });
+  }
+});
+
+// ── Stock CRUD ──────────────────────────────────────────────────────────────
 
 router.get('/', validateToken, async (req: Request, res: Response) => {
   const { wing } = req.query as { wing?: string };
