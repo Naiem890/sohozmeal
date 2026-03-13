@@ -43,6 +43,7 @@ interface Student {
   department: string;
   batch?: string;
   gender: string;
+  residence?: string;
   [key: string]: unknown;
 }
 
