@@ -34,6 +34,7 @@ const NoticeBoard        = lazy(() => import("./components/Admin/NoticeBoard"));
 const MealRoutineAdmin   = lazy(() => import("./components/Student/MealRoutineAdmin"));
 const TransactionHistory = lazy(() => import("./components/Admin/Transaction History/TransactionHistory"));
 const Settings           = lazy(() => import("./components/Admin/Settings"));
+const DataManagement     = lazy(() => import("./components/Admin/DataManagement"));
 
 // Student layout + pages
 const Dashboard        = lazy(() => import("./components/Student/Dashboard"));
@@ -158,6 +159,7 @@ export default function App() {
           <Route path="complaints"       element={<AdminComplaints />} />
           <Route path="blood-bank"       element={<BloodBank />} />
           <Route path="settings"         element={<Settings />} />
+          <Route path="data-management" element={<DataManagement />} />
         </Route>
 
         {/* ── Student dashboard ── */}

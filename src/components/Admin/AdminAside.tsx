@@ -10,6 +10,7 @@ import {
   MessageSquareWarning,
   Heart,
   Settings,
+  HardDrive,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -35,6 +36,7 @@ const navLinks = [
   { link: "Complaints", path: "/admin/dashboard/complaints", icon: MessageSquareWarning, description: "Handle student complaints" },
   { link: "Blood Bank", path: "/admin/dashboard/blood-bank", icon: Heart, description: "Blood donation records" },
   { link: "Settings", path: "/admin/dashboard/settings", icon: Settings, description: "Meal cutoff time & config" },
+  { link: "Data", path: "/admin/dashboard/data-management", icon: HardDrive, description: "Backup, restore & purge stock data" },
 ];
 
 interface AdminAsideProps {
