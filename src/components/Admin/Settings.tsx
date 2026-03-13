@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Clock, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Axios } from "../../api/api";
@@ -148,10 +148,11 @@ function HallsSettings({ wing }: { wing: "MALE" | "FEMALE" }) {
   const [adding, setAdding] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const fetchHalls = () =>
-    Axios.get(`/hall?wing=${wing}`).then((r) => setHalls(r.data)).catch(() => {});
+  const fetchHalls = useCallback(() =>
+    Axios.get(`/hall?wing=${wing}`).then((r) => setHalls(r.data)).catch(() => {}),
+  [wing]);
 
-  useEffect(() => { fetchHalls(); }, [wing]);
+  useEffect(() => { fetchHalls(); }, [fetchHalls]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,8 +165,8 @@ function HallsSettings({ wing }: { wing: "MALE" | "FEMALE" }) {
       setNewName("");
       toast.success(`Hall "${data.name}" added`);
       inputRef.current?.focus();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? "Failed to add hall");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Failed to add hall");
     } finally {
       setAdding(false);
     }
@@ -176,8 +177,8 @@ function HallsSettings({ wing }: { wing: "MALE" | "FEMALE" }) {
       await Axios.delete(`/hall/${hall._id}`);
       setHalls((prev) => prev.filter((h) => h._id !== hall._id));
       toast.success(`Hall "${hall.name}" deleted`);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? "Failed to delete hall");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Failed to delete hall");
     }
   };
 

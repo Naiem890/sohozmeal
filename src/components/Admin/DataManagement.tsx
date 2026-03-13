@@ -86,7 +86,7 @@ export default function DataManagement() {
     }
 
     // Read and preview the backup
-    let backup: any;
+    let backup: { version?: string; wing?: string; data?: unknown; createdAt?: string; counts?: { stockItems?: number; stockTransactions?: number; costs?: number } };
     try {
       const text = await file.text();
       backup = JSON.parse(text);
@@ -117,8 +117,8 @@ export default function DataManagement() {
       setLastRestore(res.data);
       toast.success(`Backup restored successfully for ${backup.wing} wing`);
       fetchStats();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Failed to restore backup");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to restore backup");
     } finally {
       setRestoring(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -151,8 +151,8 @@ export default function DataManagement() {
       const d = res.data.deleted;
       toast.success(`Purged: ${d.stockItems} items, ${d.stockTransactions} transactions, ${d.costs} cost records`);
       fetchStats();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Failed to purge data");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to purge data");
     } finally {
       setPurging(false);
     }
