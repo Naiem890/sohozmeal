@@ -3,7 +3,7 @@ import { format, parseISO } from "date-fns";
 import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar, DropdownCaption } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -85,6 +85,7 @@ const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(function
             if (maxDate && d > maxDate) return true;
             return false;
           }}
+          components={{ Caption: DropdownCaption }}
           initialFocus
         />
       </PopoverContent>

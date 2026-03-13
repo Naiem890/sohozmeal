@@ -1,9 +1,75 @@
 import * as React from "react";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, CaptionProps, useNavigation } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const navBtnClass =
+  "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input hover:bg-accent hover:text-accent-foreground transition-colors disabled:pointer-events-none disabled:opacity-20";
+
+const selectClass =
+  "text-sm font-medium bg-transparent rounded-md py-1 pl-1.5 pr-0.5 cursor-pointer border-0 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+function DropdownCaption({ displayMonth }: CaptionProps) {
+  const { goToMonth, previousMonth, nextMonth } = useNavigation();
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 2019 }, (_, i) => 2020 + i);
+
+  return (
+    <div className="flex items-center justify-between pt-1 pb-1">
+      <button
+        type="button"
+        onClick={() => previousMonth && goToMonth(previousMonth)}
+        disabled={!previousMonth}
+        className={navBtnClass}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <div className="flex items-center gap-0.5">
+        <select
+          value={displayMonth.getMonth()}
+          onChange={(e) =>
+            goToMonth(new Date(displayMonth.getFullYear(), parseInt(e.target.value)))
+          }
+          className={selectClass}
+        >
+          {MONTHS.map((m, i) => (
+            <option key={m} value={i}>
+              {m}
+            </option>
+          ))}
+        </select>
+        <select
+          value={displayMonth.getFullYear()}
+          onChange={(e) =>
+            goToMonth(new Date(parseInt(e.target.value), displayMonth.getMonth()))
+          }
+          className={selectClass}
+        >
+          {years.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+      </div>
+      <button
+        type="button"
+        onClick={() => nextMonth && goToMonth(nextMonth)}
+        disabled={!nextMonth}
+        className={navBtnClass}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
 
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
   return (
@@ -16,9 +82,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         caption: "flex justify-center pt-1 relative items-center",
         caption_label: "text-sm font-medium",
         nav: "space-x-1 flex items-center",
-        nav_button: cn(
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input hover:bg-accent hover:text-accent-foreground transition-colors"
-        ),
+        nav_button: cn(navBtnClass),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
@@ -57,4 +121,4 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
 }
 Calendar.displayName = "Calendar";
 
-export { Calendar };
+export { Calendar, DropdownCaption };
