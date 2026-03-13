@@ -128,6 +128,9 @@ export async function recomputeStockHistory(
         poolValue = 0;
       }
       onHand -= tx.quantityChange;
+      if (onHand < -0.001) {
+        console.warn(`[recomputeStockHistory] Negative onHand (${r2(onHand)}) for item ${itemId} on ${(tx.date as Date).toISOString().split('T')[0]}`);
+      }
     }
   }
 
@@ -138,8 +141,47 @@ export async function recomputeStockHistory(
   const currentAvg = poolQty > 0 ? r2(poolValue / poolQty) : r2(lastAvgPrice);
   await Stock.findOneAndUpdate(
     { item: itemId, wing },
-    { quantity: r2(Math.max(0, onHand)), price: currentAvg }
+    { quantity: r2(Math.max(0, onHand)), price: currentAvg },
+    { upsert: true }
   );
 
   return Array.from(affectedDates);
+}
+
+export async function validateStockTimeline(
+  itemId: mongoose.Types.ObjectId | string,
+  wing: string,
+  excludeTxIds: string[] = []
+): Promise<{ valid: boolean; minOnHand: number; minDate?: string }> {
+  const query: any = {
+    item: new mongoose.Types.ObjectId(itemId.toString()),
+    wing,
+    type: { $in: ['IN', 'OUT'] },
+  };
+  if (excludeTxIds.length > 0) {
+    query._id = { $nin: excludeTxIds.map((id) => new mongoose.Types.ObjectId(id)) };
+  }
+
+  const allTx = await StockTransaction.find(query)
+    .sort({ date: 1, createdAt: 1 })
+    .lean();
+
+  let onHand = 0;
+  let minOnHand = Infinity;
+  let minDate: string | undefined;
+
+  for (const tx of allTx) {
+    if (tx.type === 'IN') {
+      onHand += tx.quantityChange;
+    } else if (tx.type === 'OUT') {
+      onHand -= tx.quantityChange;
+    }
+    if (onHand < minOnHand) {
+      minOnHand = r2(onHand);
+      minDate = (tx.date as Date).toISOString().split('T')[0];
+    }
+  }
+
+  if (minOnHand === Infinity) minOnHand = 0;
+  return { valid: minOnHand >= -0.001, minOnHand, minDate };
 }

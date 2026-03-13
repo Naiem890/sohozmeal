@@ -61,6 +61,8 @@ costSchema.virtual('mealBill.dinner.perHeadCost').get(function (this: ICost) {
     : 0;
 });
 
+costSchema.index({ date: 1, wing: 1 }, { unique: true });
+
 const Cost = mongoose.model<ICost>('Cost', costSchema);
 
 export default Cost;

@@ -72,35 +72,27 @@ export async function createOrUpdateBill(date: string | Date, wing: string): Pro
     const lunchFeastExists = hallFeasts.some((feast) => feast.meal === 'lunch');
     const dinnerFeastExists = hallFeasts.some((feast) => feast.meal === 'dinner');
 
-    const breakfastCount = breakfastFeastExists ? totalStudents : totalBreakfastCount;
-    const lunchCount = lunchFeastExists ? totalStudents : totalLunchCount;
-    const dinnerCount = dinnerFeastExists ? totalStudents : totalDinnerCount;
+    const breakfastCount = breakfastFeastExists ? totalStudents + guestBreakfast : totalBreakfastCount;
+    const lunchCount = lunchFeastExists ? totalStudents + guestLunch : totalLunchCount;
+    const dinnerCount = dinnerFeastExists ? totalStudents + guestDinner : totalDinnerCount;
 
     const breakfastCost = r2(mealCosts[0]?.breakfastCost || 0);
     const lunchCost = r2(mealCosts[0]?.lunchCost || 0);
     const dinnerCost = r2(mealCosts[0]?.dinnerCost || 0);
 
-    let bill = await Cost.findOne({ date: formattedDate, wing });
+    const mealBill = {
+      breakfast: { totalCost: breakfastCost, totalStudent: breakfastCount },
+      lunch: { totalCost: lunchCost, totalStudent: lunchCount },
+      dinner: { totalCost: dinnerCost, totalStudent: dinnerCount },
+    };
 
-    if (!bill) {
-      bill = new Cost({
-        date: dateObj,
-        wing,
-        mealBill: {
-          breakfast: { totalCost: breakfastCost, totalStudent: breakfastCount },
-          lunch: { totalCost: lunchCost, totalStudent: lunchCount },
-          dinner: { totalCost: dinnerCost, totalStudent: dinnerCount },
-        },
-      });
-    } else {
-      bill.mealBill = {
-        breakfast: { totalCost: breakfastCost, totalStudent: breakfastCount },
-        lunch: { totalCost: lunchCost, totalStudent: lunchCount },
-        dinner: { totalCost: dinnerCost, totalStudent: dinnerCount },
-      };
-    }
+    const normalizedDate = new Date(formattedDate);
+    const bill = await Cost.findOneAndUpdate(
+      { date: normalizedDate, wing },
+      { $set: { mealBill }, $setOnInsert: { date: normalizedDate, wing } },
+      { upsert: true, new: true }
+    );
 
-    await bill.save();
     return bill;
   } catch (error) {
     console.error('Error during bill creation or update:', error);

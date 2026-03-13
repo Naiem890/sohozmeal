@@ -5,7 +5,7 @@ import Cost from '../models/cost';
 import { validateToken } from '../utils/validateToken';
 import { checkAdminRole } from '../utils/checkAdminRole';
 import { createOrUpdateBill } from '../utils/billService';
-import { computeQuantityAtDate, computeRunningAvgAtDate, recomputeStockHistory } from '../utils/stockRecompute';
+import { computeQuantityAtDate, computeRunningAvgAtDate, recomputeStockHistory, validateStockTimeline } from '../utils/stockRecompute';
 import {
   createStockItemSchema,
   updateStockItemSchema,
@@ -21,7 +21,7 @@ const r2 = (v: number): number => Math.round(v * 100) / 100;
 
 const router = Router();
 
-router.post('/item', validateToken, validate(createStockItemSchema), async (req: Request, res: Response) => {
+router.post('/item', validateToken, checkAdminRole, validate(createStockItemSchema), async (req: Request, res: Response) => {
   try {
     const { item: itemData } = req.body;
     const stockItem = new StockItem(itemData);
@@ -29,7 +29,7 @@ router.post('/item', validateToken, validate(createStockItemSchema), async (req:
     res.status(201).json(savedItem);
   } catch (error: any) {
     if (error.code === 11000) {
-      res.status(400).json({ error: 'Duplicate item name. Name must be unique.' });
+      res.status(400).json({ error: 'An item with this name already exists in this wing.' });
     } else {
       console.log(error);
       res.status(500).json({ error: 'Error creating stock item' });
@@ -50,7 +50,7 @@ router.get('/item', validateToken, async (req: Request, res: Response) => {
   }
 });
 
-router.put('/item/:id', validateToken, validate(updateStockItemSchema), async (req: Request, res: Response) => {
+router.put('/item/:id', validateToken, checkAdminRole, validate(updateStockItemSchema), async (req: Request, res: Response) => {
   try {
     const itemId = req.params.id;
     const { item: itemData } = req.body;
@@ -62,7 +62,7 @@ router.put('/item/:id', validateToken, validate(updateStockItemSchema), async (r
   }
 });
 
-router.delete('/item/:id/force', validateToken, async (req: Request, res: Response) => {
+router.delete('/item/:id/force', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const itemId = req.params.id as string;
     const wing = req.query.wing as string;
@@ -88,7 +88,7 @@ router.delete('/item/:id/force', validateToken, async (req: Request, res: Respon
   }
 });
 
-router.delete('/item/:id', validateToken, async (req: Request, res: Response) => {
+router.delete('/item/:id', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const itemId = req.params.id;
     const associatedStock = await Stock.findOne({ item: itemId });
@@ -347,28 +347,6 @@ router.post('/', validateToken, validate(stockInSchema), async (req: Request, re
   try {
     const stockData = req.body.stock;
     const { item: itemId, date, quantity: newQuantity, price: newPrice, wing } = stockData;
-    delete stockData.date;
-
-    let stock = await Stock.findOne({ item: itemId, wing });
-    let newPricePerUnit: number;
-    let updatedStock: any;
-
-    if (!stock) {
-      stock = new Stock({ ...stockData, wing });
-      newPricePerUnit = r2(newPrice);
-      stock.price = newPricePerUnit;
-      stock.quantity = r2(newQuantity);
-      updatedStock = await stock.save();
-    } else {
-      const { price: prevPrice, quantity: prevQuantity } = stock;
-      const totalPrice = prevPrice * prevQuantity + newPrice * newQuantity;
-      newPricePerUnit = r2(totalPrice / (prevQuantity + newQuantity));
-      updatedStock = await Stock.findOneAndUpdate(
-        { item: itemId, wing },
-        { quantity: r2(prevQuantity + newQuantity), price: newPricePerUnit },
-        { new: true }
-      );
-    }
 
     const newStockTransaction = new StockTransaction({
       item: itemId,
@@ -382,9 +360,10 @@ router.post('/', validateToken, validate(stockInSchema), async (req: Request, re
     });
     await newStockTransaction.save();
 
+    // recomputeStockHistory replays all transactions and upserts the Stock snapshot
     const affectedDates = await recomputeStockHistory(itemId, wing);
     await Promise.all(affectedDates.map((d) => createOrUpdateBill(d, wing)));
-    updatedStock = await Stock.findOne({ item: itemId, wing });
+    const updatedStock = await Stock.findOne({ item: itemId, wing });
 
     res.json({ updatedStock, newStockTransaction, affectedDates });
   } catch (error) {
@@ -396,29 +375,23 @@ router.post('/', validateToken, validate(stockInSchema), async (req: Request, re
 router.put('/:id', validateToken, async (req: Request, res: Response) => {
   try {
     const stockId = req.params.id;
-    const stockData = req.body;
 
     const existingStock = await Stock.findById(stockId);
     if (!existingStock) return res.status(404).json({ error: 'Stock not found' });
 
-    // Prevent setting negative quantity
-    if (stockData.quantity !== undefined && stockData.quantity < 0) {
-      return res.status(400).json({ error: 'Stock quantity cannot be negative' });
-    }
+    // Stock quantity and price are derived from transactions.
+    // Trigger a recompute to sync the snapshot with the transaction history.
+    const affectedDates = await recomputeStockHistory(existingStock.item as any, existingStock.wing);
+    await Promise.all(affectedDates.map((d) => createOrUpdateBill(d, existingStock.wing)));
+    const updatedStock = await Stock.findById(stockId);
 
-    // Prevent setting negative price
-    if (stockData.price !== undefined && stockData.price < 0) {
-      return res.status(400).json({ error: 'Stock price cannot be negative' });
-    }
-
-    const updatedStock = await Stock.findByIdAndUpdate(stockId, stockData, { new: true });
     res.json(updatedStock);
   } catch (error) {
     res.status(500).json({ error: 'Error updating stock' });
   }
 });
 
-router.delete('/:id', validateToken, async (req: Request, res: Response) => {
+router.delete('/:id', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const stockId = req.params.id;
     const existingStock = await Stock.findById(stockId);
@@ -437,7 +410,7 @@ router.delete('/:id', validateToken, async (req: Request, res: Response) => {
   }
 });
 
-router.post('/out/:stockId', validateToken, validate(stockOutSchema), async (req: Request, res: Response) => {
+router.post('/out/:stockId', validateToken, checkAdminRole, validate(stockOutSchema), async (req: Request, res: Response) => {
   try {
     const { stockId } = req.params;
     const { quantityToReduce, date, meal, category, wing, price } = req.body;
@@ -468,8 +441,17 @@ router.post('/out/:stockId', validateToken, validate(stockOutSchema), async (req
         wing: outWing,
       });
       await outTransaction.save();
-      stock.quantity = r2(stock.quantity - quantityToReduce);
-      await stock.save();
+
+      // Atomic update with quantity guard to prevent race conditions
+      const updated = await Stock.findOneAndUpdate(
+        { _id: stockId, wing: outWing, quantity: { $gte: quantityToReduce } },
+        { $inc: { quantity: -r2(quantityToReduce) } },
+        { new: true }
+      );
+      if (!updated) {
+        await StockTransaction.deleteOne({ _id: outTransaction._id });
+        return res.status(409).json({ error: 'Insufficient stock — it may have been modified concurrently. Please retry.' });
+      }
     } else {
       if (!price) return res.status(400).json({ error: 'price is required for NON_STORED items' });
       const stockItem = await StockItem.findOne({ _id: stockId, wing: outWing });
@@ -550,7 +532,7 @@ router.get('/transactions', validateToken, async (req: Request, res: Response) =
   }
 });
 
-router.put('/transaction/:transactionId', validateToken, validate(editTransactionSchema), async (req: Request, res: Response) => {
+router.put('/transaction/:transactionId', validateToken, checkAdminRole, validate(editTransactionSchema), async (req: Request, res: Response) => {
   try {
     const { transactionId } = req.params;
     const { quantityChange: newQty, pricePerUnit, date, meal } = req.body;
@@ -643,7 +625,7 @@ router.put('/transaction/:transactionId', validateToken, validate(editTransactio
   }
 });
 
-router.delete('/transaction/:id', validateToken, async (req: Request, res: Response) => {
+router.delete('/transaction/:id', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const tx = await StockTransaction.findById(req.params.id).populate('item');
     if (!tx) return res.status(404).json({ error: 'Stock transaction not found' });
@@ -652,13 +634,12 @@ router.delete('/transaction/:id', validateToken, async (req: Request, res: Respo
     const wing = tx.wing;
     const txDateStr = tx.date.toISOString().split('T')[0];
 
-    // If deleting a STORED IN transaction, check if stock would go negative
+    // Validate the full timeline wouldn't go negative at any point if this transaction is removed
     if ((tx.item as any).category === 'STORED' && tx.type === 'IN') {
-      const stock = await Stock.findOne({ item: itemId, wing });
-      const available = stock ? stock.quantity : 0;
-      if (tx.quantityChange > available) {
+      const timeline = await validateStockTimeline(itemId, wing, [tx._id.toString()]);
+      if (!timeline.valid) {
         return res.status(400).json({
-          error: `Cannot delete this IN transaction. Removing ${tx.quantityChange} would exceed available stock (${available}). Reduce OUT transactions first.`,
+          error: `Cannot delete this IN transaction. Stock would go negative (${r2(timeline.minOnHand)}) on ${timeline.minDate}. Reduce OUT transactions first.`,
         });
       }
     }
@@ -680,7 +661,7 @@ router.delete('/transaction/:id', validateToken, async (req: Request, res: Respo
   }
 });
 
-router.post('/transactions/bulk-delete', validateToken, async (req: Request, res: Response) => {
+router.post('/transactions/bulk-delete', validateToken, checkAdminRole, async (req: Request, res: Response) => {
   try {
     const { ids } = req.body;
     if (!Array.isArray(ids) || ids.length === 0) {
@@ -690,24 +671,24 @@ router.post('/transactions/bulk-delete', validateToken, async (req: Request, res
     const txList = await StockTransaction.find({ _id: { $in: ids } }).populate('item');
     if (txList.length === 0) return res.status(404).json({ error: 'No transactions found' });
 
-    // Group by item+wing to validate stock availability for STORED IN deletions
-    const storedInByGroup = new Map<string, { totalQty: number; itemId: any; wing: string }>();
+    // Validate that deleting these transactions won't cause negative stock at any point in the timeline
+    const affectedItemWings = new Map<string, { itemId: any; wing: string }>();
     for (const tx of txList) {
-      if ((tx.item as any).category === 'STORED' && tx.type === 'IN') {
+      if ((tx.item as any).category === 'STORED') {
         const key = `${(tx.item as any)._id}_${tx.wing}`;
-        const existing = storedInByGroup.get(key) || { totalQty: 0, itemId: (tx.item as any)._id, wing: tx.wing };
-        existing.totalQty += tx.quantityChange;
-        storedInByGroup.set(key, existing);
+        affectedItemWings.set(key, { itemId: (tx.item as any)._id, wing: tx.wing });
       }
     }
 
-    for (const [, group] of storedInByGroup) {
-      const stock = await Stock.findOne({ item: group.itemId, wing: group.wing });
-      const available = stock ? stock.quantity : 0;
-      if (group.totalQty > available) {
+    for (const [, group] of affectedItemWings) {
+      const excludeIds = txList
+        .filter((tx) => (tx.item as any)._id.toString() === group.itemId.toString() && tx.wing === group.wing)
+        .map((tx) => tx._id.toString());
+      const timeline = await validateStockTimeline(group.itemId, group.wing, excludeIds);
+      if (!timeline.valid) {
         const item = await StockItem.findById(group.itemId);
         return res.status(400).json({
-          error: `Cannot delete IN transactions for "${item?.name}". Removing ${group.totalQty} would exceed available stock (${available}).`,
+          error: `Cannot delete transactions for "${item?.name}". Stock would go negative (${r2(timeline.minOnHand)}) on ${timeline.minDate}.`,
         });
       }
     }
@@ -748,7 +729,7 @@ router.post('/transactions/bulk-delete', validateToken, async (req: Request, res
   }
 });
 
-router.post('/transaction/batch', validateToken, validate(batchTransactionSchema), async (req: Request, res: Response) => {
+router.post('/transaction/batch', validateToken, checkAdminRole, validate(batchTransactionSchema), async (req: Request, res: Response) => {
   const { transactions, wing } = req.body;
 
   try {
@@ -885,11 +866,11 @@ router.post('/transaction/batch', validateToken, validate(batchTransactionSchema
       const { quantity, date, meal, name } = transaction;
       const stockItem = await StockItem.findOne({ name, wing });
       if (!stockItem) {
-        return res.status(400).json({ error: `Stock item not found: ${name}` });
+        throw new Error(`Stock item not found during write phase: ${name}`);
       }
       const stock = await Stock.findOne({ item: stockItem._id, wing });
       if (!stock) {
-        return res.status(400).json({ error: `No stock record for item: ${name}` });
+        throw new Error(`No stock record during write phase for item: ${name}`);
       }
       const qty = r2(parseFloat(quantity));
       const outDate = new Date(date);

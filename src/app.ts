@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import dbConnect from './config/database';
 import apiRoutes from './routes/index';
 import { migrateHalls } from './migrations/hallMigration';
+import { StockItem } from './models/stock';
 
 
 require('dotenv').config();
@@ -46,6 +47,8 @@ const { initializeCronFromConfig } = require('../cron/mealGenerate');
 async function startServer(): Promise<void> {
   try {
     await dbConnect();
+    // Drop stale single-field indexes so compound (name+wing) uniqueness works correctly
+    await StockItem.syncIndexes();
     await migrateHalls();
   } catch (error) {
     console.error('Database connection error: ', error);
