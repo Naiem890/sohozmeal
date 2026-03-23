@@ -16,6 +16,14 @@ function formatDateToYYYYMMDD(date: Date | string): string {
   return `${year}-${month}-${day}`;
 }
 
+function getUtcDayRange(date: Date | string): { start: Date; end: Date } {
+  const d = new Date(date);
+  const start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+}
+
 async function updateBillStudentsCount(
   date: Date | string,
   meal: string,
@@ -23,10 +31,18 @@ async function updateBillStudentsCount(
   includeAllStudents = false
 ): Promise<void> {
   const dateWithoutTime = formatDateToYYYYMMDD(date);
+  const { start, end } = getUtcDayRange(date);
   try {
-    let bill = await Cost.findOne({ date: dateWithoutTime, wing });
+    let bill = await Cost.findOne({ date: { $gte: start, $lt: end }, wing });
     if (!bill) {
-      bill = new Cost({ date: dateWithoutTime, mealBill: {}, wing } as any);
+      bill = new Cost({ date: start, wing } as any);
+    }
+
+    if (!(bill.mealBill as any)) {
+      (bill as any).mealBill = {};
+    }
+    if (!(bill.mealBill as any)[meal]) {
+      (bill.mealBill as any)[meal] = { totalCost: 0, totalStudent: 0 };
     }
 
     if (includeAllStudents) {
@@ -122,7 +138,7 @@ router.delete('/:id', validateToken, checkAdminRole, async (req: Request, res: R
   }
 });
 
-router.get('/date/:date/wing/:wing', validateToken, checkAdminRole, async (req: Request, res: Response) => {
+router.get('/date/:date/wing/:wing', validateToken, async (req: Request, res: Response) => {
   try {
     const date = req.params.date as string;
     const wing = req.params.wing as string;
@@ -161,7 +177,7 @@ router.delete('/date/:date/meal/:meal/wing/:wing', validateToken, checkAdminRole
   }
 });
 
-router.get('/month/:year/:month/wing/:wing', validateToken, checkAdminRole, async (req: Request, res: Response) => {
+router.get('/month/:year/:month/wing/:wing', validateToken, async (req: Request, res: Response) => {
   try {
     const year = req.params.year as string;
     const month = req.params.month as string;
@@ -176,10 +192,7 @@ router.get('/month/:year/:month/wing/:wing', validateToken, checkAdminRole, asyn
       date: { $gte: startDate, $lt: endDate },
       wing: wing.toUpperCase(),
     });
-    if (!hallFeasts || hallFeasts.length === 0) {
-      return res.status(404).json({ error: `No HallFeasts found for ${month}/${year} and ${wing} wing` });
-    }
-    res.status(200).json(hallFeasts);
+    res.status(200).json(hallFeasts || []);
   } catch (error: any) {
     res.status(500).json({ error: 'Internal server error' });
   }

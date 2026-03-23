@@ -6,6 +6,13 @@ import Meal from '../models/meal';
 
 const r2 = (v: number): number => Math.round(v * 100) / 100;
 
+function getUtcDayRange(date: Date): { start: Date; end: Date } {
+  const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+}
+
 function generateDateRange(year: number, month: number): Date[] {
   const dates: Date[] = [];
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -25,6 +32,7 @@ export async function createOrUpdateCostForMonth(
 
     const promises = datesInMonth.map(async (dateObj) => {
       const formattedDate = dateObj.toISOString().split('T')[0];
+      const { start, end } = getUtcDayRange(dateObj);
 
       const students = await Student.find({ gender: wing }).lean();
       const studentIds = students.map((student) => student.studentId);
@@ -38,7 +46,7 @@ export async function createOrUpdateCostForMonth(
         mealCosts,
         guestMealCounts,
       ] = await Promise.all([
-        HallFeast.find({ date: formattedDate, wing }).lean(),
+        HallFeast.find({ date: { $gte: start, $lt: end }, wing }).lean(),
         Student.countDocuments({ gender: wing }),
         Meal.countDocuments({ 'meal.breakfast': true, date: formattedDate, studentId: { $in: studentIds } }),
         Meal.countDocuments({ 'meal.lunch': true, date: formattedDate, studentId: { $in: studentIds } }),
@@ -99,9 +107,10 @@ export async function createOrUpdateCostForMonth(
       const dinnerCost = r2(mealCosts[0]?.dinnerCost || 0);
 
       await Cost.findOneAndUpdate(
-        { date: formattedDate, wing },
+        { date: { $gte: start, $lt: end }, wing },
         {
           $set: {
+            date: start,
             mealBill: {
               breakfast: { totalCost: breakfastCost, totalStudent: breakfastCount },
               lunch: { totalCost: lunchCost, totalStudent: lunchCount },

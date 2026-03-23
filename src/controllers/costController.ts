@@ -191,18 +191,22 @@ router.get('/student', validateToken, async (req: Request, res: Response) => {
       const mealMap: Record<string, any> = {};
       for (const meal of meals) mealMap[meal.date] = meal;
 
-      combinedMealBill = bills
-        .filter((bill) => mealMap[bill.date])
-        .map((bill) => ({
+      combinedMealBill = bills.map((bill) => {
+        const mealForDay = mealMap[bill.date];
+        const mealStatus = mealForDay?.meal || { breakfast: false, lunch: false, dinner: false };
+        const guestMeal = mealForDay?.guestMeal || { breakfast: 0, lunch: 0, dinner: 0 };
+
+        return {
           date: bill.date,
           wing: bill.wing,
-          guestMeal: mealMap[bill.date].guestMeal,
+          guestMeal,
           mealBill: {
-            breakfast: { ...bill.mealBill.breakfast, perHeadCost: bill.mealBill.breakfast.perHeadCost, status: mealMap[bill.date].meal.breakfast },
-            lunch: { ...bill.mealBill.lunch, perHeadCost: bill.mealBill.lunch.perHeadCost, status: mealMap[bill.date].meal.lunch },
-            dinner: { ...bill.mealBill.dinner, perHeadCost: bill.mealBill.dinner.perHeadCost, status: mealMap[bill.date].meal.dinner },
+            breakfast: { ...bill.mealBill.breakfast, perHeadCost: bill.mealBill.breakfast.perHeadCost, status: mealStatus.breakfast },
+            lunch: { ...bill.mealBill.lunch, perHeadCost: bill.mealBill.lunch.perHeadCost, status: mealStatus.lunch },
+            dinner: { ...bill.mealBill.dinner, perHeadCost: bill.mealBill.dinner.perHeadCost, status: mealStatus.dinner },
           },
-        }));
+        };
+      });
     } else {
       combinedMealBill = bills;
     }

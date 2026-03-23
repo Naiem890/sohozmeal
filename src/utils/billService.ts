@@ -6,10 +6,19 @@ import Meal from '../models/meal';
 
 const r2 = (v: number): number => Math.round(v * 100) / 100;
 
+function getUtcDayRange(date: string | Date): { start: Date; end: Date } {
+  const d = new Date(date);
+  const start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+}
+
 export async function createOrUpdateBill(date: string | Date, wing: string): Promise<ICost> {
   try {
     const dateObj = new Date(date);
     const formattedDate = dateObj.toISOString().split('T')[0];
+    const { start, end } = getUtcDayRange(dateObj);
 
     const students = await Student.find({ gender: wing }, { studentId: 1 }).lean();
     const studentIds = students.map((s) => s.studentId);
@@ -23,7 +32,7 @@ export async function createOrUpdateBill(date: string | Date, wing: string): Pro
       mealCosts,
       guestMealCounts,
     ] = await Promise.all([
-      HallFeast.find({ date: formattedDate, wing }),
+      HallFeast.find({ date: { $gte: start, $lt: end }, wing }),
       Meal.countDocuments({ 'meal.breakfast': true, date: formattedDate, studentId: { $in: studentIds } }),
       Meal.countDocuments({ 'meal.lunch': true, date: formattedDate, studentId: { $in: studentIds } }),
       Meal.countDocuments({ 'meal.dinner': true, date: formattedDate, studentId: { $in: studentIds } }),
@@ -86,9 +95,9 @@ export async function createOrUpdateBill(date: string | Date, wing: string): Pro
       dinner: { totalCost: dinnerCost, totalStudent: dinnerCount },
     };
 
-    const normalizedDate = new Date(formattedDate);
+    const normalizedDate = start;
     const bill = await Cost.findOneAndUpdate(
-      { date: normalizedDate, wing },
+      { date: { $gte: start, $lt: end }, wing },
       { $set: { mealBill }, $setOnInsert: { date: normalizedDate, wing } },
       { upsert: true, new: true }
     );
